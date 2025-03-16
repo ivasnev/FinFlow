@@ -1,62 +1,51 @@
 package config
 
-import "time"
+import (
+	"gopkg.in/yaml.v3"
+	"os"
+	"time"
+)
 
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Redis    RedisConfig
-	TVM      TVMConfig
+	Server   ServerConfig   `yaml:"server"`
+	Database DatabaseConfig `yaml:"database"`
+	Redis    RedisConfig    `yaml:"redis"`
+	TVM      TVMConfig      `yaml:"tvm"`
 }
 
 type ServerConfig struct {
-	Port string
+	Port string `yaml:"port"`
 }
 
 type DatabaseConfig struct {
-	Host     string
-	Port     string
-	User     string
-	Password string
-	DBName   string
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	DBName   string `yaml:"dbname"`
 }
 
 type RedisConfig struct {
-	Host     string
-	Port     string
-	Password string
-	DB       int
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	Password string `yaml:"password"`
+	DB       int    `yaml:"db"`
 }
 
 type TVMConfig struct {
-	KeyRotationInterval time.Duration // Интервал ротации ключей
-	TicketTTL          time.Duration // Время жизни тикетов
-	RSAKeyBits         int           // Размер RSA ключа в битах
+	TicketTTL time.Duration `yaml:"ticket_ttl"`
 }
 
 func LoadConfig() (*Config, error) {
-	// TODO: Implement configuration loading using viper
-	return &Config{
-		Server: ServerConfig{
-			Port: ":8081",
-		},
-		Database: DatabaseConfig{
-			Host:     "localhost",
-			Port:     "5432",
-			User:     "postgres",
-			Password: "postgres",
-			DBName:   "ff_tvm",
-		},
-		Redis: RedisConfig{
-			Host:     "localhost",
-			Port:     "6379",
-			Password: "",
-			DB:       0,
-		},
-		TVM: TVMConfig{
-			KeyRotationInterval: 24 * time.Hour,    // Ротация ключей раз в сутки
-			TicketTTL:          1 * time.Hour,      // Тикеты живут 1 час
-			RSAKeyBits:         2048,               // 2048-битные ключи
-		},
-	}, nil
-} 
+	data, err := os.ReadFile("config.yaml")
+	if err != nil {
+		return nil, err
+	}
+
+	var config Config
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}

@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"github.com/ivasnev/FinFlow/ff-tvm/internal/models"
+	"ff-tvm/internal/models"
 	"gorm.io/gorm"
 )
 
@@ -12,14 +12,14 @@ type ServiceRepository interface {
 	GetServiceByName(ctx context.Context, name string) (*models.Service, error)
 	UpdateService(ctx context.Context, service *models.Service) error
 	DeleteService(ctx context.Context, id uint) error
-	
+
 	CreateServiceAccess(ctx context.Context, access *models.ServiceAccess) error
 	CheckServiceAccess(ctx context.Context, sourceID, targetID uint) (bool, error)
 	DeleteServiceAccess(ctx context.Context, sourceID, targetID uint) error
-	
+
 	CreateServiceTicket(ctx context.Context, ticket *models.ServiceTicket) error
 	GetServiceTicket(ctx context.Context, sourceID, targetID uint) (*models.ServiceTicket, error)
-	
+
 	CreateKeyRotation(ctx context.Context, rotation *models.KeyRotation) error
 	GetLastKeyRotation(ctx context.Context, serviceID uint) (*models.KeyRotation, error)
 }
@@ -114,4 +114,4 @@ func (r *serviceRepository) GetLastKeyRotation(ctx context.Context, serviceID ui
 		return nil, err
 	}
 	return &rotation, nil
-} 
+}

@@ -1,9 +1,10 @@
 package handler
 
 import (
+	"ff-tvm/internal/service"
 	"github.com/gin-gonic/gin"
-	"github.com/ivasnev/FinFlow/ff-tvm/internal/service"
 	"net/http"
+	"strconv"
 )
 
 type TVMHandler struct {
@@ -42,7 +43,7 @@ func (h *TVMHandler) RegisterService(c *gin.Context) {
 		return
 	}
 
-	service, err := h.tvmService.RegisterService(c.Request.Context(), req.Name, req.Description)
+	registeredService, err := h.tvmService.RegisterService(c.Request.Context(), req.Name, req.Description)
 	if err != nil {
 		if err == service.ErrServiceExists {
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
@@ -53,10 +54,10 @@ func (h *TVMHandler) RegisterService(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"id":          service.ID,
-		"name":        service.Name,
-		"description": service.Description,
-		"public_key":  service.PublicKey,
+		"id":          registeredService.ID,
+		"name":        registeredService.Name,
+		"description": registeredService.Description,
+		"public_key":  registeredService.PublicKey,
 	})
 }
 
@@ -145,8 +146,14 @@ func (h *TVMHandler) ValidateTicket(c *gin.Context) {
 }
 
 func (h *TVMHandler) GetPublicKey(c *gin.Context) {
-	serviceID := uint(c.GetInt("service_id"))
-	publicKey, err := h.tvmService.GetPublicKey(c.Request.Context(), serviceID)
+	serviceIDStr := c.Param("service_id")
+	serviceID, err := strconv.ParseUint(serviceIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid service ID"})
+		return
+	}
+
+	publicKey, err := h.tvmService.GetPublicKey(c.Request.Context(), uint(serviceID))
 	if err != nil {
 		if err == service.ErrServiceNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -160,8 +167,14 @@ func (h *TVMHandler) GetPublicKey(c *gin.Context) {
 }
 
 func (h *TVMHandler) RotateKeys(c *gin.Context) {
-	serviceID := uint(c.GetInt("service_id"))
-	err := h.tvmService.RotateKeys(c.Request.Context(), serviceID)
+	serviceIDStr := c.Param("service_id")
+	serviceID, err := strconv.ParseUint(serviceIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid service ID"})
+		return
+	}
+
+	err = h.tvmService.RotateKeys(c.Request.Context(), uint(serviceID))
 	if err != nil {
 		if err == service.ErrServiceNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -172,4 +185,4 @@ func (h *TVMHandler) RotateKeys(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "keys rotated successfully"})
-} 
+}

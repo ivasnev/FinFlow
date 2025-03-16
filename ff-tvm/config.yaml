@@ -1,0 +1,22 @@
+server:
+  port: ":8081"
+
+database:
+  host: "localhost"
+  port: "5432"
+  user: "postgres"
+  password: "postgres"
+  dbname: "ff_tvm"
+
+redis:
+  host: "localhost"
+  port: "6379"
+  password: ""
+  db: 0
+
+jwt:
+  signing_key: "your-secret-key-here"
+  expiration: "24h"
+
+tvm:
+  ticket_ttl: "1h" 
