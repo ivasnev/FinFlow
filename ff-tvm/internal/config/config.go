@@ -1,51 +1,26 @@
 package config
 
 import (
-	"gopkg.in/yaml.v3"
 	"os"
-	"time"
 )
 
 type Config struct {
-	Server   ServerConfig   `yaml:"server"`
-	Database DatabaseConfig `yaml:"database"`
-	Redis    RedisConfig    `yaml:"redis"`
-	TVM      TVMConfig      `yaml:"tvm"`
+	DatabaseURL string
+	Port        string
+	Environment string
 }
 
-type ServerConfig struct {
-	Port string `yaml:"port"`
-}
-
-type DatabaseConfig struct {
-	Host     string `yaml:"host"`
-	Port     string `yaml:"port"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	DBName   string `yaml:"dbname"`
-}
-
-type RedisConfig struct {
-	Host     string `yaml:"host"`
-	Port     string `yaml:"port"`
-	Password string `yaml:"password"`
-	DB       int    `yaml:"db"`
-}
-
-type TVMConfig struct {
-	TicketTTL time.Duration `yaml:"ticket_ttl"`
-}
-
-func LoadConfig() (*Config, error) {
-	data, err := os.ReadFile("config.yaml")
-	if err != nil {
-		return nil, err
+func Load() *Config {
+	return &Config{
+		DatabaseURL: getEnvOrDefault("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/finflow?sslmode=disable"),
+		Port:        getEnvOrDefault("PORT", "8080"),
+		Environment: getEnvOrDefault("ENVIRONMENT", "development"),
 	}
+}
 
-	var config Config
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, err
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
 	}
-
-	return &config, nil
+	return defaultValue
 }
