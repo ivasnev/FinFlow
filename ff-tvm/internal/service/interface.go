@@ -5,9 +5,11 @@ import (
 	"crypto/ed25519"
 )
 
+//go:generate mockgen -source=interface.go -destination=service_mock.go -package=service
+
 // Service представляет информацию о сервисе
 type Service struct {
-	ID             int64  `json:"id"`
+	ID             int    `json:"id"`
 	Name           string `json:"name"`
 	PublicKey      string `json:"public_key"`
 	PrivateKeyHash string `json:"-"`
@@ -15,8 +17,8 @@ type Service struct {
 
 // Ticket представляет тикет авторизации
 type Ticket struct {
-	From      int64  `json:"from"`
-	To        int64  `json:"to"`
+	From      int    `json:"from"`
+	To        int    `json:"to"`
 	TTL       int64  `json:"ttl"`
 	Signature string `json:"signature"`
 	Metadata  string `json:"metadata"`
@@ -25,11 +27,11 @@ type Ticket struct {
 // ServiceRepository интерфейс для работы с хранилищем сервисов
 type ServiceRepository interface {
 	Create(ctx context.Context, service *Service) error
-	GetByID(ctx context.Context, id int64) (*Service, error)
-	GetPublicKey(ctx context.Context, id int64) (string, error)
-	GetPrivateKeyHash(ctx context.Context, id int64) (string, error)
-	GrantAccess(ctx context.Context, from, to int64) error
-	RevokeAccess(ctx context.Context, from, to int64) error
+	GetByID(ctx context.Context, id int) (*Service, error)
+	GetPublicKey(ctx context.Context, id int) (string, error)
+	GetPrivateKeyHash(ctx context.Context, id int) (string, error)
+	GrantAccess(ctx context.Context, from, to int) error
+	RevokeAccess(ctx context.Context, from, to int) error
 }
 
 // KeyManager интерфейс для управления ключами
@@ -41,13 +43,12 @@ type KeyManager interface {
 
 // AccessManager интерфейс для управления доступом
 type AccessManager interface {
-	CheckAccess(from, to int64) bool
-	GrantAccess(from, to int64) error
-	RevokeAccess(from, to int64) error
+	CheckAccess(from, to int) bool
+	GrantAccess(from, to int) error
+	RevokeAccess(from, to int) error
 }
 
 // TicketService интерфейс для работы с тикетами
 type TicketService interface {
-	GenerateTicket(ctx context.Context, from, to int64, secret string) (*Ticket, error)
-	ValidateTicket(ctx context.Context, ticket *Ticket) error
+	GenerateTicket(ctx context.Context, from, to int, secret string) (*Ticket, error)
 }

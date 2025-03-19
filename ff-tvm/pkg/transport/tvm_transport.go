@@ -11,12 +11,12 @@ import (
 type TVMTransport struct {
 	baseTransport http.RoundTripper
 	client        *client.TVMClient
-	from          int64
-	to            int64
+	from          int
+	to            int
 }
 
 // NewTVMTransport создает новый транспорт для добавления тикетов
-func NewTVMTransport(client *client.TVMClient, baseTransport http.RoundTripper, from, to int64) *TVMTransport {
+func NewTVMTransport(client *client.TVMClient, baseTransport http.RoundTripper, from, to int) *TVMTransport {
 	return &TVMTransport{
 		client:        client,
 		baseTransport: baseTransport,

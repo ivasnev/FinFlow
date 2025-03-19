@@ -23,8 +23,8 @@ func NewHandlers(ticketService service.TicketService, repo service.ServiceReposi
 }
 
 type createTicketRequest struct {
-	From   int64  `json:"from" binding:"required"`
-	To     int64  `json:"to" binding:"required"`
+	From   int    `json:"from" binding:"required"`
+	To     int    `json:"to" binding:"required"`
 	Secret string `json:"secret" binding:"required"`
 }
 
@@ -51,7 +51,7 @@ func (h *Handlers) GetServicePublicKey(c *gin.Context) {
 		return
 	}
 
-	serviceID, err := strconv.ParseInt(id, 10, 64)
+	serviceID, err := strconv.Atoi(id)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid service ID format"})
 		return
@@ -71,7 +71,7 @@ type createServiceRequest struct {
 }
 
 type createServiceResponse struct {
-	ID         int64  `json:"id"`
+	ID         int    `json:"id"`
 	Name       string `json:"name"`
 	PublicKey  string `json:"public_key"`
 	PrivateKey string `json:"private_key"`
@@ -118,8 +118,8 @@ func (h *Handlers) CreateService(c *gin.Context) {
 }
 
 type grantAccessRequest struct {
-	From int64 `json:"from" binding:"required"`
-	To   int64 `json:"to" binding:"required"`
+	From int `json:"from" binding:"required"`
+	To   int `json:"to" binding:"required"`
 }
 
 func (h *Handlers) GrantAccess(c *gin.Context) {
@@ -138,8 +138,8 @@ func (h *Handlers) GrantAccess(c *gin.Context) {
 }
 
 type revokeAccessRequest struct {
-	From int64 `json:"from" binding:"required"`
-	To   int64 `json:"to" binding:"required"`
+	From int `json:"from" binding:"required"`
+	To   int `json:"to" binding:"required"`
 }
 
 func (h *Handlers) RevokeAccess(c *gin.Context) {

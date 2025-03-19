@@ -17,7 +17,7 @@ const (
 )
 
 type TVMClient interface {
-	GetPublicKey(serviceID int64) (string, error)
+	GetPublicKey(serviceID int) (string, error)
 }
 
 type TVMMiddleware struct {

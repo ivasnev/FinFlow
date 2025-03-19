@@ -25,12 +25,12 @@ func TestCreate(t *testing.T) {
 	}
 
 	mock.ExpectQuery("INSERT INTO services").
-		WithArgs(service.Name, service.PublicKey).
+		WithArgs(service.Name, service.PublicKey, service.PrivateKeyHash).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
 	err = repo.Create(context.Background(), service)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(1), service.ID)
+	assert.Equal(t, int(1), service.ID)
 
 	// Проверяем, что все ожидаемые запросы были выполнены
 	assert.NoError(t, mock.ExpectationsWereMet())
@@ -47,20 +47,20 @@ func TestGetByID(t *testing.T) {
 	repo := NewRepository(db)
 
 	// Тест: Успешное получение сервиса
-	mock.ExpectQuery("SELECT id, name, public_key FROM services").
+	mock.ExpectQuery("SELECT id, name, public_key, private_key_hash FROM services").
 		WithArgs(1).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "public_key"}).
-			AddRow(1, "test-service", "test-public-key"))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "public_key", "private_key_hash"}).
+			AddRow(1, "test-service", "test-public-key", "test-private-key-hash"))
 
 	service, err := repo.GetByID(context.Background(), 1)
 	assert.NoError(t, err)
 	assert.NotNil(t, service)
-	assert.Equal(t, int64(1), service.ID)
+	assert.Equal(t, 1, service.ID)
 	assert.Equal(t, "test-service", service.Name)
 	assert.Equal(t, "test-public-key", service.PublicKey)
 
 	// Тест: Сервис не найден
-	mock.ExpectQuery("SELECT id, name, public_key FROM services").
+	mock.ExpectQuery("SELECT id, name, public_key, private_key_hash FROM services").
 		WithArgs(2).
 		WillReturnError(ErrServiceNotFound)
 
