@@ -6,24 +6,11 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/finflow?sslmode=disable
+      - DATABASE_URL=postgres://postgres:postgres@localhost:5432/ff_tvm?sslmode=disable
       - PORT=8080
       - ENVIRONMENT=development
-    depends_on:
-      - db
     volumes:
       - ./migrations:/app/migrations
-
-  db:
-    image: postgres:16-alpine
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=finflow
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
 
 volumes:
   postgres_data: 
