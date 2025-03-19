@@ -8,6 +8,7 @@
 - Управление сервисами и их ключами
 - Управление правами доступа между сервисами
 - Middleware для проверки тикетов в других сервисах
+- HTTP транспорт для автоматического добавления тикетов в заголовки
 
 ## Требования
 
@@ -67,7 +68,9 @@ Content-Type: application/json
 }
 ```
 
-## Middleware
+## Использование
+
+### Middleware
 
 Для использования в других сервисах добавьте middleware:
 
@@ -78,6 +81,28 @@ client := client.NewTVMClient("http://tvm-service:8080")
 tvmMiddleware := middleware.NewTVMMiddleware(client)
 
 router.Use(tvmMiddleware.ValidateTicket())
+```
+
+### HTTP Транспорт
+
+Для автоматического добавления тикетов в заголовки запросов используйте TVM транспорт:
+
+```go
+import "github.com/ivasnev/FinFlow/ff-tvm/pkg/transport"
+
+// Создаем клиент TVM
+tvmClient := client.NewTVMClient("http://tvm-service:8080")
+
+// Создаем транспорт с указанием сервисов
+tvmTransport := transport.NewTVMTransport(tvmClient, http.DefaultTransport, fromServiceID, toServiceID)
+
+// Создаем HTTP клиент с нашим транспортом
+httpClient := &http.Client{
+    Transport: tvmTransport,
+}
+
+// Теперь все запросы через этот клиент будут автоматически содержать тикет
+resp, err := httpClient.Get("http://target-service/api/endpoint")
 ```
 
 ## Безопасность
