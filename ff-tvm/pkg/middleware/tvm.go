@@ -4,13 +4,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-tvm/internal/service"
 )
 
 const (
-	HeaderServiceID  = "X-Id-Service-Ticket"
+	HeaderServiceID  = "X-FF-Id-Service"
 	HeaderTicket     = "X-FF-Service-Ticket"
 	ServiceIDContext = "service_id"
 )
@@ -39,8 +40,10 @@ func (m *TVMMiddleware) ValidateTicket() gin.HandlerFunc {
 			return
 		}
 
-		// TODO: Convert string ID to int64
-		fromID := int64(0) // Placeholder
+		fromID, err := strconv.Atoi(serviceID) // Placeholder
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "service ID is must be int"})
+		}
 
 		// Получаем тикет из заголовка
 		ticketStr := c.GetHeader(HeaderTicket)
