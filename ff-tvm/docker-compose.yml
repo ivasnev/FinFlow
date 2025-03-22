@@ -6,11 +6,17 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@localhost:5432/ff_tvm?sslmode=disable
+      - DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/ff_tvm?sslmode=disable
       - PORT=8080
       - ENVIRONMENT=development
     volumes:
       - ./migrations:/app/migrations
+    networks:
+      - shared_network
+
+networks:
+  shared_network:
+    external: true
 
 volumes:
-  postgres_data: 
+  postgres_data:

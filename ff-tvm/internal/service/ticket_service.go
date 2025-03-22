@@ -49,18 +49,15 @@ func (s *ticketServiceImpl) GenerateTicket(ctx context.Context, from, to int, se
 	}
 
 	// Создаем данные для подписи
-	data := struct {
-		From int   `json:"from"`
-		To   int   `json:"to"`
-		TTL  int64 `json:"ttl"`
-	}{
-		From: from,
-		To:   to,
-		TTL:  time.Now().Add(24 * time.Hour).Unix(),
+	payload := TicketPayload{
+		From:     from,
+		To:       to,
+		TTL:      time.Now().Add(24 * time.Hour).Unix(),
+		Metadata: "{}",
 	}
 
 	// Сериализуем данные в JSON
-	jsonData, err := json.Marshal(data)
+	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
 	}
@@ -72,11 +69,8 @@ func (s *ticketServiceImpl) GenerateTicket(ctx context.Context, from, to int, se
 	}
 
 	return &Ticket{
-		From:      from,
-		To:        to,
-		TTL:       data.TTL,
+		Payload:   payload,
 		Signature: EncodeKey(signature),
-		Metadata:  "{}",
 	}, nil
 }
 
@@ -95,7 +89,7 @@ func ValidateTicketSignature(ticket *Ticket, publicKey string) error {
 	}
 
 	// Подготовка данных для проверки
-	data, err := json.Marshal(ticket)
+	data, err := json.Marshal(ticket.Payload)
 	if err != nil {
 		return err
 	}

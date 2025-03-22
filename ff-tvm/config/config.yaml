@@ -1,0 +1,12 @@
+server:
+  port: "8081"
+
+database:
+  url: "postgres://postgres:postgres@localhost:5432/ff_tvm?sslmode=disable"
+
+dev:
+  enabled: false
+  secret: "hackme" 
+
+migrations:
+  path: "migrations"
