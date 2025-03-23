@@ -1,5 +1,5 @@
 # Этап сборки
-FROM golang:1.23-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /ff-files
 
@@ -22,6 +22,8 @@ WORKDIR /ff-files
 
 # Копируем бинарный файл из этапа сборки
 COPY --from=builder /ff-files/server .
+
+COPY config/ ./config
 
 # Открываем порт
 EXPOSE 8082

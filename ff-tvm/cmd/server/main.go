@@ -4,10 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
-
 	"github.com/gin-gonic/gin"
 	"github.com/golang-migrate/migrate/v4"
 	migratepostgres "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -17,6 +13,9 @@ import (
 	"github.com/ivasnev/FinFlow/ff-tvm/internal/service"
 	"github.com/ivasnev/FinFlow/ff-tvm/pkg/logger"
 	_ "github.com/lib/pq"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func connectToDatabase(cfg *config.Config, log *logger.Logger) (*sql.DB, error) {

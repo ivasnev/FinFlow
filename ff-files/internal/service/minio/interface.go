@@ -1,8 +1,8 @@
 package minio
 
 import (
-	"FinFlow/ff-files/internal/common/config"
-	helpers2 "FinFlow/ff-files/internal/service/minio/helpers"
+	"github.com/ivasnev/FinFlow/ff-files/internal/common/config"
+	helpers2 "github.com/ivasnev/FinFlow/ff-files/internal/service/minio/helpers"
 )
 
 // MinioServiceInterface интерфейс для взаимодействия с Minio

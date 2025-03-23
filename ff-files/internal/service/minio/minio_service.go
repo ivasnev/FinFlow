@@ -1,12 +1,12 @@
 package minio
 
 import (
-	"FinFlow/ff-files/internal/common/config"
-	helpers2 "FinFlow/ff-files/internal/service/minio/helpers"
 	"bytes"
 	"context"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/ivasnev/FinFlow/ff-files/internal/common/config"
+	helpers2 "github.com/ivasnev/FinFlow/ff-files/internal/service/minio/helpers"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"net/http"

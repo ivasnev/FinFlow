@@ -1,12 +1,12 @@
 package minioHandler
 
 import (
-	"FinFlow/ff-files/internal/common/dto"
-	"FinFlow/ff-files/internal/common/errors"
-	"FinFlow/ff-files/internal/common/responses"
-	"FinFlow/ff-files/internal/service/minio/helpers"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/ivasnev/FinFlow/ff-files/internal/common/dto"
+	"github.com/ivasnev/FinFlow/ff-files/internal/common/errors"
+	"github.com/ivasnev/FinFlow/ff-files/internal/common/responses"
+	"github.com/ivasnev/FinFlow/ff-files/internal/service/minio/helpers"
 	"io"
 	"net/http"
 )

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -29,47 +30,34 @@ type Config struct {
 func Load() *Config {
 	cfg := &Config{}
 
-	// Загружаем конфигурацию из YAML файла, если он существует
 	if err := loadFromYAML(cfg); err != nil {
-		fmt.Printf("Warning: failed to load config from YAML: %v\n", err)
+		fmt.Printf("⚠️ Warning: failed to load config from YAML: %v\n", err)
 	}
 
-	// Загружаем конфигурацию из переменных окружения
-	if err := loadFromEnv(cfg); err != nil {
-		fmt.Printf("Warning: failed to load config from environment: %v\n", err)
-	}
+	loadFromEnv(cfg)
 
 	return cfg
 }
 
 func loadFromYAML(cfg *Config) error {
-	// Ищем конфигурационный файл в текущей директории и родительских директориях
-	configPaths := []string{
-		"config.yaml",
-		"config.yml",
-		"config/config.yaml",
-		"config/config.yml",
-	}
-
-	var configData []byte
-	var err error
-
-	for _, path := range configPaths {
-		configData, err = os.ReadFile(path)
-		if err == nil {
-			break
-		}
-	}
-
+	// Получаем текущую рабочую директорию
+	wd, err := os.Getwd()
 	if err != nil {
-		return fmt.Errorf("no config file found: %w", err)
+		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	if err := yaml.Unmarshal(configData, cfg); err != nil {
-		return fmt.Errorf("failed to parse YAML config: %w", err)
+	// Строим путь к файлу конфигурации относительно рабочей директории
+	configPath := filepath.Join(wd, "config", "config.yaml")
+
+	// Открываем файл
+	if data, err := os.ReadFile(configPath); err == nil {
+		if err := yaml.Unmarshal(data, cfg); err != nil {
+			return fmt.Errorf("failed to parse YAML config: %w", err)
+		}
+		return nil
 	}
 
-	return nil
+	return fmt.Errorf("no config file found at %s", configPath)
 }
 
 func loadFromEnv(cfg *Config) error {

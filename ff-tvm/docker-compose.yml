@@ -4,10 +4,10 @@ services:
   app:
     build: .
     ports:
-      - "8080:8080"
+      - "8081:8081"
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/ff_tvm?sslmode=disable
-      - PORT=8080
+      - DATABASE_URL=postgres://postgres:postgres@host.docker.internal:5432/ff_tvm?sslmode=disable
+      - PORT=8081
       - ENVIRONMENT=development
     volumes:
       - ./migrations:/app/migrations

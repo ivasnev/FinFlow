@@ -1,7 +1,7 @@
 package main
 
 import (
-	"ff-files/internal/application"
+	"github.com/ivasnev/FinFlow/ff-files/internal/application"
 	"go.uber.org/zap"
 )
 
