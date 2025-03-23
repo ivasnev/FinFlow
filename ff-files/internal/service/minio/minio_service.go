@@ -84,8 +84,12 @@ func (m *minioService) CreateOne(file helpers2.FileDataType) (*helpers2.CreatedO
 		return nil, fmt.Errorf("ошибка при создании объекта %s: %v", file.FileName, err)
 	}
 
-	// Получение URL для загруженного объекта
-	url, err := m.mc.PresignedGetObject(context.Background(), m.cfg.BucketName, objectID, time.Second*time.Duration(m.cfg.FileTimeExpiration), nil)
+	// Генерация подписанного URL для получения объекта
+	url, err := m.mc.PresignedGetObject(
+		context.Background(), m.cfg.BucketName, objectID,
+		time.Second*time.Duration(m.cfg.FileTimeExpiration),
+		nil)
+
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при создании URL для объекта %s: %v", file.FileName, err)
 	}
