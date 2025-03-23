@@ -10,6 +10,7 @@ postgres:
 
 minio:
   endpoint: localhost:9000
+  internal_endpoint: http://localhost:9000
   access_key: minioadmin
   secret_key: minioadmin
   bucket: ff-files
