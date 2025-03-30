@@ -4,25 +4,25 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ivasnev/FinFlow/ff-id/internal/repository/postgres"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/ivasnev/FinFlow/ff-id/dto"
-	"github.com/ivasnev/FinFlow/ff-id/interfaces"
+	"github.com/ivasnev/FinFlow/ff-id/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-id/internal/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // UserService реализует интерфейс для работы с пользователями
 type UserService struct {
-	userRepository   interfaces.UserRepository
-	avatarRepository interfaces.AvatarRepository
+	userRepository   postgres.UserRepositoryInterface
+	avatarRepository postgres.AvatarRepositoryInterface
 }
 
 // NewUserService создает новый сервис пользователей
 func NewUserService(
-	userRepository interfaces.UserRepository,
-	avatarRepository interfaces.AvatarRepository,
+	userRepository postgres.UserRepositoryInterface,
+	avatarRepository postgres.AvatarRepositoryInterface,
 ) *UserService {
 	return &UserService{
 		userRepository:   userRepository,

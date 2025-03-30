@@ -10,31 +10,31 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/ivasnev/FinFlow/ff-id/dto"
-	"github.com/ivasnev/FinFlow/ff-id/interfaces"
+	"github.com/ivasnev/FinFlow/ff-id/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-id/internal/common/config"
 	"github.com/ivasnev/FinFlow/ff-id/internal/models"
+	"github.com/ivasnev/FinFlow/ff-id/internal/repository/postgres"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // AuthService реализует интерфейс для аутентификации и авторизации
 type AuthService struct {
 	config                 *config.Config
-	userRepository         interfaces.UserRepository
-	roleRepository         interfaces.RoleRepository
-	sessionRepository      interfaces.SessionRepository
-	deviceService          interfaces.DeviceService
-	loginHistoryRepository interfaces.LoginHistoryRepository
+	userRepository         postgres.UserRepositoryInterface
+	roleRepository         postgres.RoleRepositoryInterface
+	sessionRepository      postgres.SessionRepositoryInterface
+	deviceService          DeviceServiceInterface
+	loginHistoryRepository postgres.LoginHistoryRepositoryInterface
 }
 
 // NewAuthService создает новый сервис аутентификации
 func NewAuthService(
 	config *config.Config,
-	userRepository interfaces.UserRepository,
-	roleRepository interfaces.RoleRepository,
-	sessionRepository interfaces.SessionRepository,
-	deviceService interfaces.DeviceService,
-	loginHistoryRepository interfaces.LoginHistoryRepository,
+	userRepository postgres.UserRepositoryInterface,
+	roleRepository postgres.RoleRepositoryInterface,
+	sessionRepository postgres.SessionRepositoryInterface,
+	deviceService DeviceServiceInterface,
+	loginHistoryRepository postgres.LoginHistoryRepositoryInterface,
 ) *AuthService {
 	return &AuthService{
 		config:                 config,

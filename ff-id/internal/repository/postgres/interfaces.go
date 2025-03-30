@@ -1,4 +1,4 @@
-package interfaces
+package postgres
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"github.com/ivasnev/FinFlow/ff-id/internal/models"
 )
 
-// UserRepository определяет методы для работы с пользователями
-type UserRepository interface {
+// UserRepositoryInterface определяет методы для работы с пользователями
+type UserRepositoryInterface interface {
 	// Create создает нового пользователя
 	Create(ctx context.Context, user *models.User) error
 
@@ -38,8 +38,8 @@ type UserRepository interface {
 	GetRoles(ctx context.Context, userID int64) ([]models.RoleEntity, error)
 }
 
-// RoleRepository определяет методы для работы с ролями
-type RoleRepository interface {
+// RoleRepositoryInterface определяет методы для работы с ролями
+type RoleRepositoryInterface interface {
 	// GetByName находит роль по имени
 	GetByName(ctx context.Context, name string) (*models.RoleEntity, error)
 
@@ -47,8 +47,8 @@ type RoleRepository interface {
 	GetAll(ctx context.Context) ([]models.RoleEntity, error)
 }
 
-// SessionRepository определяет методы для работы с сессиями
-type SessionRepository interface {
+// SessionRepositoryInterface определяет методы для работы с сессиями
+type SessionRepositoryInterface interface {
 	// Create создает новую сессию
 	Create(ctx context.Context, session *models.Session) error
 
@@ -71,8 +71,8 @@ type SessionRepository interface {
 	DeleteExpired(ctx context.Context) error
 }
 
-// LoginHistoryRepository определяет методы для работы с историей входов
-type LoginHistoryRepository interface {
+// LoginHistoryRepositoryInterface определяет методы для работы с историей входов
+type LoginHistoryRepositoryInterface interface {
 	// Create создает новую запись в истории входов
 	Create(ctx context.Context, history *models.LoginHistory) error
 
@@ -80,8 +80,8 @@ type LoginHistoryRepository interface {
 	GetAllByUserID(ctx context.Context, userID int64, limit, offset int) ([]models.LoginHistory, error)
 }
 
-// DeviceRepository определяет методы для работы с устройствами
-type DeviceRepository interface {
+// DeviceRepositoryInterface определяет методы для работы с устройствами
+type DeviceRepositoryInterface interface {
 	// Create создает новое устройство
 	Create(ctx context.Context, device *models.Device) error
 
@@ -101,8 +101,8 @@ type DeviceRepository interface {
 	Delete(ctx context.Context, id int) error
 }
 
-// AvatarRepository определяет методы для работы с аватарками
-type AvatarRepository interface {
+// AvatarRepositoryInterface определяет методы для работы с аватарками
+type AvatarRepositoryInterface interface {
 	// Create создает новую аватарку
 	Create(ctx context.Context, avatar *models.UserAvatar) error
 

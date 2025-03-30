@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ivasnev/FinFlow/ff-id/interfaces"
+	"github.com/ivasnev/FinFlow/ff-id/internal/service"
 )
 
 // AuthMiddleware создает middleware для аутентификации запросов
-func AuthMiddleware(authService interfaces.AuthService) gin.HandlerFunc {
+func AuthMiddleware(authService service.AuthServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Получаем токен из заголовка
 		authHeader := c.GetHeader("Authorization")
@@ -48,7 +48,7 @@ func AuthMiddleware(authService interfaces.AuthService) gin.HandlerFunc {
 }
 
 // RoleMiddleware создает middleware для проверки роли пользователя
-func RoleMiddleware(role string, authService interfaces.AuthService) gin.HandlerFunc {
+func RoleMiddleware(role string, authService service.AuthServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Получаем ID пользователя из контекста
 		userID, exists := c.Get("user_id")

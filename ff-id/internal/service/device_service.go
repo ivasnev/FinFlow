@@ -6,19 +6,19 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ivasnev/FinFlow/ff-id/dto"
-	"github.com/ivasnev/FinFlow/ff-id/interfaces"
+	"github.com/ivasnev/FinFlow/ff-id/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-id/internal/models"
+	"github.com/ivasnev/FinFlow/ff-id/internal/repository/postgres"
 )
 
 // DeviceService реализует интерфейс для работы с устройствами
 type DeviceService struct {
-	deviceRepository interfaces.DeviceRepository
+	deviceRepository postgres.DeviceRepositoryInterface
 }
 
 // NewDeviceService создает новый сервис устройств
 func NewDeviceService(
-	deviceRepository interfaces.DeviceRepository,
+	deviceRepository postgres.DeviceRepositoryInterface,
 ) *DeviceService {
 	return &DeviceService{
 		deviceRepository: deviceRepository,
