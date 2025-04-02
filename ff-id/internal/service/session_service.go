@@ -34,9 +34,13 @@ func (s *SessionService) GetUserSessions(ctx context.Context, userID int64) ([]d
 	// Преобразуем в DTO
 	result := make([]dto.SessionDTO, len(sessions))
 	for i, session := range sessions {
+		var ipAdress string
+		if session.IPAddress != nil {
+			ipAdress = session.IPAddress[0]
+		}
 		result[i] = dto.SessionDTO{
 			ID:        session.ID,
-			IPAddress: string(session.IPAddress[0]), // Берем первый IP для отображения
+			IPAddress: ipAdress, // Берем первый IP для отображения
 			CreatedAt: session.CreatedAt,
 			ExpiresAt: session.ExpiresAt,
 		}

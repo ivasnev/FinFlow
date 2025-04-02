@@ -24,10 +24,10 @@ type RefreshTokenRequest struct {
 
 // AuthResponse представляет ответ после успешной аутентификации
 type AuthResponse struct {
-	AccessToken  string    `json:"access_token"`
-	RefreshToken string    `json:"refresh_token"`
-	ExpiresAt    time.Time `json:"expires_at"`
-	User         UserDTO   `json:"user"`
+	AccessToken  string       `json:"access_token"`
+	RefreshToken string       `json:"refresh_token"`
+	ExpiresAt    time.Time    `json:"expires_at"`
+	User         ShortUserDTO `json:"user"`
 }
 
 // LogoutRequest представляет запрос на выход из системы

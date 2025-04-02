@@ -2,10 +2,10 @@ package container
 
 import (
 	"fmt"
-	"github.com/ivasnev/FinFlow/ff-id/internal/api/middleware"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-id/internal/api/handler"
+	"github.com/ivasnev/FinFlow/ff-id/internal/api/middleware"
 	"github.com/ivasnev/FinFlow/ff-id/internal/common/config"
 	pg_repos "github.com/ivasnev/FinFlow/ff-id/internal/repository/postgres"
 	"github.com/ivasnev/FinFlow/ff-id/internal/service"
@@ -20,12 +20,12 @@ type Container struct {
 	DB     *gorm.DB
 
 	// Репозитории
-	UserRepository         interfaces.UserRepositoryInterface
-	RoleRepository         interfaces.RoleRepositoryInterface
-	SessionRepository      interfaces.SessionRepositoryInterface
-	LoginHistoryRepository interfaces.LoginHistoryRepositoryInterface
-	DeviceRepository       interfaces.DeviceRepositoryInterface
-	AvatarRepository       interfaces.AvatarRepositoryInterface
+	UserRepository         pg_repos.UserRepositoryInterface
+	RoleRepository         pg_repos.RoleRepositoryInterface
+	SessionRepository      pg_repos.SessionRepositoryInterface
+	LoginHistoryRepository pg_repos.LoginHistoryRepositoryInterface
+	DeviceRepository       pg_repos.DeviceRepositoryInterface
+	AvatarRepository       pg_repos.AvatarRepositoryInterface
 
 	// Сервисы
 	AuthService         service.AuthServiceInterface

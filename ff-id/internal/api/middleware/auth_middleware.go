@@ -30,7 +30,7 @@ func AuthMiddleware(authService service.AuthServiceInterface) gin.HandlerFunc {
 		token := parts[1]
 
 		// Валидируем токен
-		claims, err := authService.ValidateToken(token)
+		userID, roles, err := authService.ValidateToken(token)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
 			c.Abort()
@@ -38,10 +38,17 @@ func AuthMiddleware(authService service.AuthServiceInterface) gin.HandlerFunc {
 		}
 
 		// Устанавливаем данные пользователя в контекст
-		c.Set("user_id", claims.UserID)
-		c.Set("user_email", claims.Email)
-		c.Set("user_roles", claims.Roles)
-		c.Set("is_admin", claims.IsAdmin)
+		c.Set("user_id", userID)
+		c.Set("user_roles", roles)
+		// Проверяем, имеет ли пользователь роль администратора
+		isAdmin := false
+		for _, role := range roles {
+			if role == "admin" {
+				isAdmin = true
+				break
+			}
+		}
+		c.Set("is_admin", isAdmin)
 
 		c.Next()
 	}
@@ -51,19 +58,28 @@ func AuthMiddleware(authService service.AuthServiceInterface) gin.HandlerFunc {
 func RoleMiddleware(role string, authService service.AuthServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Получаем ID пользователя из контекста
-		userID, exists := c.Get("user_id")
+		_, exists := c.Get("user_id")
 		if !exists {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
 			c.Abort()
 			return
 		}
 
-		// Проверяем роль
-		hasRole, err := authService.HasRole(c, userID.(int64), role)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "error checking role"})
+		// Получаем роли пользователя из контекста
+		userRoles, exists := c.Get("user_roles")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "user roles not found"})
 			c.Abort()
 			return
+		}
+
+		// Проверяем наличие требуемой роли
+		hasRole := false
+		for _, userRole := range userRoles.([]string) {
+			if userRole == role {
+				hasRole = true
+				break
+			}
 		}
 
 		if !hasRole {
