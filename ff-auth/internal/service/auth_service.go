@@ -2,13 +2,13 @@ package service
 
 import (
 	"context"
+	"crypto/ed25519"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/common/config"
@@ -25,6 +25,7 @@ type AuthService struct {
 	sessionRepository      postgres.SessionRepositoryInterface
 	deviceService          DeviceServiceInterface
 	loginHistoryRepository postgres.LoginHistoryRepositoryInterface
+	tokenManager           *ED25519TokenManager
 }
 
 // NewAuthService создает новый сервис аутентификации
@@ -35,6 +36,7 @@ func NewAuthService(
 	sessionRepository postgres.SessionRepositoryInterface,
 	deviceService DeviceServiceInterface,
 	loginHistoryRepository postgres.LoginHistoryRepositoryInterface,
+	tokenManager *ED25519TokenManager,
 ) *AuthService {
 	return &AuthService{
 		config:                 config,
@@ -43,6 +45,7 @@ func NewAuthService(
 		sessionRepository:      sessionRepository,
 		deviceService:          deviceService,
 		loginHistoryRepository: loginHistoryRepository,
+		tokenManager:           tokenManager,
 	}
 }
 
@@ -299,81 +302,22 @@ func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
 
 // GenerateTokenPair генерирует пару токенов (access и refresh)
 func (s *AuthService) GenerateTokenPair(ctx context.Context, userID int64, roles []string) (accessToken, refreshToken string, expiresAt int64, err error) {
-	// Время истечения access-токена
-	accessExpiresAt := time.Now().Add(time.Duration(s.config.Auth.AccessTokenDuration) * time.Minute)
-	expiresAtUnix := accessExpiresAt.Unix()
+	// Генерируем токены с помощью tokenManager
+	accessTTL := time.Duration(s.config.Auth.AccessTokenDuration) * time.Minute
+	refreshTTL := time.Duration(s.config.Auth.RefreshTokenDuration) * time.Minute // В минутах как в конфиге
 
-	// Создаем claims для access-токена
-	claims := jwt.MapClaims{
-		"user_id": userID,
-		"role":    roles[0], // Для совместимости с middleware
-		"roles":   roles,
-		"exp":     expiresAtUnix,
-	}
-
-	// Создаем access-токен
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	accessToken, err = token.SignedString([]byte(s.config.Auth.JWTSecret))
-	if err != nil {
-		return "", "", 0, fmt.Errorf("ошибка подписи access-токена: %w", err)
-	}
-
-	// Создаем refresh-токен (обычно простой UUID)
-	refreshToken = uuid.New().String()
-
-	return accessToken, refreshToken, expiresAtUnix, nil
+	return s.tokenManager.GenerateTokenPair(userID, roles, accessTTL, refreshTTL)
 }
 
 // ValidateToken проверяет валидность токена
 func (s *AuthService) ValidateToken(tokenString string) (int64, []string, error) {
-	// Парсим токен
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Проверяем алгоритм подписи
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("неожиданный алгоритм подписи: %v", token.Header["alg"])
-		}
-		return []byte(s.config.Auth.JWTSecret), nil
-	})
-
+	// Проверяем токен с помощью tokenManager
+	payload, err := s.tokenManager.ValidateToken(tokenString)
 	if err != nil {
-		return 0, nil, fmt.Errorf("ошибка парсинга токена: %w", err)
+		return 0, nil, err
 	}
 
-	// Проверяем валидность токена
-	if !token.Valid {
-		return 0, nil, errors.New("недействительный токен")
-	}
-
-	// Извлекаем claims
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return 0, nil, errors.New("невозможно извлечь claims из токена")
-	}
-
-	// Извлекаем ID пользователя
-	userIDFloat, ok := claims["user_id"].(float64)
-	if !ok {
-		return 0, nil, errors.New("невозможно извлечь ID пользователя из токена")
-	}
-	userID := int64(userIDFloat)
-
-	// Извлекаем роли
-	var roles []string
-	if rolesArray, ok := claims["roles"].([]interface{}); ok {
-		roles = make([]string, len(rolesArray))
-		for i, role := range rolesArray {
-			if roleStr, ok := role.(string); ok {
-				roles[i] = roleStr
-			}
-		}
-	} else if roleStr, ok := claims["role"].(string); ok {
-		// Обратная совместимость с токенами, у которых нет массива roles
-		roles = []string{roleStr}
-	} else {
-		return 0, nil, errors.New("невозможно извлечь роли из токена")
-	}
-
-	return userID, roles, nil
+	return payload.UserID, payload.Roles, nil
 }
 
 // RecordLogin записывает историю входа
@@ -390,6 +334,11 @@ func (s *AuthService) RecordLogin(ctx context.Context, userID int64, r *http.Req
 	}
 
 	return s.loginHistoryRepository.Create(ctx, loginHistory)
+}
+
+// GetPublicKey возвращает публичный ключ для проверки токенов
+func (s *AuthService) GetPublicKey() ed25519.PublicKey {
+	return s.tokenManager.GetPublicKey()
 }
 
 // Вспомогательные функции

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"crypto/ed25519"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -31,6 +32,9 @@ type AuthServiceInterface interface {
 
 	// RecordLogin записывает историю входа
 	RecordLogin(ctx context.Context, userID int64, r *http.Request) error
+
+	// GetPublicKey возвращает публичный ключ для проверки токенов
+	GetPublicKey() ed25519.PublicKey
 }
 
 // UserServiceInterface определяет методы для работы с пользователями
