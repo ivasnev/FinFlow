@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ivasnev/FinFlow/ff-id/internal/repository/postgres"
 	"time"
+
+	"github.com/ivasnev/FinFlow/ff-id/internal/repository/postgres"
 
 	"github.com/google/uuid"
 	"github.com/ivasnev/FinFlow/ff-id/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-id/internal/models"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // UserService реализует интерфейс для работы с пользователями
@@ -37,24 +37,11 @@ func (s *UserService) GetUserByID(ctx context.Context, id int64) (*dto.UserDTO, 
 		return nil, fmt.Errorf("ошибка получения пользователя: %w", err)
 	}
 
-	// Получаем роли пользователя
-	roles, err := s.userRepository.GetRoles(ctx, user.ID)
-	if err != nil {
-		return nil, fmt.Errorf("ошибка получения ролей пользователя: %w", err)
-	}
-
-	// Преобразуем роли в строки
-	roleStrings := make([]string, len(roles))
-	for i, role := range roles {
-		roleStrings[i] = role.Name
-	}
-
 	// Формируем DTO для пользователя
 	userDTO := &dto.UserDTO{
 		ID:        user.ID,
 		Email:     user.Email,
 		Nickname:  user.Nickname,
-		Roles:     roleStrings,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 	}
@@ -89,24 +76,11 @@ func (s *UserService) GetUserByNickname(ctx context.Context, nickname string) (*
 		return nil, fmt.Errorf("ошибка получения пользователя: %w", err)
 	}
 
-	// Получаем роли пользователя
-	roles, err := s.userRepository.GetRoles(ctx, user.ID)
-	if err != nil {
-		return nil, fmt.Errorf("ошибка получения ролей пользователя: %w", err)
-	}
-
-	// Преобразуем роли в строки
-	roleStrings := make([]string, len(roles))
-	for i, role := range roles {
-		roleStrings[i] = role.Name
-	}
-
 	// Формируем DTO для пользователя
 	userDTO := &dto.UserDTO{
 		ID:        user.ID,
 		Email:     user.Email,
 		Nickname:  user.Nickname,
-		Roles:     roleStrings,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 	}
@@ -170,15 +144,6 @@ func (s *UserService) UpdateUser(ctx context.Context, userID int64, req dto.Upda
 	if req.Birthdate != nil {
 		user.Birthdate.Time = *req.Birthdate
 		user.Birthdate.Valid = true
-	}
-
-	// Обновляем пароль, если указан
-	if req.Password != nil {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(*req.Password), bcrypt.DefaultCost)
-		if err != nil {
-			return nil, fmt.Errorf("ошибка хеширования пароля: %w", err)
-		}
-		user.PasswordHash = string(hashedPassword)
 	}
 
 	// Обновляем время изменения

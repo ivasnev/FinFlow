@@ -73,32 +73,3 @@ func (r *UserRepository) Update(ctx context.Context, user *models.User) error {
 func (r *UserRepository) Delete(ctx context.Context, id int64) error {
 	return r.db.WithContext(ctx).Delete(&models.User{}, id).Error
 }
-
-// AddRole добавляет пользователю роль
-func (r *UserRepository) AddRole(ctx context.Context, userID int64, roleID int) error {
-	userRole := models.UserRole{
-		UserID: userID,
-		RoleID: roleID,
-	}
-	return r.db.WithContext(ctx).Create(&userRole).Error
-}
-
-// RemoveRole удаляет роль у пользователя
-func (r *UserRepository) RemoveRole(ctx context.Context, userID int64, roleID int) error {
-	return r.db.WithContext(ctx).
-		Where("user_id = ? AND role_id = ?", userID, roleID).
-		Delete(&models.UserRole{}).
-		Error
-}
-
-// GetRoles получает все роли пользователя
-func (r *UserRepository) GetRoles(ctx context.Context, userID int64) ([]models.RoleEntity, error) {
-	var roles []models.RoleEntity
-	err := r.db.WithContext(ctx).
-		Table("roles").
-		Joins("JOIN user_roles ON user_roles.role_id = roles.id").
-		Where("user_roles.user_id = ?", userID).
-		Find(&roles).
-		Error
-	return roles, err
-}
