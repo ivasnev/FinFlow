@@ -2,9 +2,11 @@ package container
 
 import (
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
-	// "github.com/ivasnev/FinFlow/ff-auth/internal/api/middleware"
+	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
 	"github.com/ivasnev/FinFlow/ff-id/internal/api/handler"
 	"github.com/ivasnev/FinFlow/ff-id/internal/common/config"
 	pg_repos "github.com/ivasnev/FinFlow/ff-id/internal/repository/postgres"
@@ -28,6 +30,9 @@ type Container struct {
 
 	// Обработчики
 	UserHandler *handler.UserHandler
+
+	// Клиенты
+	AuthClient *auth.Client
 }
 
 // NewContainer - конструктор контейнера зависимостей
@@ -50,6 +55,11 @@ func NewContainer(cfg *config.Config, router *gin.Engine) (*Container, error) {
 
 	// Инициализируем обработчики
 	container.initHandlers()
+
+	container.AuthClient = auth.NewClient(
+		cfg.AuthClient.Host+":"+strconv.Itoa(cfg.AuthClient.Port),
+		time.Second*time.Duration(cfg.AuthClient.UpdateInterval),
+	)
 
 	return container, nil
 }
@@ -98,7 +108,7 @@ func (c *Container) RegisterRoutes() {
 	v1 := c.Router.Group("/api/v1")
 
 	// Middleware для авторизации
-	// authMiddleware := middleware.AuthMiddleware(c.AuthService)
+	authMiddleware := auth.AuthMiddleware(c.AuthClient)
 
 	// Группа маршрутов для пользователей
 	users := v1.Group("/users")
@@ -107,7 +117,7 @@ func (c *Container) RegisterRoutes() {
 		users.GET("/:nickname", c.UserHandler.GetUserByNickname)
 
 		// Защищенные маршруты
-		// users.Use(authMiddleware)
+		users.Use(authMiddleware)
 		users.PATCH("/me", c.UserHandler.UpdateUser)
 	}
 }

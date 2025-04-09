@@ -14,11 +14,9 @@ redis:
   password: ""
 
 auth:
-  jwt_secret: "super_secret_key_change_in_production"
-  access_token_duration: 15
-  refresh_token_duration: 10080
-  password_min_length: 8
-  password_hash_cost: 10
+  host: localhost
+  port: 8084
+  update_interval: 120
 
 file_service:
   base_url: http://localhost:8082
