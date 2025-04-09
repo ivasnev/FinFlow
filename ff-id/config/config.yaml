@@ -14,7 +14,7 @@ redis:
   password: ""
 
 auth:
-  host: localhost
+  host: http://localhost
   port: 8084
   update_interval: 120
 

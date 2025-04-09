@@ -1,12 +1,10 @@
 package handler
 
 import (
-	"net/http"
-	"strconv"
-
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-id/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-id/internal/service"
+	"net/http"
 )
 
 // UserHandler обрабатывает запросы, связанные с пользователями
@@ -55,12 +53,15 @@ func (h *UserHandler) GetUserByNickname(c *gin.Context) {
 // @Failure 400 {object} gin.H
 // @Failure 404 {object} gin.H
 // @Failure 500 {object} gin.H
-// @Router /users/{id} [patch]
+// @Router /users/me [patch]
 func (h *UserHandler) UpdateUser(c *gin.Context) {
 	// Получаем ID пользователя из URL
-	userIDStr := c.Param("id")
-	userID, err := strconv.ParseInt(userIDStr, 10, 64)
-	if err != nil {
+	userIDStr, exist := c.Get("user_id")
+	if !exist {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found in context"})
+	}
+	userID, canParse := userIDStr.(int64)
+	if !canParse {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
 		return
 	}
