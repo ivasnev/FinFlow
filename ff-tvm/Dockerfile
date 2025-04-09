@@ -6,11 +6,17 @@ WORKDIR /app
 # Копируем файлы с зависимостями
 COPY go.mod go.sum ./
 
+RUN sed -i '/replace (/,/)/d' go.mod
+RUN sed -i '/replace .*=>/d' go.mod
+
 # Скачиваем зависимости
-RUN go mod download
+RUN go mod download all
 
 # Копируем исходный код
-COPY . .
+COPY internal/ ./internal
+COPY cmd/ ./cmd
+COPY pkg/ ./pkg
+COPY config/ ./config
 
 # Собираем приложение
 RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server ./cmd/server
@@ -24,7 +30,7 @@ WORKDIR /app
 COPY --from=builder /app/server .
 
 # Копируем миграции
-COPY migrations ./migrations
+COPY internal/repository/migrations ./migrations
 COPY config/ ./config
 
 # Открываем порт

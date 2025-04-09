@@ -1,12 +1,9 @@
 package transport
 
 import (
-	"encoding/base64"
-	"net/http"
-	"strconv"
-
 	"github.com/ivasnev/FinFlow/ff-tvm/pkg/client"
 	"github.com/ivasnev/FinFlow/ff-tvm/pkg/middleware"
+	"net/http"
 )
 
 // TVMTransport - транспорт для добавления тикетов в заголовки
@@ -35,13 +32,8 @@ func (t *TVMTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 
-	// Формируем строку тикета в новом формате
-	serviceIDStr := strconv.Itoa(t.from)
-	serviceIDBase64 := base64.StdEncoding.EncodeToString([]byte(serviceIDStr))
-	ticketStr := "serv:" + serviceIDBase64 + ":" + ticket
-
 	// Добавляем заголовок
-	req.Header.Set(middleware.HeaderServiceTicket, ticketStr)
+	req.Header.Set(middleware.HeaderServiceTicket, ticket)
 
 	// Выполняем запрос
 	return t.baseTransport.RoundTrip(req)

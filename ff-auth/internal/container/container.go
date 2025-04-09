@@ -9,6 +9,8 @@ import (
 	pg_repos "github.com/ivasnev/FinFlow/ff-auth/internal/repository/postgres"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
 	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
+	idclient "github.com/ivasnev/FinFlow/ff-id/pkg/client"
+	tvmclient "github.com/ivasnev/FinFlow/ff-tvm/pkg/client"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -28,6 +30,7 @@ type Container struct {
 
 	// Токен менеджер
 	TokenManager *service.ED25519TokenManager
+	IDClient     *idclient.Client
 
 	// Сервисы
 	AuthService         service.AuthServiceInterface
@@ -60,6 +63,11 @@ func NewContainer(cfg *config.Config, router *gin.Engine) (*Container, error) {
 		return nil, fmt.Errorf("ошибка инициализации менеджера токенов: %w", err)
 	}
 	container.TokenManager = tokenManager
+
+	tvmClient := tvmclient.NewTVMClient(cfg.TVM.BaseURL, cfg.TVM.ServiceSecret)
+
+	idClient := idclient.NewClient(cfg.IDClient.BaseURL, cfg.TVM.ServiceID, cfg.IDClient.TVMID, tvmClient)
+	container.IDClient = idClient
 
 	// Инициализируем репозитории
 	container.initRepositories()
@@ -115,6 +123,7 @@ func (c *Container) initServices() {
 		c.DeviceService,
 		c.LoginHistoryRepository,
 		c.TokenManager,
+		c.IDClient,
 	)
 	c.UserService = service.NewUserService(c.UserRepository)
 	c.SessionService = service.NewSessionService(c.SessionRepository)

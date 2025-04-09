@@ -14,6 +14,7 @@ import (
 func main() {
 	// Загрузка конфигурации
 	cfg := config.Load()
+	fmt.Println("Starting application...")
 
 	// Инициализация роутера Gin
 	router := gin.Default()

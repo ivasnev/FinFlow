@@ -23,4 +23,7 @@ type UserServiceInterface interface {
 
 	// DeleteUser удаляет пользователя
 	DeleteUser(ctx context.Context, userID int64) error
+
+	// RegisterUser регистрирует нового пользователя
+	RegisterUser(ctx context.Context, userID int64, user *dto.RegisterUserRequest) (*dto.UserDTO, error)
 }

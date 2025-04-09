@@ -48,7 +48,7 @@ func AuthMiddleware(client ValidateClient) gin.HandlerFunc {
 		// Валидируем токен
 		payload, err := client.ValidateToken(tokenStr)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token", "error_description": err.Error()})
 			c.Abort()
 			return
 		}

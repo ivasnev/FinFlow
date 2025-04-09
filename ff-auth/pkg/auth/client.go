@@ -11,10 +11,14 @@ import (
 	"time"
 )
 
+var (
+	publicKeyUrl = "/api/v1/auth/public-key"
+)
+
 // Client представляет клиент для проверки токенов
 type Client struct {
 	publicKey      ed25519.PublicKey
-	publicKeyURL   string
+	hostURL        string
 	mutex          sync.RWMutex
 	updateInterval time.Duration
 	lastUpdate     time.Time
@@ -22,9 +26,9 @@ type Client struct {
 }
 
 // NewClient создает новый клиент для проверки токенов
-func NewClient(publicKeyURL string, updateInterval time.Duration) *Client {
+func NewClient(hostURL string, updateInterval time.Duration) *Client {
 	return &Client{
-		publicKeyURL:   publicKeyURL,
+		hostURL:        hostURL,
 		updateInterval: updateInterval,
 		httpClient:     &http.Client{Timeout: 10 * time.Second},
 	}
@@ -46,11 +50,10 @@ func (c *Client) GetPublicKey() (ed25519.PublicKey, error) {
 
 // fetchPublicKey получает актуальный публичный ключ с сервера
 func (c *Client) fetchPublicKey() (ed25519.PublicKey, error) {
-	resp, err := c.httpClient.Get(c.publicKeyURL)
+	resp, err := c.httpClient.Get(c.hostURL + publicKeyUrl)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New("failed to get public key")

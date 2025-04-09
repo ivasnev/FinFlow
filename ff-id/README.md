@@ -75,7 +75,6 @@ POST /api/v1/auth/register
     "id": 1,
     "email": "user@example.com",
     "nickname": "user123",
-    "roles": ["user"],
     "created_at": "2023-01-01T10:00:00Z",
     "updated_at": "2023-01-01T10:00:00Z"
   }
@@ -106,7 +105,6 @@ POST /api/v1/auth/login
     "id": 1,
     "email": "user@example.com",
     "nickname": "user123",
-    "roles": ["user"],
     "created_at": "2023-01-01T10:00:00Z",
     "updated_at": "2023-01-01T10:00:00Z"
   }
@@ -136,7 +134,6 @@ POST /api/v1/auth/refresh
     "id": 1,
     "email": "user@example.com",
     "nickname": "user123",
-    "roles": ["user"],
     "created_at": "2023-01-01T10:00:00Z",
     "updated_at": "2023-01-01T10:00:00Z"
   }
@@ -210,77 +207,6 @@ PATCH /api/v1/users/me
   "created_at": "2023-01-01T10:00:00Z",
   "updated_at": "2023-01-01T11:00:00Z"
 }
-```
-
-### Сессии
-
-#### Получение активных сессий
-```
-GET /api/v1/sessions
-```
-Возвращает список активных сессий текущего пользователя.
-
-**Ответ:**
-```json
-[
-  {
-    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "device": "Mozilla/5.0 Chrome/92.0.4515.131",
-    "ip_address": "192.168.1.1",
-    "created_at": "2023-01-01T10:00:00Z",
-    "expires_at": "2023-01-08T10:00:00Z"
-  },
-  {
-    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-    "device": "Mozilla/5.0 Safari/605.1.15",
-    "ip_address": "192.168.1.2",
-    "created_at": "2023-01-02T11:00:00Z",
-    "expires_at": "2023-01-09T11:00:00Z"
-  }
-]
-```
-
-#### Завершение сессии
-```
-DELETE /api/v1/sessions/:id
-```
-Завершает указанную сессию текущего пользователя.
-
-**Ответ:**
-```json
-{
-  "message": "session terminated successfully"
-}
-```
-
-### История входов
-
-#### Получение истории входов
-```
-GET /api/v1/login-history
-```
-Возвращает историю входов текущего пользователя.
-
-**Параметры запроса:**
-- `limit` - количество записей на странице (по умолчанию 10)
-- `offset` - смещение для пагинации (по умолчанию 0)
-
-**Ответ:**
-```json
-[
-  {
-    "id": 1,
-    "ip_address": "192.168.1.1",
-    "user_agent": "Mozilla/5.0 Chrome/92.0.4515.131",
-    "created_at": "2023-01-01T10:00:00Z"
-  },
-  {
-    "id": 2,
-    "ip_address": "192.168.1.2",
-    "user_agent": "Mozilla/5.0 Safari/605.1.15",
-    "created_at": "2023-01-02T11:00:00Z"
-  }
-]
 ```
 
 ## Аутентификация

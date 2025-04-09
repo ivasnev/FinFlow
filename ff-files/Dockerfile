@@ -1,27 +1,33 @@
 # Этап сборки
 FROM golang:1.24-alpine AS builder
 
-WORKDIR /ff-files
+WORKDIR /app
 
 # Копируем файлы с зависимостями
 COPY go.mod go.sum ./
 
+RUN sed -i '/replace (/,/)/d' go.mod
+RUN sed -i '/replace .*=>/d' go.mod
+
 # Скачиваем зависимости
-RUN go mod download
+RUN go mod download all
 
 # Копируем исходный код
-COPY . .
+COPY internal/ ./internal
+COPY cmd/ ./cmd
+COPY pkg/ ./pkg
+COPY config/ ./config
 
 # Собираем приложение
-RUN CGO_ENABLED=0 GOOS=linux go build -o /ff-files/app ./cmd/
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server ./cmd/server
 
 # Финальный этап
 FROM alpine:latest
 
-WORKDIR /ff-files
+WORKDIR /app
 
 # Копируем бинарный файл из этапа сборки
-COPY --from=builder /ff-files/ .
+COPY --from=builder /app/server .
 
 COPY config/ ./config
 
@@ -29,4 +35,4 @@ COPY config/ ./config
 EXPOSE 8082
 
 # Запускаем приложение
-CMD ["./app"]
+CMD ["./server"]

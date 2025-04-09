@@ -128,6 +128,18 @@ func (s *UserService) UpdateUser(ctx context.Context, userID int64, req dto.Upda
 		}
 	}
 
+	// Обновляем никнейм, если указан
+	if req.Nickname != nil {
+		// Проверяем, не занят ли никнейм другим пользователем
+		if *req.Nickname != user.Nickname {
+			existingUser, err := s.userRepository.GetByNickname(ctx, *req.Nickname)
+			if err == nil && existingUser != nil && existingUser.ID != user.ID {
+				return nil, errors.New("указанный никнейм уже используется")
+			}
+			user.Nickname = *req.Nickname
+		}
+	}
+
 	// Обновляем телефон, если указан
 	if req.Phone != nil {
 		user.Phone.String = *req.Phone
@@ -194,4 +206,49 @@ func (s *UserService) ChangeAvatar(ctx context.Context, userID int64, fileID uui
 // DeleteUser удаляет пользователя
 func (s *UserService) DeleteUser(ctx context.Context, userID int64) error {
 	return s.userRepository.Delete(ctx, userID)
+}
+
+// RegisterUser регистрирует нового пользователя
+func (s *UserService) RegisterUser(ctx context.Context, userID int64, req *dto.RegisterUserRequest) (*dto.UserDTO, error) {
+	// Проверяем, не существует ли уже пользователь с таким ID
+	existingUser, err := s.userRepository.GetByID(ctx, userID)
+	if err == nil && existingUser != nil {
+		return nil, fmt.Errorf("пользователь с ID %d уже существует", userID)
+	}
+
+	// Проверяем, не занят ли email
+	existingUser, err = s.userRepository.GetByEmail(ctx, req.Email)
+	if err == nil && existingUser != nil {
+		return nil, errors.New("указанный email уже используется")
+	}
+
+	// Проверяем, не занят ли никнейм
+	existingUser, err = s.userRepository.GetByNickname(ctx, req.Nickname)
+	if err == nil && existingUser != nil {
+		return nil, errors.New("указанный никнейм уже используется")
+	}
+
+	// Создаем нового пользователя
+	now := time.Now()
+	user := &models.User{
+		ID:        userID,
+		Email:     req.Email,
+		Nickname:  req.Nickname,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	// Добавляем имя, если оно указано
+	if req.Name != "" {
+		user.Name.String = req.Name
+		user.Name.Valid = true
+	}
+
+	// Сохраняем пользователя в базе данных
+	if err := s.userRepository.Create(ctx, user); err != nil {
+		return nil, fmt.Errorf("ошибка создания пользователя: %w", err)
+	}
+
+	// Возвращаем информацию о созданном пользователе
+	return s.GetUserByID(ctx, userID)
 }

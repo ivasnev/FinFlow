@@ -12,8 +12,6 @@ services:
       - MINIO_SECRET_KEY=minioadmin
       - MINIO_BUCKET=ff-files
       - MINIO_INTERNAL_ENDPOINT=http://minio:9000
-#      - REDIS_HOST=redis
-#      - REDIS_PORT=6379
       - TVM_BASE_URL=http://host.docker.internal:8081
       - TVM_SERVICE_ID=3
     networks:
@@ -36,9 +34,9 @@ services:
     restart: unless-stopped
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+      interval: 10s
+      timeout: 10s
+      retries: 6
     networks:
       - shared_network
 

@@ -6,7 +6,7 @@ postgres:
   port: 5432
   user: postgres
   password: postgres
-  dbname: ff_id
+  dbname: ff_auth
 
 auth:
   jwt_secret: "super_secret_key_change_in_production"
@@ -15,10 +15,14 @@ auth:
   password_min_length: 8
   password_hash_cost: 10
 
+id_client:
+  base_url: http://localhost:8083
+  tvm_id: 2
+
 tvm:
   base_url: http://localhost:8081
-  service_id: 2
-  service_secret: secret
+  service_id: 1
+  service_secret: "WjA9IejKO/faO+kiyIzP3PeaxxXN6IE+eQ3Iy/0GPImp2bdWmfn2gDrM1rIJC+GOYGqTcfMwvC+YN43Vl1kPzg=="
 
 migrations:
   path: migrations 

@@ -2,14 +2,11 @@ package main
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-migrate/migrate/v4"
-	migratepostgres "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	handlers2 "github.com/ivasnev/FinFlow/ff-tvm/internal/api/handlers"
 	"github.com/ivasnev/FinFlow/ff-tvm/internal/config"
-	"github.com/ivasnev/FinFlow/ff-tvm/internal/handlers"
 	"github.com/ivasnev/FinFlow/ff-tvm/internal/service"
 	"github.com/ivasnev/FinFlow/ff-tvm/pkg/logger"
 	_ "github.com/lib/pq"
@@ -35,47 +32,6 @@ func connectToDatabase(cfg *config.Config, log *logger.Logger) (*sql.DB, error) 
 	return db, nil
 }
 
-func runMigrations(cfg *config.Config, log *logger.Logger) error {
-	db, err := connectToDatabase(cfg, log)
-	if err != nil {
-		return fmt.Errorf("failed to connect to database: %v", err)
-	}
-	defer db.Close()
-
-	driver, err := migratepostgres.WithInstance(db, &migratepostgres.Config{})
-	if err != nil {
-		return fmt.Errorf("failed to create migration driver: %v", err)
-	}
-	defer driver.Close()
-
-	m, err := migrate.NewWithDatabaseInstance(
-		fmt.Sprintf("file://%s", cfg.Migrations.Path),
-		"postgres",
-		driver,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create migration instance: %v", err)
-	}
-	defer func(m *migrate.Migrate) {
-		err, _ := m.Close()
-		if err != nil {
-			log.ErrorWithStack("Can't close migration", err)
-			return
-		}
-	}(m)
-
-	if err := m.Up(); err != nil {
-		if errors.Is(err, migrate.ErrNoChange) {
-			log.Info("No new migrations to apply")
-			return nil
-		}
-		return fmt.Errorf("failed to run migrations: %v", err)
-	}
-
-	log.Info("Migrations completed successfully")
-	return nil
-}
-
 func main() {
 	// Инициализация логгера
 	log, err := logger.New()
@@ -87,11 +43,6 @@ func main() {
 
 	// Загрузка конфигурации
 	cfg := config.Load()
-
-	// Запуск миграций
-	if err := runMigrations(cfg, log); err != nil {
-		log.FatalWithStack("Failed to run migrations", err)
-	}
 
 	// Подключение к базе данных
 	db, err := connectToDatabase(cfg, log)
@@ -105,12 +56,12 @@ func main() {
 	keyManager := service.NewKeyManager()
 	accessManager := service.NewAccessManager(db)
 	ticketService := service.NewTicketService(repo, keyManager, accessManager)
-	ticketHandlers := handlers.NewHandlers(ticketService, repo, keyManager)
+	ticketHandlers := handlers2.NewHandlers(ticketService, repo, keyManager)
 
 	// Инициализация обработчиков для разработчиков только если включен режим разработки
-	var devHandlers *handlers.DevHandlers
+	var devHandlers *handlers2.DevHandlers
 	if cfg.Dev.Enabled {
-		devHandlers = handlers.NewDevHandlers(ticketService, cfg)
+		devHandlers = handlers2.NewDevHandlers(ticketService, cfg)
 		log.Info("Development mode enabled")
 	}
 

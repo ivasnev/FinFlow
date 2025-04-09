@@ -11,6 +11,8 @@ import (
 	"github.com/ivasnev/FinFlow/ff-id/internal/common/config"
 	pg_repos "github.com/ivasnev/FinFlow/ff-id/internal/repository/postgres"
 	"github.com/ivasnev/FinFlow/ff-id/internal/service"
+	tvmclient "github.com/ivasnev/FinFlow/ff-tvm/pkg/client"
+	tvmmiddleware "github.com/ivasnev/FinFlow/ff-tvm/pkg/middleware"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -33,6 +35,7 @@ type Container struct {
 
 	// Клиенты
 	AuthClient *auth.Client
+	TVMClient  *tvmclient.TVMClient
 }
 
 // NewContainer - конструктор контейнера зависимостей
@@ -56,9 +59,16 @@ func NewContainer(cfg *config.Config, router *gin.Engine) (*Container, error) {
 	// Инициализируем обработчики
 	container.initHandlers()
 
+	// Инициализируем клиенты
 	container.AuthClient = auth.NewClient(
 		cfg.AuthClient.Host+":"+strconv.Itoa(cfg.AuthClient.Port),
 		time.Second*time.Duration(cfg.AuthClient.UpdateInterval),
+	)
+
+	// Инициализируем TVM клиент
+	container.TVMClient = tvmclient.NewTVMClient(
+		cfg.TVM.BaseURL,
+		cfg.TVM.ServiceSecret,
 	)
 
 	return container, nil
@@ -110,14 +120,31 @@ func (c *Container) RegisterRoutes() {
 	// Middleware для авторизации
 	authMiddleware := auth.AuthMiddleware(c.AuthClient)
 
+	// Middleware для TVM
+	tvmMiddleware := tvmmiddleware.NewTVMMiddleware(c.TVMClient)
+
 	// Группа маршрутов для пользователей
 	users := v1.Group("/users")
 	{
 		// Публичные маршруты
 		users.GET("/:nickname", c.UserHandler.GetUserByNickname)
 
+		// Регистрация через внешний сервис
+		users.POST("/register", authMiddleware, c.UserHandler.RegisterUser)
+
 		// Защищенные маршруты
 		users.Use(authMiddleware)
 		users.PATCH("/me", c.UserHandler.UpdateUser)
+	}
+
+	// Внутренние маршруты для межсервисного взаимодействия
+	internal := c.Router.Group("/internal")
+	{
+		// Защищенные TVM маршруты
+		internalUsers := internal.Group("/users", tvmMiddleware.ValidateTicket())
+		{
+			// Регистрация через другой сервис (backend-to-backend)
+			internalUsers.POST("/register", c.UserHandler.RegisterUserFromService)
+		}
 	}
 }

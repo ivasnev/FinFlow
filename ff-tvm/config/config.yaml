@@ -9,4 +9,4 @@ dev:
   secret: "hackme" 
 
 migrations:
-  path: "migrations"
+  path: "internal/repository/migrations"
