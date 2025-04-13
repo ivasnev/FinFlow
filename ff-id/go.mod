@@ -7,8 +7,8 @@ toolchain go1.24.1
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
-	github.com/ivasnev/FinFlow/ff-auth v0.0.0-20250413133539-2d33aba94c53
-	github.com/ivasnev/FinFlow/ff-tvm v0.0.0-20250413133539-2d33aba94c53
+	github.com/ivasnev/FinFlow/ff-auth v0.0.0-20250413153156-d6d5db6116c5
+	github.com/ivasnev/FinFlow/ff-tvm v0.0.0-20250413153156-d6d5db6116c5
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
@@ -49,4 +49,4 @@ require (
 	google.golang.org/protobuf v1.36.6 // indirect
 )
 
-replace github.com/ivasnev/FinFlow/ff-auth v0.0.0-20250413133539-2d33aba94c53 => ../ff-auth
+replace github.com/ivasnev/FinFlow/ff-auth => ../ff-auth

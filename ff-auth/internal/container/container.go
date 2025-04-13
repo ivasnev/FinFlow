@@ -27,6 +27,7 @@ type Container struct {
 	SessionRepository      pg_repos.SessionRepositoryInterface
 	LoginHistoryRepository pg_repos.LoginHistoryRepositoryInterface
 	DeviceRepository       pg_repos.DeviceRepositoryInterface
+	KeyPairRepository      pg_repos.KeyPairRepositoryInterface
 
 	// Токен менеджер
 	TokenManager *service.ED25519TokenManager
@@ -57,8 +58,11 @@ func NewContainer(cfg *config.Config, router *gin.Engine) (*Container, error) {
 		return nil, fmt.Errorf("ошибка инициализации базы данных: %w", err)
 	}
 
+	// Инициализируем репозитории
+	container.initRepositories()
+
 	// Инициализируем TokenManager
-	tokenManager, err := service.NewED25519TokenManager()
+	tokenManager, err := service.NewED25519TokenManager(container.KeyPairRepository)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка инициализации менеджера токенов: %w", err)
 	}
@@ -68,9 +72,6 @@ func NewContainer(cfg *config.Config, router *gin.Engine) (*Container, error) {
 
 	idClient := idclient.NewClient(cfg.IDClient.BaseURL, cfg.TVM.ServiceID, cfg.IDClient.TVMID, tvmClient)
 	container.IDClient = idClient
-
-	// Инициализируем репозитории
-	container.initRepositories()
 
 	// Инициализируем сервисы
 	container.initServices()
@@ -110,6 +111,7 @@ func (c *Container) initRepositories() {
 	c.SessionRepository = pg_repos.NewSessionRepository(c.DB)
 	c.LoginHistoryRepository = pg_repos.NewLoginHistoryRepository(c.DB)
 	c.DeviceRepository = pg_repos.NewDeviceRepository(c.DB)
+	c.KeyPairRepository = pg_repos.NewKeyPairRepository(c.DB)
 }
 
 // initServices инициализирует сервисы

@@ -38,10 +38,14 @@ github.com/ivasnev/FinFlow/ff-auth v0.0.0-20250413001105-de6af4703bcc h1:oFSgQGi
 github.com/ivasnev/FinFlow/ff-auth v0.0.0-20250413001105-de6af4703bcc/go.mod h1:lfxCdi9D39SZNADIH0yZC2EqjVEaE+Y8vUZYdQgPknc=
 github.com/ivasnev/FinFlow/ff-auth v0.0.0-20250413133539-2d33aba94c53 h1:SPkH0XO0NZjkn6LimhmaKUguEddMgDcnYlGf0CKdoBM=
 github.com/ivasnev/FinFlow/ff-auth v0.0.0-20250413133539-2d33aba94c53/go.mod h1:4iYdDEVIh1fcUBFGTpk8dFlzwYmw2m4YWNdDevZnKW4=
+github.com/ivasnev/FinFlow/ff-auth v0.0.0-20250413153156-d6d5db6116c5 h1:iMfjR7BK/mmyIQjaTudWFDS+W3DXnDVsbg1wmOR4Tk8=
+github.com/ivasnev/FinFlow/ff-auth v0.0.0-20250413153156-d6d5db6116c5/go.mod h1:tXM3eoKNJbi4MfFQ/qvtYpFsY7T/KqBkjSu/RxA1f34=
 github.com/ivasnev/FinFlow/ff-tvm v0.0.0-20250413001105-de6af4703bcc h1:ixp7/BtoeALbgS0d/YpuwJB605RxRD02SU6+rPz0sn0=
 github.com/ivasnev/FinFlow/ff-tvm v0.0.0-20250413001105-de6af4703bcc/go.mod h1:1zQWEqpZcfeL0ymMBprgDDA/FzPD9YHCrSasHW9P+m0=
 github.com/ivasnev/FinFlow/ff-tvm v0.0.0-20250413133539-2d33aba94c53 h1:qpjRKyCyCrWacp8GOR9SQE1fMnrIdkAtdl4qhNVd+BI=
 github.com/ivasnev/FinFlow/ff-tvm v0.0.0-20250413133539-2d33aba94c53/go.mod h1:1zQWEqpZcfeL0ymMBprgDDA/FzPD9YHCrSasHW9P+m0=
+github.com/ivasnev/FinFlow/ff-tvm v0.0.0-20250413153156-d6d5db6116c5 h1:6X06a6n503T9dfgTT+WB1tpQtQ8jqQHD88dQvmBz7Fw=
+github.com/ivasnev/FinFlow/ff-tvm v0.0.0-20250413153156-d6d5db6116c5/go.mod h1:1zQWEqpZcfeL0ymMBprgDDA/FzPD9YHCrSasHW9P+m0=
 github.com/jackc/pgpassfile v1.0.0 h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
 github.com/jackc/pgpassfile v1.0.0/go.mod h1:CEx0iS5ambNFdcRtxPj5JhEz+xB6uRky5eyVu/W2HEg=
 github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 h1:iCEnooe7UlwOQYpKFhBabPMi4aNAfoODPEFNiAnClxo=
