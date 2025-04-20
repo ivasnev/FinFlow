@@ -2,8 +2,12 @@ package container
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"strconv"
 	"time"
+
+	"gorm.io/gorm/logger"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
@@ -26,12 +30,15 @@ type Container struct {
 	// Репозитории
 	UserRepository   pg_repos.UserRepositoryInterface
 	AvatarRepository pg_repos.AvatarRepositoryInterface
+	FriendRepository pg_repos.FriendRepositoryInterface
 
 	// Сервисы
-	UserService service.UserServiceInterface
+	UserService   service.UserServiceInterface
+	FriendService service.FriendServiceInterface
 
 	// Обработчики
-	UserHandler *handler.UserHandler
+	UserHandler   *handler.UserHandler
+	FriendHandler *handler.FriendHandler
 
 	// Клиенты
 	AuthClient *auth.Client
@@ -86,8 +93,36 @@ func (c *Container) initDB() error {
 		c.Config.Postgres.DBName,
 	)
 
+	// Определяем уровень логирования на основе конфигурации
+	var logLevel logger.LogLevel
+	switch c.Config.Logger.Level {
+	case config.LogLevelSilent:
+		logLevel = logger.Silent
+	case config.LogLevelError:
+		logLevel = logger.Error
+	case config.LogLevelWarn:
+		logLevel = logger.Warn
+	case config.LogLevelInfo:
+		logLevel = logger.Info
+	default:
+		logLevel = logger.Info // По умолчанию используем Info
+	}
+
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+		logger.Config{
+			SlowThreshold:             time.Second, // Slow SQL threshold
+			LogLevel:                  logLevel,    // Log level from config
+			IgnoreRecordNotFoundError: true,        // Ignore ErrRecordNotFound error for logger
+			ParameterizedQueries:      true,        // Don't include params in the SQL log
+			Colorful:                  false,       // Disable color
+		},
+	)
+
 	// Подключаемся к базе данных
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: newLogger,
+	})
 	if err != nil {
 		return err
 	}
@@ -100,16 +135,19 @@ func (c *Container) initDB() error {
 func (c *Container) initRepositories() {
 	c.UserRepository = pg_repos.NewUserRepository(c.DB)
 	c.AvatarRepository = pg_repos.NewAvatarRepository(c.DB)
+	c.FriendRepository = pg_repos.NewFriendRepository(c.DB)
 }
 
 // initServices инициализирует сервисы
 func (c *Container) initServices() {
 	c.UserService = service.NewUserService(c.UserRepository, c.AvatarRepository)
+	c.FriendService = service.NewFriendService(c.FriendRepository, c.UserRepository)
 }
 
 // initHandlers инициализирует обработчики
 func (c *Container) initHandlers() {
 	c.UserHandler = handler.NewUserHandler(c.UserService)
+	c.FriendHandler = handler.NewFriendHandler(c.FriendService)
 }
 
 // RegisterRoutes - регистрирует все маршруты API
@@ -129,12 +167,23 @@ func (c *Container) RegisterRoutes() {
 		// Публичные маршруты
 		users.GET("/:nickname", c.UserHandler.GetUserByNickname)
 
+		// Получение списка друзей
+		users.GET("/:nickname/friends", c.FriendHandler.GetFriends)
+
 		// Регистрация через внешний сервис
 		users.POST("/register", authMiddleware, c.UserHandler.RegisterUser)
 
 		// Защищенные маршруты
 		users.Use(authMiddleware)
 		users.PATCH("/me", c.UserHandler.UpdateUser)
+
+		// Маршруты для управления друзьями
+		users.POST("/me/friends", c.FriendHandler.AddFriend)
+		users.DELETE("/me/friends/:friend_id", c.FriendHandler.RemoveFriend)
+
+		// Маршруты для действий с заявками в друзья
+		users.POST("/me/friends/action", c.FriendHandler.FriendAction)
+		users.GET("/me/friend-requests", c.FriendHandler.GetFriendRequests)
 	}
 
 	// Внутренние маршруты для межсервисного взаимодействия
