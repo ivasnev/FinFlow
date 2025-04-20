@@ -42,8 +42,8 @@ func (s *UserService) GetUserByID(ctx context.Context, id int64) (*dto.UserDTO, 
 		ID:        user.ID,
 		Email:     user.Email,
 		Nickname:  user.Nickname,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+		CreatedAt: user.CreatedAt.Unix(),
+		UpdatedAt: user.UpdatedAt.Unix(),
 	}
 
 	if user.Phone.Valid {
@@ -57,7 +57,7 @@ func (s *UserService) GetUserByID(ctx context.Context, id int64) (*dto.UserDTO, 
 	}
 
 	if user.Birthdate.Valid {
-		birthdate := user.Birthdate.Time
+		birthdate := user.Birthdate.Time.Unix()
 		userDTO.Birthdate = &birthdate
 	}
 
@@ -81,8 +81,8 @@ func (s *UserService) GetUserByNickname(ctx context.Context, nickname string) (*
 		ID:        user.ID,
 		Email:     user.Email,
 		Nickname:  user.Nickname,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+		CreatedAt: user.CreatedAt.Unix(),
+		UpdatedAt: user.UpdatedAt.Unix(),
 	}
 
 	if user.Phone.Valid {
@@ -96,7 +96,7 @@ func (s *UserService) GetUserByNickname(ctx context.Context, nickname string) (*
 	}
 
 	if user.Birthdate.Valid {
-		birthdate := user.Birthdate.Time
+		birthdate := user.Birthdate.Time.Unix()
 		userDTO.Birthdate = &birthdate
 	}
 
@@ -154,7 +154,7 @@ func (s *UserService) UpdateUser(ctx context.Context, userID int64, req dto.Upda
 
 	// Обновляем дату рождения, если указана
 	if req.Birthdate != nil {
-		user.Birthdate.Time = *req.Birthdate
+		user.Birthdate.Time = time.Unix(*req.Birthdate, 0)
 		user.Birthdate.Valid = true
 	}
 
@@ -244,11 +244,35 @@ func (s *UserService) RegisterUser(ctx context.Context, userID int64, req *dto.R
 		user.Name.Valid = true
 	}
 
-	// Сохраняем пользователя в базе данных
+	// Устанавливаем телефон, если указан
+	if req.Phone != nil {
+		user.Phone.String = *req.Phone
+		user.Phone.Valid = true
+	}
+
+	// Устанавливаем дату рождения, если указана
+	if req.Birthdate != nil {
+		user.Birthdate.Time = time.Unix(*req.Birthdate, 0)
+		user.Birthdate.Valid = true
+	}
+
+	// Устанавливаем аватар, если указан
+	if req.AvatarID != nil {
+		user.AvatarID.UUID = *req.AvatarID
+		user.AvatarID.Valid = true
+	}
+
+	// Сохраняем пользователя
 	if err := s.userRepository.Create(ctx, user); err != nil {
 		return nil, fmt.Errorf("ошибка создания пользователя: %w", err)
 	}
 
-	// Возвращаем информацию о созданном пользователе
-	return s.GetUserByID(ctx, userID)
+	// Возвращаем созданного пользователя
+	return &dto.UserDTO{
+		ID:        user.ID,
+		Email:     user.Email,
+		Nickname:  user.Nickname,
+		CreatedAt: user.CreatedAt.Unix(),
+		UpdatedAt: user.UpdatedAt.Unix(),
+	}, nil
 }
