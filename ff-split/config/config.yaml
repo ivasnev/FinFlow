@@ -13,10 +13,10 @@ redis:
   port: 6379
   password: ""
 
-auth:
-  host: http://localhost
+auth_client:
+  host: localhost
   port: 8084
-  update_interval: 10
+  update_interval: 60
 
 file_service:
   base_url: http://localhost:8082
@@ -29,7 +29,7 @@ id_service:
 tvm:
   base_url: http://localhost:8081
   service_id: 3
-  service_secret: "your-secret-key-here"
+  service_secret: "secret"
 
 migrations:
   path: migrations

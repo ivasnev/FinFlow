@@ -12,7 +12,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
 	"github.com/ivasnev/FinFlow/ff-id/pkg/client"
+	handler "github.com/ivasnev/FinFlow/ff-split/internal/api/handler"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/config"
+	pg_repos "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres"
+	service "github.com/ivasnev/FinFlow/ff-split/internal/service"
 	tvmclient "github.com/ivasnev/FinFlow/ff-tvm/pkg/client"
 	tvmmiddleware "github.com/ivasnev/FinFlow/ff-tvm/pkg/middleware"
 	"gorm.io/driver/postgres"
@@ -24,6 +27,21 @@ type Container struct {
 	Config *config.Config
 	Router *gin.Engine
 	DB     *gorm.DB
+
+	// Репозитории
+	CategoryRepository *pg_repos.CategoryRepository
+	EventRepository    *pg_repos.EventRepository
+	ActivityRepository *pg_repos.ActivityRepository
+
+	// Сервисы
+	CategoryService service.CategoryService
+	EventService    service.EventService
+	ActivityService service.ActivityService
+
+	// Обработчики маршрутов
+	CategoryHandler *handler.CategoryHandler
+	EventHandler    *handler.EventHandler
+	ActivityHandler *handler.ActivityHandler
 
 	// Клиенты внешних сервисов
 	AuthClient *auth.Client
@@ -64,6 +82,27 @@ func NewContainer(cfg *config.Config, router *gin.Engine) (*Container, error) {
 	)
 
 	return container, nil
+}
+
+// initRepositories инициализирует репозитории
+func (c *Container) initRepositories() {
+	c.CategoryRepository = pg_repos.NewCategoryRepository(c.DB)
+	c.EventRepository = pg_repos.NewEventRepository(c.DB)
+	c.ActivityRepository = pg_repos.NewActivityRepository(c.DB)
+}
+
+// initServices инициализирует сервисы
+func (c *Container) initServices() {
+	c.CategoryService = service.NewCategoryService(c.CategoryRepository)
+	c.EventService = service.NewEventService(c.EventRepository)
+	c.ActivityService = service.NewActivityService(c.ActivityRepository)
+}
+
+// initHandlers инициализирует обработчики
+func (c *Container) initHandlers() {
+	c.CategoryHandler = handler.NewCategoryHandler(c.CategoryService)
+	c.EventHandler = handler.NewEventHandler(c.EventService)
+	c.ActivityHandler = handler.NewActivityHandler(c.ActivityService)
 }
 
 // initDB инициализирует подключение к базе данных
@@ -126,6 +165,55 @@ func (c *Container) RegisterRoutes() {
 
 	// Middleware для TVM
 	tvmMiddleware := tvmmiddleware.NewTVMMiddleware(c.TVMClient)
+
+	// Категории
+	categoryRoutes := v1.Group("/category")
+	{
+		categoryRoutes.GET("", c.CategoryHandler.GetCategories)
+		categoryRoutes.GET("/:id", c.CategoryHandler.GetCategoryByID)
+		categoryRoutes.POST("", c.CategoryHandler.CreateCategory)
+		categoryRoutes.PUT("/:id", c.CategoryHandler.UpdateCategory)
+		categoryRoutes.DELETE("/:id", c.CategoryHandler.DeleteCategory)
+	}
+
+	// Мероприятия
+	eventRoutes := v1.Group("/event")
+	{
+		// Список мероприятий
+		eventRoutes.GET("/", c.EventHandler.GetEvents)
+
+		// Маршруты для отдельного мероприятия
+		eventRoutes.GET("/:id_event", c.EventHandler.GetEventByID)
+		eventRoutes.POST("", c.EventHandler.CreateEvent)
+		eventRoutes.PUT("/:id_event", c.EventHandler.UpdateEvent)
+		eventRoutes.DELETE("/:id_event", c.EventHandler.DeleteEvent)
+
+		activityRoutes := eventRoutes.Group("/:id_event/activity")
+		{
+			// Активности мероприятия
+			activityRoutes.GET("", c.ActivityHandler.GetActivitiesByEventID)
+			activityRoutes.GET("/:id", c.ActivityHandler.GetActivityByID)
+			activityRoutes.POST("", c.ActivityHandler.CreateActivity)
+			activityRoutes.PUT("/:id", c.ActivityHandler.UpdateActivity)
+			activityRoutes.DELETE("/:id", c.ActivityHandler.DeleteActivity)
+		}
+	}
+
+	// Управление (требуется роль service_admin)
+	manageRoutes := v1.Group("/manage")
+	{
+		// Типы транзакций
+		manageRoutes.Group("/transaction_type")
+		// {
+		// 	// Здесь будут добавлены маршруты для типов транзакций
+		// }
+
+		// Иконки
+		manageRoutes.Group("/icons")
+		// {
+		// 	// Здесь будут добавлены маршруты для иконок
+		// }
+	}
 
 	// Базовый маршрут для проверки работоспособности сервиса
 	v1.GET("/health", func(ctx *gin.Context) {
