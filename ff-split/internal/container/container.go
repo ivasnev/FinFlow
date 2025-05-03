@@ -17,7 +17,7 @@ import (
 	pg_repos "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres"
 	service "github.com/ivasnev/FinFlow/ff-split/internal/service"
 	tvmclient "github.com/ivasnev/FinFlow/ff-tvm/pkg/client"
-	tvmmiddleware "github.com/ivasnev/FinFlow/ff-tvm/pkg/middleware"
+	//tvmmiddleware "github.com/ivasnev/FinFlow/ff-tvm/pkg/middleware"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -34,14 +34,14 @@ type Container struct {
 	ActivityRepository *pg_repos.ActivityRepository
 
 	// Сервисы
-	CategoryService service.CategoryService
-	EventService    service.EventService
-	ActivityService service.ActivityService
+	CategoryService service.CategoryServiceInterface
+	EventService    service.EventServiceInterface
+	ActivityService service.ActivityServiceInterface
 
 	// Обработчики маршрутов
-	CategoryHandler *handler.CategoryHandler
-	EventHandler    *handler.EventHandler
-	ActivityHandler *handler.ActivityHandler
+	CategoryHandler handler.CategoryHandlerInterface
+	EventHandler    handler.EventHandlerInterface
+	ActivityHandler handler.ActivityHandlerInterface
 
 	// Клиенты внешних сервисов
 	AuthClient *auth.Client
@@ -164,16 +164,13 @@ func (c *Container) RegisterRoutes() {
 	// authMiddleware := auth.AuthMiddleware(c.AuthClient)
 
 	// Middleware для TVM
-	tvmMiddleware := tvmmiddleware.NewTVMMiddleware(c.TVMClient)
+	//tvmMiddleware := tvmmiddleware.NewTVMMiddleware(c.TVMClient)
 
 	// Категории
 	categoryRoutes := v1.Group("/category")
 	{
 		categoryRoutes.GET("", c.CategoryHandler.GetCategories)
 		categoryRoutes.GET("/:id", c.CategoryHandler.GetCategoryByID)
-		categoryRoutes.POST("", c.CategoryHandler.CreateCategory)
-		categoryRoutes.PUT("/:id", c.CategoryHandler.UpdateCategory)
-		categoryRoutes.DELETE("/:id", c.CategoryHandler.DeleteCategory)
 	}
 
 	// Мероприятия
@@ -192,27 +189,33 @@ func (c *Container) RegisterRoutes() {
 		{
 			// Активности мероприятия
 			activityRoutes.GET("", c.ActivityHandler.GetActivitiesByEventID)
-			activityRoutes.GET("/:id", c.ActivityHandler.GetActivityByID)
+			activityRoutes.GET("/:id_activity", c.ActivityHandler.GetActivityByID)
 			activityRoutes.POST("", c.ActivityHandler.CreateActivity)
-			activityRoutes.PUT("/:id", c.ActivityHandler.UpdateActivity)
-			activityRoutes.DELETE("/:id", c.ActivityHandler.DeleteActivity)
+			activityRoutes.PUT("/:id_activity", c.ActivityHandler.UpdateActivity)
+			activityRoutes.DELETE("/:id_activity", c.ActivityHandler.DeleteActivity)
 		}
 	}
 
 	// Управление (требуется роль service_admin)
 	manageRoutes := v1.Group("/manage")
 	{
+		categoryManageRoutes := manageRoutes.Group("/category")
+		{
+			categoryManageRoutes.POST("", c.CategoryHandler.CreateCategory)
+			categoryManageRoutes.PUT("/:id", c.CategoryHandler.UpdateCategory)
+			categoryManageRoutes.DELETE("/:id", c.CategoryHandler.DeleteCategory)
+		}
 		// Типы транзакций
 		manageRoutes.Group("/transaction_type")
-		// {
-		// 	// Здесь будут добавлены маршруты для типов транзакций
-		// }
+		{
+			// Здесь будут добавлены маршруты для типов транзакций
+		}
 
 		// Иконки
 		manageRoutes.Group("/icons")
-		// {
-		// 	// Здесь будут добавлены маршруты для иконок
-		// }
+		{
+			// Здесь будут добавлены маршруты для иконок
+		}
 	}
 
 	// Базовый маршрут для проверки работоспособности сервиса
@@ -222,20 +225,4 @@ func (c *Container) RegisterRoutes() {
 			"name":   "FinFlow Split Service",
 		})
 	})
-
-	// Внутренние маршруты для межсервисного взаимодействия
-	internal := c.Router.Group("/internal")
-	{
-		// Защищенные TVM маршруты
-		internalRoutes := internal.Group("/split", tvmMiddleware.ValidateTicket())
-		{
-			// Примеры маршрутов
-			internalRoutes.GET("/health", func(ctx *gin.Context) {
-				ctx.JSON(200, gin.H{
-					"status": "ok",
-					"name":   "FinFlow Split Service Internal",
-				})
-			})
-		}
-	}
 }

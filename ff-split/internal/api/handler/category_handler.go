@@ -5,152 +5,244 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 )
 
-// CategoryHandler обработчик запросов для категорий
+// CategoryHandler реализует интерфейс handler.CategoryHandlerInterface
 type CategoryHandler struct {
-	categoryService service.CategoryService
+	service service.CategoryServiceInterface
 }
 
-// NewCategoryHandler создает новый экземпляр обработчика категорий
-func NewCategoryHandler(categoryService service.CategoryService) *CategoryHandler {
+// NewCategoryHandler создает новый экземпляр CategoryHandlerInterface
+func NewCategoryHandler(service service.CategoryServiceInterface) *CategoryHandler {
 	return &CategoryHandler{
-		categoryService: categoryService,
+		service: service,
 	}
 }
 
-// GetCategories обрабатывает запрос на получение всех категорий
-// @Summary Получить все категории
-// @Description Получить список всех доступных категорий
-// @Tags Category
-// @Accept json
-// @Produce json
-// @Success 200 {array} models.CategoryResponse
-// @Router /category [get]
-func (h *CategoryHandler) GetCategories(c *gin.Context) {
-	categories, err := h.categoryService.GetCategories(c.Request.Context())
+// Options обрабатывает запрос на получение списка доступных типов категорий
+func (h *CategoryHandler) Options(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	types, err := h.service.GetCategoryTypes(ctx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Error: "Ошибка при получении типов категорий: " + err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, categories)
+	c.JSON(http.StatusOK, dto.CategoryTypesResponse{
+		Types: types,
+	})
+}
+
+// GetCategories обрабатывает запрос на получение списка категорий
+func (h *CategoryHandler) GetCategories(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	// Получаем тип категории из query параметра
+	categoryType := c.Query("category_type")
+	if categoryType == "" {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Ошибка при получении категорий: не указан тип категорий",
+		})
+		return
+	}
+
+	categories, err := h.service.GetCategories(ctx, categoryType)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Error: "Ошибка при получении категорий: " + err.Error(),
+		})
+		return
+	}
+
+	// Преобразуем модели в DTO для ответа
+	response := dto.CategoryListResponse{
+		Categories: make([]dto.CategoryResponse, 0, len(categories)),
+	}
+
+	for _, category := range categories {
+		response.Categories = append(response.Categories, dto.CategoryResponse{
+			ID:     category.ID,
+			Name:   category.Name,
+			IconID: category.IconID,
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // GetCategoryByID обрабатывает запрос на получение категории по ID
-// @Summary Получить категорию по ID
-// @Description Получить информацию о категории по её ID
-// @Tags Category
-// @Accept json
-// @Produce json
-// @Param id path int true "ID категории"
-// @Success 200 {object} models.CategoryResponse
-// @Failure 404 {object} map[string]string
-// @Router /category/{id} [get]
 func (h *CategoryHandler) GetCategoryByID(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	// Получаем ID категории из URL
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID"})
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Некорректный ID категории",
+		})
 		return
 	}
 
-	category, err := h.categoryService.GetCategoryByID(c.Request.Context(), id)
+	// Получаем тип категории из query параметра
+	categoryType := c.Query("category_type")
+	if categoryType == "" {
+		categoryType = "event" // По умолчанию используем категории мероприятий
+	}
+
+	category, err := h.service.GetCategoryByID(ctx, id, categoryType)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "категория не найдена"})
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Error: "Ошибка при получении категории: " + err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, category)
+	if category == nil {
+		c.JSON(http.StatusNotFound, dto.ErrorResponse{
+			Error: "Категория не найдена",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.CategoryResponse{
+		ID:     category.ID,
+		Name:   category.Name,
+		IconID: category.IconID,
+	})
 }
 
 // CreateCategory обрабатывает запрос на создание новой категории
-// @Summary Создать новую категорию
-// @Description Создать новую категорию с указанными данными
-// @Tags Category
-// @Accept json
-// @Produce json
-// @Param category body models.Category true "Данные категории"
-// @Success 201 {object} models.CategoryResponse
-// @Failure 400 {object} map[string]string
-// @Router /category [post]
 func (h *CategoryHandler) CreateCategory(c *gin.Context) {
-	var category models.Category
-	if err := c.ShouldBindJSON(&category); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	ctx := c.Request.Context()
+
+	// Получаем данные запроса
+	var request dto.CategoryRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Некорректные данные запроса: " + err.Error(),
+		})
 		return
 	}
 
-	createdCategory, err := h.categoryService.CreateCategory(c.Request.Context(), category)
+	// Получаем тип категории из query параметра
+	categoryType := c.Query("category_type")
+	if categoryType == "" {
+		categoryType = "event" // По умолчанию используем категории мероприятий
+	}
+
+	// Преобразуем DTO в модель
+	category := &models.EventCategory{
+		Name:   request.Name,
+		IconID: request.IconID,
+	}
+
+	createdCategory, err := h.service.CreateCategory(ctx, category, categoryType)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Error: "Ошибка при создании категории: " + err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusCreated, createdCategory)
+	c.JSON(http.StatusCreated, dto.CategoryResponse{
+		ID:     createdCategory.ID,
+		Name:   createdCategory.Name,
+		IconID: createdCategory.IconID,
+	})
 }
 
 // UpdateCategory обрабатывает запрос на обновление категории
-// @Summary Обновить категорию
-// @Description Обновить данные категории по её ID
-// @Tags Category
-// @Accept json
-// @Produce json
-// @Param id path int true "ID категории"
-// @Param category body models.Category true "Данные категории"
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Router /category/{id} [put]
 func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	// Получаем ID категории из URL
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID"})
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Некорректный ID категории",
+		})
 		return
 	}
 
-	var category models.Category
-	if err := c.ShouldBindJSON(&category); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// Получаем данные запроса
+	var request dto.CategoryRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Некорректные данные запроса: " + err.Error(),
+		})
 		return
 	}
 
-	category.ID = id
+	// Получаем тип категории из query параметра
+	categoryType := c.Query("category_type")
+	if categoryType == "" {
+		categoryType = "event" // По умолчанию используем категории мероприятий
+	}
 
-	if err := h.categoryService.UpdateCategory(c.Request.Context(), category); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// Преобразуем DTO в модель
+	category := &models.EventCategory{
+		Name:   request.Name,
+		IconID: request.IconID,
+	}
+
+	updatedCategory, err := h.service.UpdateCategory(ctx, id, category, categoryType)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Error: "Ошибка при обновлении категории: " + err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "категория успешно обновлена"})
+	if updatedCategory == nil {
+		c.JSON(http.StatusNotFound, dto.ErrorResponse{
+			Error: "Категория не найдена",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.CategoryResponse{
+		ID:     updatedCategory.ID,
+		Name:   updatedCategory.Name,
+		IconID: updatedCategory.IconID,
+	})
 }
 
 // DeleteCategory обрабатывает запрос на удаление категории
-// @Summary Удалить категорию
-// @Description Удалить категорию по её ID
-// @Tags Category
-// @Accept json
-// @Produce json
-// @Param id path int true "ID категории"
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Router /category/{id} [delete]
 func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	// Получаем ID категории из URL
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID"})
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Некорректный ID категории",
+		})
 		return
 	}
 
-	if err := h.categoryService.DeleteCategory(c.Request.Context(), id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// Получаем тип категории из query параметра
+	categoryType := c.Query("category_type")
+	if categoryType == "" {
+		categoryType = "event" // По умолчанию используем категории мероприятий
+	}
+
+	if err := h.service.DeleteCategory(ctx, id, categoryType); err != nil {
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Error: "Ошибка при удалении категории: " + err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "категория успешно удалена"})
+	c.JSON(http.StatusOK, dto.SuccessResponse{
+		Success: true,
+	})
 }

@@ -2,12 +2,13 @@ package postgres
 
 import (
 	"context"
+	"errors"
 
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"gorm.io/gorm"
 )
 
-// EventRepository представляет собой репозиторий для работы с мероприятиями в PostgreSQL
+// EventRepository реализует интерфейс repository.EventRepository
 type EventRepository struct {
 	db *gorm.DB
 }
@@ -19,74 +20,77 @@ func NewEventRepository(db *gorm.DB) *EventRepository {
 	}
 }
 
-// GetEvents возвращает все мероприятия
-func (r *EventRepository) GetEvents(ctx context.Context) ([]models.Event, error) {
+// GetAll возвращает все мероприятия
+func (r *EventRepository) GetAll(ctx context.Context) ([]models.Event, error) {
 	var events []models.Event
-	if err := r.db.WithContext(ctx).Find(&events).Error; err != nil {
+	err := r.db.WithContext(ctx).Find(&events).Error
+	if err != nil {
 		return nil, err
 	}
 	return events, nil
 }
 
-// GetEventByID возвращает мероприятие по ID
-func (r *EventRepository) GetEventByID(ctx context.Context, id int64) (models.Event, error) {
+// GetByID возвращает мероприятие по ID
+func (r *EventRepository) GetByID(ctx context.Context, id int64) (*models.Event, error) {
 	var event models.Event
-	if err := r.db.WithContext(ctx).First(&event, id).Error; err != nil {
-		return models.Event{}, err
-	}
-	return event, nil
-}
-
-// CreateEvent создает новое мероприятие
-func (r *EventRepository) CreateEvent(ctx context.Context, event models.Event) (models.Event, error) {
-	if err := r.db.WithContext(ctx).Create(&event).Error; err != nil {
-		return models.Event{}, err
-	}
-	return event, nil
-}
-
-// UpdateEvent обновляет существующее мероприятие
-func (r *EventRepository) UpdateEvent(ctx context.Context, event models.Event) error {
-	return r.db.WithContext(ctx).Save(&event).Error
-}
-
-// DeleteEvent удаляет мероприятие
-func (r *EventRepository) DeleteEvent(ctx context.Context, id int64) error {
-	return r.db.WithContext(ctx).Delete(&models.Event{}, id).Error
-}
-
-// AddUserToEvent добавляет пользователя в мероприятие
-func (r *EventRepository) AddUserToEvent(ctx context.Context, userEvent models.UserEvent) error {
-	return r.db.WithContext(ctx).Create(&userEvent).Error
-}
-
-// RemoveUserFromEvent удаляет пользователя из мероприятия
-func (r *EventRepository) RemoveUserFromEvent(ctx context.Context, userID, eventID int64) error {
-	return r.db.WithContext(ctx).Where("id_user = ? AND id_event = ?", userID, eventID).Delete(&models.UserEvent{}).Error
-}
-
-// GetEventUsers возвращает всех пользователей мероприятия
-func (r *EventRepository) GetEventUsers(ctx context.Context, eventID int64) ([]models.User, error) {
-	var users []models.User
-	if err := r.db.WithContext(ctx).
-		Joins("JOIN user_event ON user_event.id_user = users.id_user").
-		Where("user_event.id_event = ?", eventID).
-		Find(&users).Error; err != nil {
+	err := r.db.WithContext(ctx).First(&event, id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil // возвращаем nil, nil если мероприятие не найдено
+		}
 		return nil, err
 	}
-	return users, nil
+	return &event, nil
 }
 
-// CreateDummyUser создает искусственного пользователя
-func (r *EventRepository) CreateDummyUser(ctx context.Context, name string) (models.User, error) {
-	user := models.User{
-		NameCashed: name,
-		IsDummy:    true,
+// Create создает новое мероприятие
+func (r *EventRepository) Create(ctx context.Context, event *models.Event) (*models.Event, error) {
+	err := r.db.WithContext(ctx).Create(event).Error
+	if err != nil {
+		return nil, err
+	}
+	return event, nil
+}
+
+// Update обновляет мероприятие
+func (r *EventRepository) Update(ctx context.Context, id int64, event *models.Event) (*models.Event, error) {
+	// Проверяем существование мероприятия
+	var existingEvent models.Event
+	err := r.db.WithContext(ctx).First(&existingEvent, id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil // возвращаем nil, nil если мероприятие не найдено
+		}
+		return nil, err
 	}
 
-	if err := r.db.WithContext(ctx).Create(&user).Error; err != nil {
-		return models.User{}, err
+	// Обновляем только указанные поля
+	event.ID = id // Важно установить ID для правильного обновления
+	err = r.db.WithContext(ctx).Model(&models.Event{}).Where("id = ?", id).Updates(event).Error
+	if err != nil {
+		return nil, err
 	}
 
-	return user, nil
+	// Получаем обновленное мероприятие
+	var updatedEvent models.Event
+	err = r.db.WithContext(ctx).First(&updatedEvent, id).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &updatedEvent, nil
+}
+
+// Delete удаляет мероприятие
+func (r *EventRepository) Delete(ctx context.Context, id int64) error {
+	result := r.db.WithContext(ctx).Delete(&models.Event{}, id)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return errors.New("мероприятие не найдено")
+	}
+
+	return nil
 }

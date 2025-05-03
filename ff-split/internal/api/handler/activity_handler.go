@@ -5,182 +5,234 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 )
 
-// ActivityHandler обработчик запросов для активностей
+// ActivityHandler реализует интерфейс handler.ActivityHandlerInterface
 type ActivityHandler struct {
-	activityService service.ActivityService
+	service service.ActivityServiceInterface
 }
 
-// NewActivityHandler создает новый экземпляр обработчика активностей
-func NewActivityHandler(activityService service.ActivityService) *ActivityHandler {
+// NewActivityHandler создает новый экземпляр ActivityHandlerInterface
+func NewActivityHandler(service service.ActivityServiceInterface) *ActivityHandler {
 	return &ActivityHandler{
-		activityService: activityService,
+		service: service,
 	}
 }
 
-// GetActivitiesByEventID обрабатывает запрос на получение всех активностей мероприятия
-// @Summary Получить все активности мероприятия
-// @Description Получить список всех активностей определенного мероприятия
-// @Tags Activity
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Success 200 {array} models.ActivityResponse
-// @Failure 400 {object} map[string]string
-// @Router /event/{id_event}/activity [get]
+// GetActivitiesByEventID обрабатывает запрос на получение списка активностей по ID мероприятия
 func (h *ActivityHandler) GetActivitiesByEventID(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	// Получаем ID мероприятия из URL
 	eventIDStr := c.Param("id_event")
 	eventID, err := strconv.ParseInt(eventIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID мероприятия"})
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Некорректный ID мероприятия",
+		})
 		return
 	}
 
-	activities, err := h.activityService.GetActivitiesByEventID(c.Request.Context(), eventID)
+	activities, err := h.service.GetActivitiesByEventID(ctx, eventID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Error: "Ошибка при получении активностей: " + err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, activities)
+	// Преобразуем модели в DTO для ответа
+	response := dto.ActivityListResponse{
+		Activities: make([]dto.ActivityResponse, 0, len(activities)),
+	}
+
+	for _, activity := range activities {
+		response.Activities = append(response.Activities, dto.ActivityResponse{
+			ID:          activity.ID,
+			EventID:     activity.EventID,
+			UserID:      activity.UserID,
+			Description: activity.Description,
+			CreatedAt:   activity.CreatedAt,
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // GetActivityByID обрабатывает запрос на получение активности по ID
-// @Summary Получить активность по ID
-// @Description Получить информацию об активности по её ID
-// @Tags Activity
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Param id path int true "ID активности"
-// @Success 200 {object} models.ActivityResponse
-// @Failure 404 {object} map[string]string
-// @Router /event/{id_event}/activity/{id} [get]
 func (h *ActivityHandler) GetActivityByID(c *gin.Context) {
-	idStr := c.Param("id")
+	ctx := c.Request.Context()
+
+	// Получаем ID активности из URL
+	idStr := c.Param("id_activity")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID активности"})
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Некорректный ID активности",
+		})
 		return
 	}
 
-	activity, err := h.activityService.GetActivityByID(c.Request.Context(), id)
+	activity, err := h.service.GetActivityByID(ctx, id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "активность не найдена"})
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Error: "Ошибка при получении активности: " + err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, activity)
+	if activity == nil {
+		c.JSON(http.StatusNotFound, dto.ErrorResponse{
+			Error: "Активность не найдена",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.ActivityResponse{
+		ID:          activity.ID,
+		EventID:     activity.EventID,
+		UserID:      activity.UserID,
+		Description: activity.Description,
+		CreatedAt:   activity.CreatedAt,
+	})
 }
 
 // CreateActivity обрабатывает запрос на создание новой активности
-// @Summary Создать новую активность
-// @Description Создать новую активность для определенного мероприятия
-// @Tags Activity
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Param activity body models.Activity true "Данные активности"
-// @Success 201 {object} models.ActivityResponse
-// @Failure 400 {object} map[string]string
-// @Router /event/{id_event}/activity [post]
 func (h *ActivityHandler) CreateActivity(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	// Получаем ID мероприятия из URL
 	eventIDStr := c.Param("id_event")
 	eventID, err := strconv.ParseInt(eventIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID мероприятия"})
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Некорректный ID мероприятия",
+		})
 		return
 	}
 
-	var activity models.Activity
-	if err := c.ShouldBindJSON(&activity); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// Получаем данные запроса
+	var request dto.ActivityRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Некорректные данные запроса: " + err.Error(),
+		})
 		return
 	}
 
-	activity.IDEvent = eventID
+	// Преобразуем DTO в модель
+	activity := &models.Activity{
+		EventID:     &eventID,
+		UserID:      request.UserID,
+		Description: request.Description,
+	}
 
-	createdActivity, err := h.activityService.CreateActivity(c.Request.Context(), activity)
+	createdActivity, err := h.service.CreateActivity(ctx, activity)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Error: "Ошибка при создании активности: " + err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusCreated, createdActivity)
+	c.JSON(http.StatusCreated, dto.ActivityResponse{
+		ID:          createdActivity.ID,
+		EventID:     createdActivity.EventID,
+		UserID:      createdActivity.UserID,
+		Description: createdActivity.Description,
+		CreatedAt:   createdActivity.CreatedAt,
+	})
 }
 
 // UpdateActivity обрабатывает запрос на обновление активности
-// @Summary Обновить активность
-// @Description Обновить данные активности по её ID
-// @Tags Activity
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Param id path int true "ID активности"
-// @Param activity body models.Activity true "Данные активности"
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Router /event/{id_event}/activity/{id} [put]
 func (h *ActivityHandler) UpdateActivity(c *gin.Context) {
-	idStr := c.Param("id")
+	ctx := c.Request.Context()
+
+	// Получаем ID активности из URL
+	idStr := c.Param("id_activity")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID активности"})
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Некорректный ID активности",
+		})
 		return
 	}
 
+	// Получаем ID мероприятия из URL
 	eventIDStr := c.Param("id_event")
 	eventID, err := strconv.ParseInt(eventIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID мероприятия"})
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Некорректный ID мероприятия",
+		})
 		return
 	}
 
-	var activity models.Activity
-	if err := c.ShouldBindJSON(&activity); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// Получаем данные запроса
+	var request dto.ActivityRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Некорректные данные запроса: " + err.Error(),
+		})
 		return
 	}
 
-	activity.ID = id
-	activity.IDEvent = eventID
+	// Преобразуем DTO в модель
+	activity := &models.Activity{
+		EventID:     &eventID,
+		UserID:      request.UserID,
+		Description: request.Description,
+	}
 
-	if err := h.activityService.UpdateActivity(c.Request.Context(), activity); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	updatedActivity, err := h.service.UpdateActivity(ctx, id, activity)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Error: "Ошибка при обновлении активности: " + err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "активность успешно обновлена"})
+	if updatedActivity == nil {
+		c.JSON(http.StatusNotFound, dto.ErrorResponse{
+			Error: "Активность не найдена",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.ActivityResponse{
+		ID:          updatedActivity.ID,
+		EventID:     updatedActivity.EventID,
+		UserID:      updatedActivity.UserID,
+		Description: updatedActivity.Description,
+		CreatedAt:   updatedActivity.CreatedAt,
+	})
 }
 
 // DeleteActivity обрабатывает запрос на удаление активности
-// @Summary Удалить активность
-// @Description Удалить активность по её ID
-// @Tags Activity
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Param id path int true "ID активности"
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Router /event/{id_event}/activity/{id} [delete]
 func (h *ActivityHandler) DeleteActivity(c *gin.Context) {
-	idStr := c.Param("id")
+	ctx := c.Request.Context()
+
+	// Получаем ID активности из URL
+	idStr := c.Param("id_activity")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID активности"})
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Некорректный ID активности",
+		})
 		return
 	}
 
-	if err := h.activityService.DeleteActivity(c.Request.Context(), id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.service.DeleteActivity(ctx, id); err != nil {
+		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Error: "Ошибка при удалении активности: " + err.Error(),
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "активность успешно удалена"})
+	c.JSON(http.StatusOK, dto.SuccessResponse{
+		Success: true,
+	})
 }

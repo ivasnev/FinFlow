@@ -4,168 +4,203 @@ import (
 	"time"
 )
 
-// User представляет пользователя в системе
+// User представляет модель пользователя
 type User struct {
-	ID              int64  `json:"id" gorm:"primaryKey"`
-	IDUser          int64  `json:"id_user" gorm:"uniqueIndex"`
-	NicknameCashed  string `json:"nickname_cashed"`
-	NameCashed      string `json:"name_cashed"`
-	PhotoUUIDCashed string `json:"photo_uuid_cashed"`
-	IsDummy         bool   `json:"is_dummy" gorm:"default:false"`
+	ID              int64  `gorm:"column:id;primaryKey;autoIncrement"`
+	UserID          int64  `gorm:"column:user_id;uniqueIndex"`
+	NicknameCashed  string `gorm:"column:nickname_cashed"`
+	NameCashed      string `gorm:"column:name_cashed"`
+	PhotoUUIDCashed string `gorm:"column:photo_uuid_cashed"`
+	IsDummy         bool   `gorm:"column:is_dummy;default:false"`
+
+	// Отношения
+	Events       []Event            `gorm:"many2many:user_event;foreignKey:UserID;references:UserID"`
+	Activities   []Activity         `gorm:"foreignKey:UserID;references:UserID"`
+	Transactions []Transaction      `gorm:"foreignKey:PayerID;references:UserID"`
+	Tasks        []Task             `gorm:"foreignKey:UserID;references:UserID"`
+	Shares       []TransactionShare `gorm:"foreignKey:UserID;references:UserID"`
+	DebtsFrom    []Debt             `gorm:"foreignKey:FromUserID;references:UserID"`
+	DebtsTo      []Debt             `gorm:"foreignKey:ToUserID;references:UserID"`
 }
 
-// Category представляет категорию для мероприятий
-type Category struct {
-	ID      int    `json:"id" gorm:"primaryKey"`
-	Name    string `json:"name"`
-	ImageID string `json:"image_id"`
+// TableName задает имя таблицы для модели User
+func (User) TableName() string {
+	return "users"
 }
 
-// Event представляет мероприятие
+// EventCategory представляет категорию мероприятия
+type EventCategory struct {
+	ID     int    `gorm:"column:id;primaryKey;autoIncrement"`
+	Name   string `gorm:"column:name;not null"`
+	IconID string `gorm:"column:icon_id"`
+
+	// Отношения
+	Events []Event `gorm:"foreignKey:CategoryID"`
+}
+
+// TableName задает имя таблицы для модели EventCategory
+func (EventCategory) TableName() string {
+	return "event_categories"
+}
+
+// Event представляет модель мероприятия
 type Event struct {
-	ID          int64    `json:"id" gorm:"primaryKey"`
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	CategoryID  int      `json:"category_id"`
-	ImageID     string   `json:"image_id"`
-	Status      string   `json:"status" gorm:"check:status IN ('active', 'archive')"`
-	Category    Category `json:"-" gorm:"foreignKey:CategoryID"`
+	ID          int64  `gorm:"column:id;primaryKey;autoIncrement"`
+	Name        string `gorm:"column:name;not null"`
+	Description string `gorm:"column:description"`
+	CategoryID  *int   `gorm:"column:category_id"`
+	ImageID     string `gorm:"column:image_id"`
+	Status      string `gorm:"column:status;default:active"`
+
+	// Отношения
+	Category     *EventCategory `gorm:"foreignKey:CategoryID"`
+	Users        []User         `gorm:"many2many:user_event;foreignKey:ID;joinForeignKey:EventID;references:UserID;joinReferences:UserID"`
+	Activities   []Activity     `gorm:"foreignKey:EventID"`
+	Transactions []Transaction  `gorm:"foreignKey:EventID"`
+	Tasks        []Task         `gorm:"foreignKey:EventID"`
 }
 
-// UserEvent связывает пользователей и мероприятия
+// TableName задает имя таблицы для модели Event
+func (Event) TableName() string {
+	return "events"
+}
+
+// UserEvent представляет связь между пользователем и мероприятием
 type UserEvent struct {
-	IDUser  int64 `json:"id_user" gorm:"primaryKey"`
-	IDEvent int64 `json:"id_event" gorm:"primaryKey"`
-	User    User  `json:"-" gorm:"foreignKey:IDUser"`
-	Event   Event `json:"-" gorm:"foreignKey:IDEvent"`
+	UserID  int64 `gorm:"column:user_id;primaryKey"`
+	EventID int64 `gorm:"column:event_id;primaryKey"`
 }
 
-// Activity представляет событие в мероприятии
+// TableName задает имя таблицы для модели UserEvent
+func (UserEvent) TableName() string {
+	return "user_event"
+}
+
+// Activity представляет действие в системе
 type Activity struct {
-	ID          int       `json:"id" gorm:"primaryKey"`
-	IDEvent     int64     `json:"id_event"`
-	IDUser      int64     `json:"id_user"`
-	Description string    `json:"description"`
-	CreatedAt   time.Time `json:"created_at" gorm:"default:CURRENT_TIMESTAMP"`
-	Event       Event     `json:"-" gorm:"foreignKey:IDEvent"`
-	User        User      `json:"-" gorm:"foreignKey:IDUser"`
+	ID          int       `gorm:"column:id;primaryKey;autoIncrement"`
+	EventID     *int64    `gorm:"column:event_id"`
+	UserID      *int64    `gorm:"column:user_id"`
+	Description string    `gorm:"column:description"`
+	CreatedAt   time.Time `gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
+
+	// Отношения
+	Event *Event `gorm:"foreignKey:EventID"`
+	User  *User  `gorm:"foreignKey:UserID;references:UserID"`
 }
 
-// Task представляет задачу в мероприятии
-type Task struct {
-	ID          int       `json:"id" gorm:"primaryKey"`
-	UserID      int64     `json:"user_id"`
-	EventID     int64     `json:"event_id"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Priority    int       `json:"priority"`
-	CreatedAt   time.Time `json:"created_at" gorm:"default:CURRENT_TIMESTAMP"`
-	User        User      `json:"-" gorm:"foreignKey:UserID"`
-	Event       Event     `json:"-" gorm:"foreignKey:EventID"`
+// TableName задает имя таблицы для модели Activity
+func (Activity) TableName() string {
+	return "activities"
 }
 
-// TransactionType представляет тип транзакции
-type TransactionType struct {
-	ID     int    `json:"id" gorm:"primaryKey"`
-	Name   string `json:"name"`
-	IconID string `json:"icon_id"`
+// Icon представляет иконку для типа транзакции
+type Icon struct {
+	ID       string `gorm:"column:id;primaryKey"`
+	Name     string `gorm:"column:name;not null"`
+	FileUUID string `gorm:"column:file_uuid;not null"`
+
+	// Отношения
+	TransactionCategories []TransactionCategory `gorm:"foreignKey:IconID"`
+}
+
+// TableName задает имя таблицы для модели Icon
+func (Icon) TableName() string {
+	return "icons"
+}
+
+// TransactionCategory представляет категорию транзакции
+type TransactionCategory struct {
+	ID     int    `gorm:"column:id;primaryKey;autoIncrement"`
+	Name   string `gorm:"column:name;not null"`
+	IconID string `gorm:"column:icon_id"`
+
+	// Отношения
+	Icon         *Icon         `gorm:"foreignKey:IconID"`
+	Transactions []Transaction `gorm:"foreignKey:TransactionCategoryID"`
+}
+
+// TableName задает имя таблицы для модели TransactionCategory
+func (TransactionCategory) TableName() string {
+	return "transaction_categories"
 }
 
 // Transaction представляет транзакцию
 type Transaction struct {
-	ID                int             `json:"id" gorm:"primaryKey"`
-	EventID           int64           `json:"event_id"`
-	Name              string          `json:"name"`
-	TransactionTypeID int             `json:"transaction_type_id"`
-	DateTime          time.Time       `json:"datetime"`
-	TotalPaid         float64         `json:"total_paid"`
-	PayerID           int64           `json:"payer_id"`
-	Event             Event           `json:"-" gorm:"foreignKey:EventID"`
-	TransactionType   TransactionType `json:"-" gorm:"foreignKey:TransactionTypeID"`
-	Payer             User            `json:"-" gorm:"foreignKey:PayerID"`
+	ID                    int       `gorm:"column:id;primaryKey;autoIncrement"`
+	EventID               *int64    `gorm:"column:event_id"`
+	Name                  string    `gorm:"column:name;not null"`
+	TransactionCategoryID *int      `gorm:"column:transaction_category_id"`
+	Datetime              time.Time `gorm:"column:datetime;default:CURRENT_TIMESTAMP"`
+	TotalPaid             float64   `gorm:"column:total_paid;type:numeric(10,2);not null"`
+	PayerID               *int64    `gorm:"column:payer_id"`
+	SplitType             int       `gorm:"column:split_type;default:0;not null"`
+
+	// Отношения
+	Event               *Event               `gorm:"foreignKey:EventID"`
+	TransactionCategory *TransactionCategory `gorm:"foreignKey:TransactionCategoryID"`
+	Payer               *User                `gorm:"foreignKey:PayerID;references:UserID"`
+	Shares              []TransactionShare   `gorm:"foreignKey:TransactionID"`
+	Debts               []Debt               `gorm:"foreignKey:TransactionID"`
 }
 
-// UserTransaction представляет участие пользователя в транзакции
-type UserTransaction struct {
-	ID            int         `json:"id" gorm:"primaryKey"`
-	TransactionID int         `json:"transaction_id"`
-	UserID        int64       `json:"user_id"`
-	UserPart      float64     `json:"user_part"`
-	Transaction   Transaction `json:"-" gorm:"foreignKey:TransactionID"`
-	User          User        `json:"-" gorm:"foreignKey:UserID"`
+// TableName задает имя таблицы для модели Transaction
+func (Transaction) TableName() string {
+	return "transactions"
 }
 
-// Icon представляет иконку
-type Icon struct {
-	ID       string `json:"id" gorm:"primaryKey"`
-	Name     string `json:"name"`
-	FileUUID string `json:"file_uuid"`
+// TransactionShare представляет долю пользователя в транзакции
+type TransactionShare struct {
+	ID            int     `gorm:"column:id;primaryKey;autoIncrement"`
+	TransactionID int     `gorm:"column:transaction_id;uniqueIndex:uniq_tx_user"`
+	UserID        int64   `gorm:"column:user_id;uniqueIndex:uniq_tx_user"`
+	Value         float64 `gorm:"column:value;type:numeric(10,2);not null"`
+
+	// Отношения
+	Transaction *Transaction `gorm:"foreignKey:TransactionID"`
+	User        *User        `gorm:"foreignKey:UserID;references:UserID"`
 }
 
-// EventMembersRequest представляет запрос на добавление участников в мероприятие
-type EventMembersRequest struct {
-	UserIDs      []int64  `json:"user_ids"`
-	DummiesNames []string `json:"dummies_names"`
+// TableName задает имя таблицы для модели TransactionShare
+func (TransactionShare) TableName() string {
+	return "transaction_shares"
 }
 
-// EventTransactionTemporalResponse представляет запрос на получение данных о задолженностях
-type EventTransactionTemporalResponse struct {
-	TotalID   int `json:"total_id"`
-	Requestor struct {
-		Name  string `json:"name"`
-		ID    int64  `json:"id"`
-		Photo string `json:"photo"`
-	} `json:"requestor"`
-	Debtor struct {
-		Name  string `json:"name"`
-		ID    int64  `json:"id"`
-		Photo string `json:"photo"`
-	} `json:"debtor"`
-	Amount float64 `json:"amount"`
+// Debt представляет долг одного пользователя другому
+type Debt struct {
+	ID            int     `gorm:"column:id;primaryKey;autoIncrement"`
+	TransactionID int     `gorm:"column:transaction_id;uniqueIndex:uniq_debt"`
+	FromUserID    int64   `gorm:"column:from_user_id;uniqueIndex:uniq_debt"`
+	ToUserID      int64   `gorm:"column:to_user_id;uniqueIndex:uniq_debt"`
+	Amount        float64 `gorm:"column:amount;type:numeric(10,2);not null"`
+
+	// Отношения
+	Transaction *Transaction `gorm:"foreignKey:TransactionID"`
+	FromUser    *User        `gorm:"foreignKey:FromUserID;references:UserID"`
+	ToUser      *User        `gorm:"foreignKey:ToUserID;references:UserID"`
 }
 
-// EventRequest представляет запрос на создание мероприятия
-type EventRequest struct {
-	Name        string              `json:"name"`
-	Description string              `json:"description"`
-	CategoryID  int                 `json:"category_id"`
-	Members     EventMembersRequest `json:"members"`
+// TableName задает имя таблицы для модели Debt
+func (Debt) TableName() string {
+	return "debts"
 }
 
-// EventResponse представляет ответ с информацией о мероприятии
-type EventResponse struct {
-	ID         int64  `json:"id"`
-	Name       string `json:"name"`
-	CategoryID int    `json:"category_id"`
-	PhotoID    string `json:"photo_id"`
-	Balance    int    `json:"balance,omitempty"`
+// Task представляет задачу в системе
+type Task struct {
+	ID          int       `gorm:"column:id;primaryKey;autoIncrement"`
+	UserID      *int64    `gorm:"column:user_id"`
+	EventID     *int64    `gorm:"column:event_id"`
+	Title       string    `gorm:"column:title;not null"`
+	Description string    `gorm:"column:description"`
+	Priority    int       `gorm:"column:priority;default:0"`
+	CreatedAt   time.Time `gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
+
+	// Отношения
+	User  *User  `gorm:"foreignKey:UserID;references:UserID"`
+	Event *Event `gorm:"foreignKey:EventID"`
 }
 
-// CategoryResponse представляет ответ с информацией о категории
-type CategoryResponse struct {
-	ID     int    `json:"id"`
-	IconID int    `json:"icon_id"`
-	Name   string `json:"name"`
-}
-
-// ActivityResponse представляет ответ с информацией о событии в мероприятии
-type ActivityResponse struct {
-	ActivityID  int       `json:"activity_id"`
-	Description string    `json:"description"`
-	IconID      string    `json:"icon_id"`
-	DateTime    time.Time `json:"datetime"`
-}
-
-// TransactionResponse представляет ответ с информацией о транзакции
-type TransactionResponse struct {
-	TransactionID     int    `json:"transaction_id"`
-	Name              string `json:"name"`
-	TransactionTypeID struct {
-		ID     int    `json:"id"`
-		IconID string `json:"icon_id"`
-	} `json:"transaction_type_id"`
-	DateTime  time.Time `json:"datetime"`
-	UserPart  float64   `json:"user_part"`
-	TotalPaid float64   `json:"total_paid"`
-	PayerName string    `json:"payer_name"`
+// TableName задает имя таблицы для модели Task
+func (Task) TableName() string {
+	return "tasks"
 }
