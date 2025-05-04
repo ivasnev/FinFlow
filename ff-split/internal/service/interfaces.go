@@ -8,6 +8,15 @@ import (
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 )
 
+// IconServiceInterface интерфейс для работы с иконками на уровне бизнес-логики
+type IconServiceInterface interface {
+	GetIcons(ctx context.Context) ([]dto.IconFullDTO, error)
+	GetIconByID(ctx context.Context, id uint) (*dto.IconFullDTO, error)
+	CreateIcon(ctx context.Context, icon *dto.IconFullDTO) (*dto.IconFullDTO, error)
+	UpdateIcon(ctx context.Context, id uint, icon *dto.IconFullDTO) (*dto.IconFullDTO, error)
+	DeleteIcon(ctx context.Context, id uint) error
+}
+
 // CategoryServiceInterface интерфейс для работы с категориями на уровне бизнес-логики
 type CategoryServiceInterface interface {
 	GetCategories(ctx context.Context, categoryType string) ([]dto.CategoryDTO, error)
