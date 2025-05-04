@@ -54,8 +54,8 @@ func (r *UserRepository) BatchCreate(ctx context.Context, users []*models.User) 
 	return db.GetTx(ctx, r.db).WithContext(ctx).Create(users).Error
 }
 
-// GetByUserIDs находит пользователей по UserID (ID из сервиса идентификации)
-func (r *UserRepository) GetByUserIDs(ctx context.Context, ids []int64) ([]models.User, error) {
+// GetByExternalUserIDs находит пользователей по UserID (ID из сервиса идентификации)
+func (r *UserRepository) GetByExternalUserIDs(ctx context.Context, ids []int64) ([]models.User, error) {
 	var users []models.User
 	err := r.db.WithContext(ctx).Where("user_id IN ?", ids).Find(&users).Error
 	if err != nil {
@@ -64,7 +64,17 @@ func (r *UserRepository) GetByUserIDs(ctx context.Context, ids []int64) ([]model
 	return users, nil
 }
 
-func (r *UserRepository) GetByID(ctx context.Context, id int64) (*models.User, error) {
+// GetByInternalUserIDs находит пользователей по UserID (ID из сервиса идентификации)
+func (r *UserRepository) GetByInternalUserIDs(ctx context.Context, ids []int64) ([]models.User, error) {
+	var users []models.User
+	err := r.db.WithContext(ctx).Where("id IN ?", ids).Find(&users).Error
+	if err != nil {
+		return nil, fmt.Errorf("ошибка при получении пользователей: %w", err)
+	}
+	return users, nil
+}
+
+func (r *UserRepository) GetByInternalUserID(ctx context.Context, id int64) (*models.User, error) {
 	var user models.User
 	err := r.db.WithContext(ctx).First(&user, id).Error
 	if err != nil {
@@ -76,8 +86,8 @@ func (r *UserRepository) GetByID(ctx context.Context, id int64) (*models.User, e
 	return &user, nil
 }
 
-// GetByUserID находит пользователя по UserID (ID из сервиса идентификации)
-func (r *UserRepository) GetByUserID(ctx context.Context, userID int64) (*models.User, error) {
+// GetByExternalUserID находит пользователя по UserID (ID из сервиса идентификации)
+func (r *UserRepository) GetByExternalUserID(ctx context.Context, userID int64) (*models.User, error) {
 	var user models.User
 	err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&user).Error
 	if err != nil {

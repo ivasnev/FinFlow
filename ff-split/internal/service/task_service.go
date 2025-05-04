@@ -46,7 +46,7 @@ func (s *TaskService) GetTaskByID(ctx context.Context, id uint) (*dto.TaskDTO, e
 
 // CreateTask создает новую задачу
 func (s *TaskService) CreateTask(ctx context.Context, eventID int64, taskRequest *dto.TaskRequest) (*dto.TaskDTO, error) {
-	user, err := s.userService.GetUserByUserID(ctx, taskRequest.UserID)
+	user, err := s.userService.GetUserByID(ctx, taskRequest.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (s *TaskService) CreateTask(ctx context.Context, eventID int64, taskRequest
 
 // UpdateTask обновляет существующую задачу
 func (s *TaskService) UpdateTask(ctx context.Context, id uint, taskRequest *dto.TaskRequest) (*dto.TaskDTO, error) {
-	user, err := s.userService.GetUserByUserID(ctx, taskRequest.UserID)
+	user, err := s.userService.GetUserByID(ctx, taskRequest.UserID)
 	if err != nil {
 		return nil, err
 	}

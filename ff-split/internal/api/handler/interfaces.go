@@ -47,3 +47,13 @@ type ActivityHandlerInterface interface {
 	UpdateActivity(c *gin.Context)
 	DeleteActivity(c *gin.Context)
 }
+
+// TransactionHandlerInterface интерфейс для обработки запросов по транзакциям
+type TransactionHandlerInterface interface {
+	GetTransactionsByEventID(c *gin.Context)
+	GetTransactionByID(c *gin.Context)
+	CreateTransaction(c *gin.Context)
+	UpdateTransaction(c *gin.Context)
+	DeleteTransaction(c *gin.Context)
+	GetDebtsByEventID(c *gin.Context)
+}

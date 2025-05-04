@@ -72,7 +72,7 @@ type UserServiceInterface interface {
 	GetUserByUserID(ctx context.Context, userID int64) (*models.User, error)
 
 	// GetUsersByUserIDs получает пользователей по UserID (ID из сервиса идентификации)
-	GetUsersByUserIDs(ctx context.Context, userIDs []int64) ([]models.User, error)
+	GetUsersByExternalUserIDs(ctx context.Context, userIDs []int64) ([]models.User, error)
 
 	// GetUsersByEventID получает всех пользователей мероприятия
 	GetUsersByEventID(ctx context.Context, eventID int64) ([]models.User, error)
@@ -100,4 +100,14 @@ type UserServiceInterface interface {
 
 	// GetNotExistsUsers получает пользователей, которые не существуют в базе данных
 	GetNotExistsUsers(ctx context.Context, ids []int64) ([]int64, error)
+}
+
+// TransactionServiceInterface интерфейс для работы с транзакциями
+type TransactionServiceInterface interface {
+	GetTransactionsByEventID(ctx context.Context, eventID int64) ([]dto.TransactionResponse, error)
+	GetTransactionByID(ctx context.Context, id int) (*dto.TransactionResponse, error)
+	CreateTransaction(ctx context.Context, eventID int64, req *dto.TransactionRequest) (*dto.TransactionResponse, error)
+	UpdateTransaction(ctx context.Context, id int, req *dto.TransactionRequest) (*dto.TransactionResponse, error)
+	DeleteTransaction(ctx context.Context, id int) error
+	GetDebtsByEventID(ctx context.Context, eventID int64) ([]dto.DebtDTO, error)
 }
