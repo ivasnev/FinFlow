@@ -111,7 +111,7 @@ func (s *TransactionService) CreateTransaction(ctx context.Context, eventID int6
 		}
 
 		// Проверяем, что плательщик существует
-		payer, err := s.userService.GetUserByID(ctx, req.FromUser)
+		payer, err := s.userService.GetUserByInternalUserID(ctx, req.FromUser)
 		if err != nil {
 			return err
 		}
@@ -202,7 +202,7 @@ func (s *TransactionService) UpdateTransaction(ctx context.Context, id int, req 
 		}
 
 		// Проверяем, что плательщик существует
-		payer, err := s.userService.GetUserByID(ctx, req.FromUser)
+		payer, err := s.userService.GetUserByInternalUserID(ctx, req.FromUser)
 		if err != nil {
 			return err
 		}
@@ -360,7 +360,7 @@ func (s *TransactionService) mapTransactionToDTO(
 
 	var fromUser int64
 	if tx.PayerID != nil {
-		user, err := s.userService.GetUserByID(context.Background(), *tx.PayerID)
+		user, err := s.userService.GetUserByInternalUserID(context.Background(), *tx.PayerID)
 		if err != nil {
 			return nil, err
 		}
