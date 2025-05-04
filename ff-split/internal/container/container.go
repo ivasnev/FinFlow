@@ -36,6 +36,7 @@ type Container struct {
 	ActivityRepository *pg_repos.ActivityRepository
 	UserRepository     *pg_repos.UserRepository
 	IconRepository     *pg_repos.IconRepository
+	TaskRepository     *pg_repos.TaskRepository
 
 	// Сервисы
 	CategoryService service.CategoryServiceInterface
@@ -43,12 +44,14 @@ type Container struct {
 	ActivityService service.ActivityServiceInterface
 	UserService     service.UserServiceInterface
 	IconService     service.IconServiceInterface
+	TaskService     service.TaskServiceInterface
 
 	// Обработчики маршрутов
 	CategoryHandler handler.CategoryHandlerInterface
 	EventHandler    handler.EventHandlerInterface
 	ActivityHandler handler.ActivityHandlerInterface
 	IconHandler     handler.IconHandlerInterface
+	TaskHandler     handler.TaskHandlerInterface
 
 	// Клиенты внешних сервисов
 	AuthClient *auth.Client
@@ -102,6 +105,7 @@ func (c *Container) initRepositories() {
 	c.ActivityRepository = pg_repos.NewActivityRepository(c.DB)
 	c.UserRepository = pg_repos.NewUserRepository(c.DB)
 	c.IconRepository = pg_repos.NewIconRepository(c.DB)
+	c.TaskRepository = pg_repos.NewTaskRepository(c.DB)
 }
 
 // initServices инициализирует сервисы
@@ -111,6 +115,7 @@ func (c *Container) initServices() {
 	c.EventService = service.NewEventService(c.EventRepository, c.DB, c.UserService)
 	c.ActivityService = service.NewActivityService(c.ActivityRepository)
 	c.IconService = service.NewIconService(c.IconRepository)
+	c.TaskService = service.NewTaskService(c.TaskRepository, c.UserService)
 }
 
 // initHandlers инициализирует обработчики
@@ -119,6 +124,7 @@ func (c *Container) initHandlers() {
 	c.EventHandler = handler.NewEventHandler(c.EventService, c.UserService)
 	c.ActivityHandler = handler.NewActivityHandler(c.ActivityService)
 	c.IconHandler = handler.NewIconHandler(c.IconService)
+	c.TaskHandler = handler.NewTaskHandler(c.TaskService)
 }
 
 // initDB инициализирует подключение к базе данных
@@ -210,6 +216,16 @@ func (c *Container) RegisterRoutes() {
 			activityRoutes.POST("", c.ActivityHandler.CreateActivity)
 			activityRoutes.PUT("/:id_activity", c.ActivityHandler.UpdateActivity)
 			activityRoutes.DELETE("/:id_activity", c.ActivityHandler.DeleteActivity)
+		}
+
+		// Задачи мероприятия
+		taskRoutes := eventRoutes.Group("/:id_event/task")
+		{
+			taskRoutes.GET("", c.TaskHandler.GetTasksByEventID)
+			taskRoutes.GET("/:id_task", c.TaskHandler.GetTaskByID)
+			taskRoutes.POST("", c.TaskHandler.CreateTask)
+			taskRoutes.PUT("/:id_task", c.TaskHandler.UpdateTask)
+			taskRoutes.DELETE("/:id_task", c.TaskHandler.DeleteTask)
 		}
 	}
 

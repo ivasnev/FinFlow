@@ -2,6 +2,15 @@ package handler
 
 import "github.com/gin-gonic/gin"
 
+// TaskHandlerInterface интерфейс для обработки запросов по задачам
+type TaskHandlerInterface interface {
+	GetTasksByEventID(c *gin.Context)
+	GetTaskByID(c *gin.Context)
+	CreateTask(c *gin.Context)
+	UpdateTask(c *gin.Context)
+	DeleteTask(c *gin.Context)
+}
+
 // IconHandlerInterface интерфейс для обработки запросов по иконкам
 type IconHandlerInterface interface {
 	GetIcons(c *gin.Context)
