@@ -6,7 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
-	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 )
 
@@ -24,9 +23,7 @@ func NewCategoryHandler(service service.CategoryServiceInterface) *CategoryHandl
 
 // Options обрабатывает запрос на получение списка доступных типов категорий
 func (h *CategoryHandler) Options(c *gin.Context) {
-	ctx := c.Request.Context()
-
-	types, err := h.service.GetCategoryTypes(ctx)
+	types, err := h.service.GetCategoryTypes()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Error: "Ошибка при получении типов категорий: " + err.Error(),
@@ -34,9 +31,7 @@ func (h *CategoryHandler) Options(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, dto.CategoryTypesResponse{
-		Types: types,
-	})
+	c.JSON(http.StatusOK, types)
 }
 
 // GetCategories обрабатывает запрос на получение списка категорий
@@ -67,9 +62,9 @@ func (h *CategoryHandler) GetCategories(c *gin.Context) {
 
 	for _, category := range categories {
 		response.Categories = append(response.Categories, dto.CategoryResponse{
-			ID:     category.ID,
-			Name:   category.Name,
-			IconID: category.IconID,
+			ID:   category.ID,
+			Name: category.Name,
+			Icon: category.Icon,
 		})
 	}
 
@@ -93,7 +88,10 @@ func (h *CategoryHandler) GetCategoryByID(c *gin.Context) {
 	// Получаем тип категории из query параметра
 	categoryType := c.Query("category_type")
 	if categoryType == "" {
-		categoryType = "event" // По умолчанию используем категории мероприятий
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Ошибка при получении категорий: не указан тип категорий",
+		})
+		return
 	}
 
 	category, err := h.service.GetCategoryByID(ctx, id, categoryType)
@@ -112,9 +110,9 @@ func (h *CategoryHandler) GetCategoryByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, dto.CategoryResponse{
-		ID:     category.ID,
-		Name:   category.Name,
-		IconID: category.IconID,
+		ID:   category.ID,
+		Name: category.Name,
+		Icon: category.Icon,
 	})
 }
 
@@ -134,11 +132,13 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 	// Получаем тип категории из query параметра
 	categoryType := c.Query("category_type")
 	if categoryType == "" {
-		categoryType = "event" // По умолчанию используем категории мероприятий
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Ошибка при получении категорий: не указан тип категорий",
+		})
+		return
 	}
 
-	// Преобразуем DTO в модель
-	category := &models.EventCategory{
+	category := &dto.CategoryDTO{
 		Name:   request.Name,
 		IconID: request.IconID,
 	}
@@ -152,9 +152,9 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, dto.CategoryResponse{
-		ID:     createdCategory.ID,
-		Name:   createdCategory.Name,
-		IconID: createdCategory.IconID,
+		ID:   createdCategory.ID,
+		Name: createdCategory.Name,
+		Icon: createdCategory.Icon,
 	})
 }
 
@@ -184,11 +184,13 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 	// Получаем тип категории из query параметра
 	categoryType := c.Query("category_type")
 	if categoryType == "" {
-		categoryType = "event" // По умолчанию используем категории мероприятий
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Ошибка при получении категорий: не указан тип категорий",
+		})
+		return
 	}
 
-	// Преобразуем DTO в модель
-	category := &models.EventCategory{
+	category := &dto.CategoryDTO{
 		Name:   request.Name,
 		IconID: request.IconID,
 	}
@@ -209,9 +211,9 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, dto.CategoryResponse{
-		ID:     updatedCategory.ID,
-		Name:   updatedCategory.Name,
-		IconID: updatedCategory.IconID,
+		ID:   updatedCategory.ID,
+		Name: updatedCategory.Name,
+		Icon: updatedCategory.Icon,
 	})
 }
 
@@ -232,7 +234,10 @@ func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 	// Получаем тип категории из query параметра
 	categoryType := c.Query("category_type")
 	if categoryType == "" {
-		categoryType = "event" // По умолчанию используем категории мероприятий
+		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "Ошибка при получении категорий: не указан тип категорий",
+		})
+		return
 	}
 
 	if err := h.service.DeleteCategory(ctx, id, categoryType); err != nil {

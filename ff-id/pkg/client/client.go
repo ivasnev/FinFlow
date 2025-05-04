@@ -90,3 +90,38 @@ func (c *Client) RegisterUser(ctx context.Context, reqBody *RegisterUserRequest)
 	// Возвращаем данные пользователя
 	return userFromResponse, nil
 }
+
+// ApiRequest выполняет запрос к API с TVM тикетом
+func (c *Client) ApiRequest(method, path string, payload any) (*http.Response, error) {
+
+	var requestBody *bytes.Buffer
+	if payload != nil {
+		jsonData, err := json.Marshal(payload)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal request payload: %w", err)
+		}
+		requestBody = bytes.NewBuffer(jsonData)
+	} else {
+		requestBody = bytes.NewBuffer(nil)
+	}
+
+	// Формируем URL запроса
+	url := fmt.Sprintf("%s%s", c.baseURL, path)
+
+	// Создаем запрос
+	req, err := http.NewRequest(method, url, requestBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Добавляем заголовки
+	req.Header.Set("Content-Type", "application/json")
+
+	// Выполняем запрос
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+
+	return resp, nil
+}

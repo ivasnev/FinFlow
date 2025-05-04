@@ -15,6 +15,9 @@ type UserRepositoryInterface interface {
 	// GetByID получает пользователя по ID
 	GetByID(ctx context.Context, id int64) (*models.User, error)
 
+	// GetByIDs получает пользователей по их ID
+	GetByIDs(ctx context.Context, ids []int64) ([]*models.User, error)
+
 	// GetByEmail получает пользователя по email
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 

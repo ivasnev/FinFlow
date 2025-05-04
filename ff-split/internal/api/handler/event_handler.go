@@ -6,19 +6,20 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
-	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 )
 
 // EventHandler реализует интерфейс handler.EventHandlerInterface
 type EventHandler struct {
-	service service.EventServiceInterface
+	service     service.EventServiceInterface
+	userService service.UserServiceInterface
 }
 
 // NewEventHandler создает новый экземпляр EventHandlerInterface
-func NewEventHandler(service service.EventServiceInterface) *EventHandler {
+func NewEventHandler(service service.EventServiceInterface, userService service.UserServiceInterface) *EventHandler {
 	return &EventHandler{
-		service: service,
+		service:     service,
+		userService: userService,
 	}
 }
 
@@ -40,13 +41,17 @@ func (h *EventHandler) GetEvents(c *gin.Context) {
 	}
 
 	for _, event := range events {
+		// Заглушка для баланса
+		var balance *int = nil
+		// Здесь будет расчет баланса в будущем
+
 		response.Events = append(response.Events, dto.EventResponse{
 			ID:          event.ID,
 			Name:        event.Name,
 			Description: event.Description,
 			CategoryID:  event.CategoryID,
-			ImageID:     event.ImageID,
-			Status:      event.Status,
+			PhotoID:     event.ImageID,
+			Balance:     balance,
 		})
 	}
 
@@ -82,13 +87,17 @@ func (h *EventHandler) GetEventByID(c *gin.Context) {
 		return
 	}
 
+	// Заглушка для баланса
+	var balance *int = nil
+	// Здесь будет расчет баланса в будущем
+
 	c.JSON(http.StatusOK, dto.EventResponse{
 		ID:          event.ID,
 		Name:        event.Name,
 		Description: event.Description,
 		CategoryID:  event.CategoryID,
-		ImageID:     event.ImageID,
-		Status:      event.Status,
+		PhotoID:     event.ImageID,
+		Balance:     balance,
 	})
 }
 
@@ -105,35 +114,14 @@ func (h *EventHandler) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	// Преобразуем DTO в модель
-	event := &models.Event{
-		Name:        request.Name,
-		Description: request.Description,
-		CategoryID:  request.CategoryID,
-		ImageID:     request.ImageID,
-		Status:      request.Status,
-	}
-
-	if event.Status == "" {
-		event.Status = "active" // Статус по умолчанию
-	}
-
-	createdEvent, err := h.service.CreateEvent(ctx, event)
+	event, err := h.service.CreateEvent(ctx, &request)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
-			Error: "Ошибка при создании мероприятия: " + err.Error(),
+			Error: "Ошибка создания ивента: " + err.Error(),
 		})
-		return
 	}
-
-	c.JSON(http.StatusCreated, dto.EventResponse{
-		ID:          createdEvent.ID,
-		Name:        createdEvent.Name,
-		Description: createdEvent.Description,
-		CategoryID:  createdEvent.CategoryID,
-		ImageID:     createdEvent.ImageID,
-		Status:      createdEvent.Status,
-	})
+	c.JSON(http.StatusOK, event)
+	return
 }
 
 // UpdateEvent обрабатывает запрос на обновление мероприятия
@@ -159,38 +147,14 @@ func (h *EventHandler) UpdateEvent(c *gin.Context) {
 		return
 	}
 
-	// Преобразуем DTO в модель
-	event := &models.Event{
-		Name:        request.Name,
-		Description: request.Description,
-		CategoryID:  request.CategoryID,
-		ImageID:     request.ImageID,
-		Status:      request.Status,
-	}
-
-	updatedEvent, err := h.service.UpdateEvent(ctx, id, event)
+	event, err := h.service.UpdateEvent(ctx, id, &request)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
-			Error: "Ошибка при обновлении мероприятия: " + err.Error(),
+			Error: "Ошибка обновления мероприятия: " + err.Error(),
 		})
 		return
 	}
-
-	if updatedEvent == nil {
-		c.JSON(http.StatusNotFound, dto.ErrorResponse{
-			Error: "Мероприятие не найдено",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, dto.EventResponse{
-		ID:          updatedEvent.ID,
-		Name:        updatedEvent.Name,
-		Description: updatedEvent.Description,
-		CategoryID:  updatedEvent.CategoryID,
-		ImageID:     updatedEvent.ImageID,
-		Status:      updatedEvent.Status,
-	})
+	c.JSON(http.StatusOK, event)
 }
 
 // DeleteEvent обрабатывает запрос на удаление мероприятия
