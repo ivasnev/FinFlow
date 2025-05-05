@@ -82,3 +82,8 @@ type UserRepositoryInterface interface {
 	// RemoveUserFromEvent удаляет пользователя из мероприятия
 	RemoveUserFromEvent(ctx context.Context, userID, eventID int64) error
 }
+
+// TransactionRepository интерфейс для работы с транзакциями
+type TransactionRepository interface {
+	// TODO: реализовать методы
+}

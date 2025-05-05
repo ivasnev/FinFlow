@@ -113,4 +113,9 @@ type TransactionServiceInterface interface {
 	UpdateTransaction(ctx context.Context, id int, req *dto.TransactionRequest) (*dto.TransactionResponse, error)
 	DeleteTransaction(ctx context.Context, id int) error
 	GetDebtsByEventID(ctx context.Context, eventID int64) ([]dto.DebtDTO, error)
+
+	// Методы для работы с оптимизированными долгами
+	OptimizeDebts(ctx context.Context, eventID int64) ([]dto.OptimizedDebtDTO, error)
+	GetOptimizedDebtsByEventID(ctx context.Context, eventID int64) ([]dto.OptimizedDebtDTO, error)
+	GetOptimizedDebtsByUserID(ctx context.Context, eventID, userID int64) ([]dto.OptimizedDebtDTO, error)
 }

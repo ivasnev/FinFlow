@@ -131,3 +131,52 @@ func (r *TransactionRepository) DeleteSharesByTransactionID(transactionID int) e
 func (r *TransactionRepository) DeleteDebtsByTransactionID(transactionID int) error {
 	return r.db.Where("transaction_id = ?", transactionID).Delete(&models.Debt{}).Error
 }
+
+// GetOptimizedDebtsByEventID возвращает оптимизированные долги по ID мероприятия
+func (r *TransactionRepository) GetOptimizedDebtsByEventID(eventID int64) ([]models.OptimizedDebt, error) {
+	var debts []models.OptimizedDebt
+	if err := r.db.Where("event_id = ?", eventID).Find(&debts).Error; err != nil {
+		return nil, err
+	}
+	return debts, nil
+}
+
+// GetOptimizedDebtsByUserID возвращает оптимизированные долги по ID пользователя в мероприятии
+func (r *TransactionRepository) GetOptimizedDebtsByUserID(eventID, userID int64) ([]models.OptimizedDebt, error) {
+	var debts []models.OptimizedDebt
+	if err := r.db.Where("event_id = ? AND (from_user_id = ? OR to_user_id = ?)", eventID, userID, userID).Find(&debts).Error; err != nil {
+		return nil, err
+	}
+	return debts, nil
+}
+
+// SaveOptimizedDebts сохраняет оптимизированные долги для мероприятия (удаляет старые и сохраняет новые)
+func (r *TransactionRepository) SaveOptimizedDebts(eventID int64, debts []models.OptimizedDebt) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Удаляем старые оптимизированные долги
+		if err := tx.Where("event_id = ?", eventID).Delete(&models.OptimizedDebt{}).Error; err != nil {
+			return err
+		}
+
+		// Сохраняем новые оптимизированные долги
+		if len(debts) > 0 {
+			if err := tx.Create(&debts).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
+// DeleteOptimizedDebtsByEventID удаляет оптимизированные долги по ID мероприятия
+func (r *TransactionRepository) DeleteOptimizedDebtsByEventID(eventID int64) error {
+	result := r.db.Where("event_id = ?", eventID).Delete(&models.OptimizedDebt{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("оптимизированные долги не найдены")
+	}
+	return nil
+}

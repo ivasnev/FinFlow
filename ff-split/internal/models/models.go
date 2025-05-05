@@ -186,6 +186,22 @@ func (Debt) TableName() string {
 	return "debts"
 }
 
+// OptimizedDebt представляет оптимизированные долги между пользователями
+type OptimizedDebt struct {
+	ID         int       `gorm:"column:id;primaryKey;autoIncrement"`
+	EventID    int64     `gorm:"column:event_id"`
+	FromUserID int64     `gorm:"column:from_user_id"`
+	ToUserID   int64     `gorm:"column:to_user_id"`
+	Amount     float64   `gorm:"column:amount;type:numeric(10,2);not null"`
+	CreatedAt  time.Time `gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
+	UpdatedAt  time.Time `gorm:"column:updated_at;default:CURRENT_TIMESTAMP"`
+}
+
+// TableName задает имя таблицы для модели OptimizedDebt
+func (OptimizedDebt) TableName() string {
+	return "optimized_debts"
+}
+
 // Task представляет задачу в системе
 type Task struct {
 	ID          int       `gorm:"column:id;primaryKey;autoIncrement"`

@@ -121,3 +121,19 @@ create table tasks
 
 create index idx_tasks_event_id on tasks (event_id);
 create index idx_tasks_user_id on tasks (user_id);
+
+-- Оптимизированные долги
+create table optimized_debts
+(
+    id         serial primary key, -- ID оптимизированного долга
+    event_id   bigint references events, -- Событие
+    from_user_id bigint references users (id), -- Кто должен
+    to_user_id bigint references users (id), -- Кому должен
+    amount numeric(10, 2) not null, -- Сумма долга
+    created_at timestamp default CURRENT_TIMESTAMP, -- Время создания
+    updated_at timestamp default CURRENT_TIMESTAMP -- Время обновления
+);
+
+create index idx_optimized_debts_event_id on optimized_debts (event_id);
+create index idx_optimized_debts_from_user_id on optimized_debts (from_user_id);
+create index idx_optimized_debts_to_user_id on optimized_debts (to_user_id);
