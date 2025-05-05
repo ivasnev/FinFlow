@@ -85,5 +85,29 @@ type UserRepositoryInterface interface {
 
 // TransactionRepository интерфейс для работы с транзакциями
 type TransactionRepository interface {
-	// TODO: реализовать методы
+	// Получение транзакций
+	GetTransactionsByEventID(eventID int64) ([]models.Transaction, error)
+	GetTransactionByID(id int) (*models.Transaction, error)
+
+	// Управление транзакциями
+	CreateTransaction(tx *models.Transaction) error
+	UpdateTransaction(tx *models.Transaction) error
+	DeleteTransaction(id int) error
+
+	// Работа с долями транзакций
+	GetSharesByTransactionID(transactionID int) ([]models.TransactionShare, error)
+	CreateTransactionShares(shares []models.TransactionShare) error
+	DeleteSharesByTransactionID(transactionID int) error
+
+	// Работа с долгами
+	GetDebtsByTransactionID(transactionID int) ([]models.Debt, error)
+	GetDebtsByEventID(eventID int64) ([]models.Debt, error)
+	CreateDebts(debts []models.Debt) error
+	DeleteDebtsByTransactionID(transactionID int) error
+
+	// Работа с оптимизированными долгами
+	GetOptimizedDebtsByEventID(eventID int64) ([]models.OptimizedDebt, error)
+	GetOptimizedDebtsByUserID(eventID, userID int64) ([]models.OptimizedDebt, error)
+	SaveOptimizedDebts(eventID int64, debts []models.OptimizedDebt) error
+	DeleteOptimizedDebtsByEventID(eventID int64) error
 }

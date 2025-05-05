@@ -20,6 +20,16 @@ func NewTransactionHandler(service service.TransactionServiceInterface) *Transac
 }
 
 // GetTransactionsByEventID возвращает список транзакций мероприятия
+// @Summary Получить все транзакции мероприятия
+// @Description Возвращает список всех транзакций, связанных с указанным мероприятием
+// @Tags транзакции
+// @Accept json
+// @Produce json
+// @Param id_event path int true "ID мероприятия"
+// @Success 200 {object} dto.TransactionListResponse "Список транзакций"
+// @Failure 400 {object} map[string]string "Неверный формат ID мероприятия"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/event/{id_event}/transaction [get]
 func (h *TransactionHandler) GetTransactionsByEventID(c *gin.Context) {
 	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
 	if err != nil {
@@ -37,6 +47,18 @@ func (h *TransactionHandler) GetTransactionsByEventID(c *gin.Context) {
 }
 
 // GetTransactionByID возвращает транзакцию по ID
+// @Summary Получить транзакцию по ID
+// @Description Возвращает информацию о конкретной транзакции по её ID
+// @Tags транзакции
+// @Accept json
+// @Produce json
+// @Param id_event path int true "ID мероприятия"
+// @Param id_transaction path int true "ID транзакции"
+// @Success 200 {object} dto.TransactionResponse "Информация о транзакции"
+// @Failure 400 {object} map[string]string "Неверный формат ID"
+// @Failure 404 {object} map[string]string "Транзакция не найдена"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/event/{id_event}/transaction/{id_transaction} [get]
 func (h *TransactionHandler) GetTransactionByID(c *gin.Context) {
 	idStr := c.Param("id_transaction")
 	id, err := strconv.Atoi(idStr)
@@ -55,6 +77,17 @@ func (h *TransactionHandler) GetTransactionByID(c *gin.Context) {
 }
 
 // CreateTransaction создает новую транзакцию
+// @Summary Создать новую транзакцию
+// @Description Создает новую транзакцию в рамках указанного мероприятия
+// @Tags транзакции
+// @Accept json
+// @Produce json
+// @Param id_event path int true "ID мероприятия"
+// @Param transaction body dto.TransactionRequest true "Данные транзакции"
+// @Success 201 {object} dto.TransactionResponse "Созданная транзакция"
+// @Failure 400 {object} map[string]string "Неверный формат данных запроса"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/event/{id_event}/transaction [post]
 func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
 	if err != nil {
@@ -78,6 +111,18 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 }
 
 // UpdateTransaction обновляет существующую транзакцию
+// @Summary Обновить транзакцию
+// @Description Обновляет существующую транзакцию по ID
+// @Tags транзакции
+// @Accept json
+// @Produce json
+// @Param id_event path int true "ID мероприятия"
+// @Param id_transaction path int true "ID транзакции"
+// @Param transaction body dto.TransactionRequest true "Данные транзакции"
+// @Success 200 {object} dto.TransactionResponse "Обновленная транзакция"
+// @Failure 400 {object} map[string]string "Неверный формат данных запроса"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/event/{id_event}/transaction/{id_transaction} [put]
 func (h *TransactionHandler) UpdateTransaction(c *gin.Context) {
 	idStr := c.Param("id_transaction")
 	id, err := strconv.Atoi(idStr)
@@ -102,6 +147,17 @@ func (h *TransactionHandler) UpdateTransaction(c *gin.Context) {
 }
 
 // DeleteTransaction удаляет транзакцию
+// @Summary Удалить транзакцию
+// @Description Удаляет транзакцию по ID
+// @Tags транзакции
+// @Accept json
+// @Produce json
+// @Param id_event path int true "ID мероприятия"
+// @Param id_transaction path int true "ID транзакции"
+// @Success 204 "Транзакция успешно удалена"
+// @Failure 400 {object} map[string]string "Неверный формат ID"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/event/{id_event}/transaction/{id_transaction} [delete]
 func (h *TransactionHandler) DeleteTransaction(c *gin.Context) {
 	idStr := c.Param("id_transaction")
 	id, err := strconv.Atoi(idStr)
@@ -120,6 +176,16 @@ func (h *TransactionHandler) DeleteTransaction(c *gin.Context) {
 }
 
 // GetDebtsByEventID возвращает долги мероприятия
+// @Summary Получить долги мероприятия
+// @Description Возвращает все долги, связанные с мероприятием
+// @Tags долги
+// @Accept json
+// @Produce json
+// @Param id_event path int true "ID мероприятия"
+// @Success 200 {array} dto.DebtDTO "Список долгов"
+// @Failure 400 {object} map[string]string "Неверный формат ID мероприятия"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/event/{id_event}/debts [get]
 func (h *TransactionHandler) GetDebtsByEventID(c *gin.Context) {
 	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
 	if err != nil {
@@ -137,6 +203,16 @@ func (h *TransactionHandler) GetDebtsByEventID(c *gin.Context) {
 }
 
 // OptimizeDebts оптимизирует долги мероприятия
+// @Summary Оптимизировать долги мероприятия
+// @Description Запускает алгоритм оптимизации долгов и возвращает оптимизированный список долгов
+// @Tags долги, оптимизация
+// @Accept json
+// @Produce json
+// @Param id_event path int true "ID мероприятия"
+// @Success 200 {array} dto.OptimizedDebtDTO "Список оптимизированных долгов"
+// @Failure 400 {object} map[string]string "Неверный формат ID мероприятия"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/event/{id_event}/optimized-debts [post]
 func (h *TransactionHandler) OptimizeDebts(c *gin.Context) {
 	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
 	if err != nil {
@@ -154,6 +230,16 @@ func (h *TransactionHandler) OptimizeDebts(c *gin.Context) {
 }
 
 // GetOptimizedDebtsByEventID возвращает оптимизированные долги мероприятия
+// @Summary Получить оптимизированные долги мероприятия
+// @Description Возвращает список оптимизированных долгов мероприятия
+// @Tags долги, оптимизация
+// @Accept json
+// @Produce json
+// @Param id_event path int true "ID мероприятия"
+// @Success 200 {array} dto.OptimizedDebtDTO "Список оптимизированных долгов"
+// @Failure 400 {object} map[string]string "Неверный формат ID мероприятия"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/event/{id_event}/optimized-debts [get]
 func (h *TransactionHandler) GetOptimizedDebtsByEventID(c *gin.Context) {
 	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
 	if err != nil {
@@ -171,6 +257,17 @@ func (h *TransactionHandler) GetOptimizedDebtsByEventID(c *gin.Context) {
 }
 
 // GetOptimizedDebtsByUserID возвращает оптимизированные долги пользователя в мероприятии
+// @Summary Получить оптимизированные долги пользователя
+// @Description Возвращает список оптимизированных долгов для конкретного пользователя в мероприятии
+// @Tags долги, оптимизация
+// @Accept json
+// @Produce json
+// @Param id_event path int true "ID мероприятия"
+// @Param id_user path int true "ID пользователя"
+// @Success 200 {array} dto.OptimizedDebtDTO "Список оптимизированных долгов пользователя"
+// @Failure 400 {object} map[string]string "Неверный формат ID"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/event/{id_event}/user/{id_user}/optimized-debts [get]
 func (h *TransactionHandler) GetOptimizedDebtsByUserID(c *gin.Context) {
 	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
 	if err != nil {

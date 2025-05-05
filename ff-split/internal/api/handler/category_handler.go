@@ -22,6 +22,14 @@ func NewCategoryHandler(service service.CategoryServiceInterface) *CategoryHandl
 }
 
 // Options обрабатывает запрос на получение списка доступных типов категорий
+// @Summary Получить типы категорий
+// @Description Возвращает список всех доступных типов категорий
+// @Tags категории
+// @Accept json
+// @Produce json
+// @Success 200 {array} string "Список типов категорий"
+// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /api/v1/category [options]
 func (h *CategoryHandler) Options(c *gin.Context) {
 	types, err := h.service.GetCategoryTypes()
 	if err != nil {
@@ -35,6 +43,16 @@ func (h *CategoryHandler) Options(c *gin.Context) {
 }
 
 // GetCategories обрабатывает запрос на получение списка категорий
+// @Summary Получить категории
+// @Description Возвращает список категорий указанного типа
+// @Tags категории
+// @Accept json
+// @Produce json
+// @Param category_type query string true "Тип категории"
+// @Success 200 {object} dto.CategoryListResponse "Список категорий"
+// @Failure 400 {object} dto.ErrorResponse "Не указан тип категорий"
+// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /api/v1/category [get]
 func (h *CategoryHandler) GetCategories(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -72,6 +90,18 @@ func (h *CategoryHandler) GetCategories(c *gin.Context) {
 }
 
 // GetCategoryByID обрабатывает запрос на получение категории по ID
+// @Summary Получить категорию по ID
+// @Description Возвращает информацию о конкретной категории по её ID
+// @Tags категории
+// @Accept json
+// @Produce json
+// @Param id path int true "ID категории"
+// @Param category_type query string true "Тип категории"
+// @Success 200 {object} dto.CategoryResponse "Информация о категории"
+// @Failure 400 {object} dto.ErrorResponse "Некорректный ID категории или не указан тип"
+// @Failure 404 {object} dto.ErrorResponse "Категория не найдена"
+// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /api/v1/category/{id} [get]
 func (h *CategoryHandler) GetCategoryByID(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -117,6 +147,17 @@ func (h *CategoryHandler) GetCategoryByID(c *gin.Context) {
 }
 
 // CreateCategory обрабатывает запрос на создание новой категории
+// @Summary Создать новую категорию
+// @Description Создает новую категорию указанного типа
+// @Tags категории
+// @Accept json
+// @Produce json
+// @Param category_type query string true "Тип категории"
+// @Param category body dto.CategoryRequest true "Данные категории"
+// @Success 201 {object} dto.CategoryResponse "Созданная категория"
+// @Failure 400 {object} dto.ErrorResponse "Некорректные данные запроса или не указан тип"
+// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /api/v1/manage/category [post]
 func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -159,6 +200,19 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 }
 
 // UpdateCategory обрабатывает запрос на обновление категории
+// @Summary Обновить категорию
+// @Description Обновляет существующую категорию по ID
+// @Tags категории
+// @Accept json
+// @Produce json
+// @Param id path int true "ID категории"
+// @Param category_type query string true "Тип категории"
+// @Param category body dto.CategoryRequest true "Данные категории"
+// @Success 200 {object} dto.CategoryResponse "Обновленная категория"
+// @Failure 400 {object} dto.ErrorResponse "Некорректные данные запроса или не указан тип"
+// @Failure 404 {object} dto.ErrorResponse "Категория не найдена"
+// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /api/v1/manage/category/{id} [put]
 func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -218,6 +272,17 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 }
 
 // DeleteCategory обрабатывает запрос на удаление категории
+// @Summary Удалить категорию
+// @Description Удаляет категорию по ID
+// @Tags категории
+// @Accept json
+// @Produce json
+// @Param id path int true "ID категории"
+// @Param category_type query string true "Тип категории"
+// @Success 200 {object} dto.SuccessResponse "Категория успешно удалена"
+// @Failure 400 {object} dto.ErrorResponse "Некорректный ID категории или не указан тип"
+// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /api/v1/manage/category/{id} [delete]
 func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 	ctx := c.Request.Context()
 
