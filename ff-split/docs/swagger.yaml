@@ -1,4 +1,4 @@
-basePath: /api/v1
+basePath: /
 definitions:
   dto.ActivityListResponse:
     properties:
@@ -12,7 +12,7 @@ definitions:
       description:
         type: string
       icon_id:
-        type: string
+        type: integer
       user_id:
         type: integer
     required:
@@ -27,7 +27,7 @@ definitions:
       description:
         type: string
       icon_id:
-        type: string
+        type: integer
     type: object
   dto.CategoryListResponse:
     properties:
@@ -66,11 +66,6 @@ definitions:
         type: integer
       transaction_id:
         type: integer
-    type: object
-  dto.ErrorResponse:
-    properties:
-      error:
-        type: string
     type: object
   dto.EventListResponse:
     properties:
@@ -315,6 +310,30 @@ definitions:
       profile:
         $ref: '#/definitions/dto.UserProfileDTO'
     type: object
+  errors.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/errors.ErrorResponseDetail'
+      id:
+        type: string
+    type: object
+  errors.ErrorResponseAdditionalData:
+    properties:
+      slug:
+        example: slug
+        type: string
+    type: object
+  errors.ErrorResponseDetail:
+    properties:
+      code:
+        example: validation
+        type: string
+      data:
+        $ref: '#/definitions/errors.ErrorResponseAdditionalData'
+      message:
+        example: invalid input
+        type: string
+    type: object
 host: localhost:8085
 info:
   contact:
@@ -350,11 +369,11 @@ paths:
         "400":
           description: Не указан тип категорий
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить категории
       tags:
       - категории
@@ -374,7 +393,7 @@ paths:
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить типы категорий
       tags:
       - категории
@@ -404,15 +423,15 @@ paths:
         "400":
           description: Некорректный ID категории или не указан тип
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: Категория не найдена
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить категорию по ID
       tags:
       - категории
@@ -431,9 +450,7 @@ paths:
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить список мероприятий
       tags:
       - мероприятия
@@ -456,15 +473,11 @@ paths:
         "400":
           description: Неверный формат ID мероприятия
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Удалить мероприятие
       tags:
       - мероприятия
@@ -488,21 +501,15 @@ paths:
         "400":
           description: Неверный формат ID мероприятия
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: Мероприятие не найдено
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить мероприятие по ID
       tags:
       - мероприятия
@@ -532,21 +539,15 @@ paths:
         "400":
           description: Неверный формат данных запроса
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: Мероприятие не найдено
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Обновить мероприятие
       tags:
       - мероприятия
@@ -554,7 +555,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Возвращает список всех активностей, связанных с указанным мероприятием
+      description: Возвращает список активностей для указанного события
       parameters:
       - description: ID мероприятия
         in: path
@@ -569,20 +570,24 @@ paths:
           schema:
             $ref: '#/definitions/dto.ActivityListResponse'
         "400":
-          description: Некорректный ID мероприятия
+          description: Некорректный ID события
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Событие не найдено
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      summary: Получить активности мероприятия
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить активности события
       tags:
       - активности
     post:
       consumes:
       - application/json
-      description: Создает новую активность в рамках указанного мероприятия
+      description: Создает новую запись об активности в событии
       parameters:
       - description: ID мероприятия
         in: path
@@ -605,12 +610,16 @@ paths:
         "400":
           description: Некорректные данные запроса
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Событие не найдено
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
-      summary: Создать новую активность
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Создать активность
       tags:
       - активности
   /api/v1/event/{id_event}/activity/{id_activity}:
@@ -639,11 +648,11 @@ paths:
         "400":
           description: Некорректный ID активности
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Удалить активность
       tags:
       - активности
@@ -672,15 +681,15 @@ paths:
         "400":
           description: Некорректный ID активности
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: Активность не найдена
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить активность по ID
       tags:
       - активности
@@ -715,15 +724,15 @@ paths:
         "400":
           description: Некорректные данные запроса
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: Активность не найдена
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Обновить активность
       tags:
       - активности
@@ -750,15 +759,11 @@ paths:
         "400":
           description: Неверный формат ID мероприятия
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить долги мероприятия
       tags:
       - долги
@@ -785,15 +790,11 @@ paths:
         "400":
           description: Неверный формат ID мероприятия
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить оптимизированные долги мероприятия
       tags:
       - долги
@@ -821,15 +822,11 @@ paths:
         "400":
           description: Неверный формат ID мероприятия
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Оптимизировать долги мероприятия
       tags:
       - долги
@@ -855,15 +852,11 @@ paths:
         "400":
           description: Неверный формат ID мероприятия
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить все задачи мероприятия
       tags:
       - задачи
@@ -893,15 +886,11 @@ paths:
         "400":
           description: Неверный формат данных запроса
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Создать новую задачу
       tags:
       - задачи
@@ -929,15 +918,11 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Удалить задачу
       tags:
       - задачи
@@ -966,21 +951,15 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: Задача не найдена
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить задачу по ID
       tags:
       - задачи
@@ -1015,15 +994,11 @@ paths:
         "400":
           description: Неверный формат данных запроса
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Обновить задачу
       tags:
       - задачи
@@ -1048,15 +1023,11 @@ paths:
         "400":
           description: Неверный формат ID мероприятия
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить все транзакции мероприятия
       tags:
       - транзакции
@@ -1086,15 +1057,11 @@ paths:
         "400":
           description: Неверный формат данных запроса
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Создать новую транзакцию
       tags:
       - транзакции
@@ -1122,15 +1089,11 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Удалить транзакцию
       tags:
       - транзакции
@@ -1159,21 +1122,15 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: Транзакция не найдена
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить транзакцию по ID
       tags:
       - транзакции
@@ -1208,15 +1165,11 @@ paths:
         "400":
           description: Неверный формат данных запроса
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Обновить транзакцию
       tags:
       - транзакции
@@ -1243,15 +1196,11 @@ paths:
         "400":
           description: Неверный формат ID мероприятия
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить пользователей мероприятия
       tags:
       - пользователи
@@ -1279,15 +1228,11 @@ paths:
         "400":
           description: Неверный формат запроса
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Добавить пользователей в мероприятие
       tags:
       - пользователи
@@ -1315,15 +1260,11 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Удалить пользователя из мероприятия
       tags:
       - пользователи
@@ -1356,15 +1297,11 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить оптимизированные долги пользователя
       tags:
       - долги
@@ -1393,15 +1330,11 @@ paths:
         "400":
           description: Неверный формат ID мероприятия
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить фиктивных пользователей мероприятия
       tags:
       - пользователи
@@ -1433,15 +1366,11 @@ paths:
         "400":
           description: Неверный формат запроса
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Создать несколько фиктивных пользователей
       tags:
       - пользователи
@@ -1472,15 +1401,11 @@ paths:
         "400":
           description: Неверный формат запроса
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Создать фиктивного пользователя
       tags:
       - пользователи
@@ -1511,11 +1436,11 @@ paths:
         "400":
           description: Некорректные данные запроса или не указан тип
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Создать новую категорию
       tags:
       - категории
@@ -1545,11 +1470,11 @@ paths:
         "400":
           description: Некорректный ID категории или не указан тип
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Удалить категорию
       tags:
       - категории
@@ -1584,15 +1509,15 @@ paths:
         "400":
           description: Некорректные данные запроса или не указан тип
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: Категория не найдена
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Обновить категорию
       tags:
       - категории
@@ -1613,9 +1538,7 @@ paths:
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить все иконки
       tags:
       - иконки
@@ -1640,15 +1563,11 @@ paths:
         "400":
           description: Неверный формат данных запроса
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Создать новую иконку
       tags:
       - иконки
@@ -1671,15 +1590,11 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Удалить иконку
       tags:
       - иконки
@@ -1703,21 +1618,15 @@ paths:
         "400":
           description: Неверный формат ID
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: Иконка не найдена
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить иконку по ID
       tags:
       - иконки
@@ -1747,15 +1656,11 @@ paths:
         "400":
           description: Неверный формат данных запроса
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Обновить иконку
       tags:
       - иконки
@@ -1778,15 +1683,11 @@ paths:
         "400":
           description: Неверный формат ID пользователя
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Удалить пользователя
       tags:
       - пользователи
@@ -1815,15 +1716,11 @@ paths:
         "400":
           description: Неверный формат ID пользователя
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: Пользователь не найден
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить пользователя по ID
       tags:
       - пользователи
@@ -1853,21 +1750,15 @@ paths:
         "400":
           description: Неверный формат запроса
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "404":
           description: Пользователь не найден
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Обновить пользователя
       tags:
       - пользователи
@@ -1899,15 +1790,11 @@ paths:
         "400":
           description: Неверный формат данных запроса
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Создать новое мероприятие
       tags:
       - мероприятия
@@ -1940,15 +1827,11 @@ paths:
         "400":
           description: Неверный формат запроса
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Получить пользователей по списку ID
       tags:
       - пользователи
@@ -1972,15 +1855,11 @@ paths:
         "400":
           description: Неверный формат запроса
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
         "500":
           description: Внутренняя ошибка сервера
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/errors.ErrorResponse'
       summary: Синхронизировать пользователей с ID-сервисом
       tags:
       - пользователи

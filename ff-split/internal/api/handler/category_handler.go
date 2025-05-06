@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
+	"github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 )
 
@@ -28,14 +30,12 @@ func NewCategoryHandler(service service.CategoryServiceInterface) *CategoryHandl
 // @Accept json
 // @Produce json
 // @Success 200 {array} string "Список типов категорий"
-// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/category [options]
 func (h *CategoryHandler) Options(c *gin.Context) {
 	types, err := h.service.GetCategoryTypes()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
-			Error: "Ошибка при получении типов категорий: " + err.Error(),
-		})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении типов категорий: %w", err))
 		return
 	}
 
@@ -50,8 +50,8 @@ func (h *CategoryHandler) Options(c *gin.Context) {
 // @Produce json
 // @Param category_type query string true "Тип категории"
 // @Success 200 {object} dto.CategoryListResponse "Список категорий"
-// @Failure 400 {object} dto.ErrorResponse "Не указан тип категорий"
-// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Не указан тип категорий"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/category [get]
 func (h *CategoryHandler) GetCategories(c *gin.Context) {
 	ctx := c.Request.Context()
@@ -59,17 +59,13 @@ func (h *CategoryHandler) GetCategories(c *gin.Context) {
 	// Получаем тип категории из query параметра
 	categoryType := c.Query("category_type")
 	if categoryType == "" {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Ошибка при получении категорий: не указан тип категорий",
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("category_type", "не указан тип категорий"))
 		return
 	}
 
 	categories, err := h.service.GetCategories(ctx, categoryType)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
-			Error: "Ошибка при получении категорий: " + err.Error(),
-		})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении категорий: %w", err))
 		return
 	}
 
@@ -98,9 +94,9 @@ func (h *CategoryHandler) GetCategories(c *gin.Context) {
 // @Param id path int true "ID категории"
 // @Param category_type query string true "Тип категории"
 // @Success 200 {object} dto.CategoryResponse "Информация о категории"
-// @Failure 400 {object} dto.ErrorResponse "Некорректный ID категории или не указан тип"
-// @Failure 404 {object} dto.ErrorResponse "Категория не найдена"
-// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Некорректный ID категории или не указан тип"
+// @Failure 404 {object} errors.ErrorResponse "Категория не найдена"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/category/{id} [get]
 func (h *CategoryHandler) GetCategoryByID(c *gin.Context) {
 	ctx := c.Request.Context()
@@ -109,33 +105,25 @@ func (h *CategoryHandler) GetCategoryByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Некорректный ID категории",
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id", "некорректный ID категории"))
 		return
 	}
 
 	// Получаем тип категории из query параметра
 	categoryType := c.Query("category_type")
 	if categoryType == "" {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Ошибка при получении категорий: не указан тип категорий",
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("category_type", "не указан тип категорий"))
 		return
 	}
 
 	category, err := h.service.GetCategoryByID(ctx, id, categoryType)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
-			Error: "Ошибка при получении категории: " + err.Error(),
-		})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении категории: %w", err))
 		return
 	}
 
 	if category == nil {
-		c.JSON(http.StatusNotFound, dto.ErrorResponse{
-			Error: "Категория не найдена",
-		})
+		errors.HTTPErrorHandler(c, errors.NewEntityNotFoundError(idStr, "категория"))
 		return
 	}
 
@@ -155,8 +143,8 @@ func (h *CategoryHandler) GetCategoryByID(c *gin.Context) {
 // @Param category_type query string true "Тип категории"
 // @Param category body dto.CategoryRequest true "Данные категории"
 // @Success 201 {object} dto.CategoryResponse "Созданная категория"
-// @Failure 400 {object} dto.ErrorResponse "Некорректные данные запроса или не указан тип"
-// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Некорректные данные запроса или не указан тип"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/manage/category [post]
 func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 	ctx := c.Request.Context()
@@ -164,18 +152,14 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 	// Получаем данные запроса
 	var request dto.CategoryRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Некорректные данные запроса: " + err.Error(),
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("request_body", err.Error()))
 		return
 	}
 
 	// Получаем тип категории из query параметра
 	categoryType := c.Query("category_type")
 	if categoryType == "" {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Ошибка при получении категорий: не указан тип категорий",
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("category_type", "не указан тип категорий"))
 		return
 	}
 
@@ -186,9 +170,7 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 
 	createdCategory, err := h.service.CreateCategory(ctx, category, categoryType)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
-			Error: "Ошибка при создании категории: " + err.Error(),
-		})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при создании категории: %w", err))
 		return
 	}
 
@@ -209,9 +191,9 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 // @Param category_type query string true "Тип категории"
 // @Param category body dto.CategoryRequest true "Данные категории"
 // @Success 200 {object} dto.CategoryResponse "Обновленная категория"
-// @Failure 400 {object} dto.ErrorResponse "Некорректные данные запроса или не указан тип"
-// @Failure 404 {object} dto.ErrorResponse "Категория не найдена"
-// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Некорректные данные запроса или не указан тип"
+// @Failure 404 {object} errors.ErrorResponse "Категория не найдена"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/manage/category/{id} [put]
 func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 	ctx := c.Request.Context()
@@ -220,27 +202,21 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Некорректный ID категории",
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id", "некорректный ID категории"))
 		return
 	}
 
 	// Получаем данные запроса
 	var request dto.CategoryRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Некорректные данные запроса: " + err.Error(),
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("request_body", err.Error()))
 		return
 	}
 
 	// Получаем тип категории из query параметра
 	categoryType := c.Query("category_type")
 	if categoryType == "" {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Ошибка при получении категорий: не указан тип категорий",
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("category_type", "не указан тип категорий"))
 		return
 	}
 
@@ -251,16 +227,12 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 
 	updatedCategory, err := h.service.UpdateCategory(ctx, id, category, categoryType)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
-			Error: "Ошибка при обновлении категории: " + err.Error(),
-		})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при обновлении категории: %w", err))
 		return
 	}
 
 	if updatedCategory == nil {
-		c.JSON(http.StatusNotFound, dto.ErrorResponse{
-			Error: "Категория не найдена",
-		})
+		errors.HTTPErrorHandler(c, errors.NewEntityNotFoundError(idStr, "категория"))
 		return
 	}
 
@@ -280,8 +252,8 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 // @Param id path int true "ID категории"
 // @Param category_type query string true "Тип категории"
 // @Success 200 {object} dto.SuccessResponse "Категория успешно удалена"
-// @Failure 400 {object} dto.ErrorResponse "Некорректный ID категории или не указан тип"
-// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Некорректный ID категории или не указан тип"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/manage/category/{id} [delete]
 func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 	ctx := c.Request.Context()
@@ -290,25 +262,19 @@ func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Некорректный ID категории",
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id", "некорректный ID категории"))
 		return
 	}
 
 	// Получаем тип категории из query параметра
 	categoryType := c.Query("category_type")
 	if categoryType == "" {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Ошибка при получении категорий: не указан тип категорий",
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("category_type", "не указан тип категорий"))
 		return
 	}
 
 	if err := h.service.DeleteCategory(ctx, id, categoryType); err != nil {
-		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
-			Error: "Ошибка при удалении категории: " + err.Error(),
-		})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при удалении категории: %w", err))
 		return
 	}
 

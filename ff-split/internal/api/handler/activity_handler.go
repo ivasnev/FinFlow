@@ -1,38 +1,41 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
+	"github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 )
 
-// ActivityHandler реализует интерфейс handler.ActivityHandlerInterface
+// ActivityHandler содержит методы для работы с логами активности
 type ActivityHandler struct {
 	service service.ActivityServiceInterface
 }
 
-// NewActivityHandler создает новый экземпляр ActivityHandlerInterface
+// NewActivityHandler создает новый объект хэндлера активности
 func NewActivityHandler(service service.ActivityServiceInterface) *ActivityHandler {
 	return &ActivityHandler{
 		service: service,
 	}
 }
 
-// GetActivitiesByEventID обрабатывает запрос на получение списка активностей по ID мероприятия
-// @Summary Получить активности мероприятия
-// @Description Возвращает список всех активностей, связанных с указанным мероприятием
+// GetActivitiesByEventID возвращает активности для указанного события
+// @Summary Получить активности события
+// @Description Возвращает список активностей для указанного события
 // @Tags активности
 // @Accept json
 // @Produce json
 // @Param id_event path int true "ID мероприятия"
 // @Success 200 {object} dto.ActivityListResponse "Список активностей"
-// @Failure 400 {object} dto.ErrorResponse "Некорректный ID мероприятия"
-// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Некорректный ID события"
+// @Failure 404 {object} errors.ErrorResponse "Событие не найдено"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/event/{id_event}/activity [get]
 func (h *ActivityHandler) GetActivitiesByEventID(c *gin.Context) {
 	ctx := c.Request.Context()
@@ -41,21 +44,17 @@ func (h *ActivityHandler) GetActivitiesByEventID(c *gin.Context) {
 	eventIDStr := c.Param("id_event")
 	eventID, err := strconv.ParseInt(eventIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Некорректный ID мероприятия",
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "некорректный ID события"))
 		return
 	}
 
 	activities, err := h.service.GetActivitiesByEventID(ctx, eventID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
-			Error: "Ошибка при получении активностей: " + err.Error(),
-		})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении активностей: %w", err))
 		return
 	}
 
-	// Преобразуем модели в DTO для ответа
+	// Преобразуем модели в DTO
 	response := dto.ActivityListResponse{
 		Activities: make([]dto.ActivityResponse, 0, len(activities)),
 	}
@@ -64,7 +63,7 @@ func (h *ActivityHandler) GetActivitiesByEventID(c *gin.Context) {
 		response.Activities = append(response.Activities, dto.ActivityResponse{
 			ActivityID:  activity.ID,
 			Description: activity.Description,
-			IconID:      "", // Пока нет поля в модели, устанавливаем пустое значение
+			IconID:      activity.IconID,
 			Datetime:    activity.CreatedAt,
 		})
 	}
@@ -81,9 +80,9 @@ func (h *ActivityHandler) GetActivitiesByEventID(c *gin.Context) {
 // @Param id_event path int true "ID мероприятия"
 // @Param id_activity path int true "ID активности"
 // @Success 200 {object} dto.ActivityResponse "Информация об активности"
-// @Failure 400 {object} dto.ErrorResponse "Некорректный ID активности"
-// @Failure 404 {object} dto.ErrorResponse "Активность не найдена"
-// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Некорректный ID активности"
+// @Failure 404 {object} errors.ErrorResponse "Активность не найдена"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/event/{id_event}/activity/{id_activity} [get]
 func (h *ActivityHandler) GetActivityByID(c *gin.Context) {
 	ctx := c.Request.Context()
@@ -92,46 +91,41 @@ func (h *ActivityHandler) GetActivityByID(c *gin.Context) {
 	idStr := c.Param("id_activity")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Некорректный ID активности",
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_activity", "некорректный ID активности"))
 		return
 	}
 
 	activity, err := h.service.GetActivityByID(ctx, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
-			Error: "Ошибка при получении активности: " + err.Error(),
-		})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении активности: %w", err))
 		return
 	}
 
 	if activity == nil {
-		c.JSON(http.StatusNotFound, dto.ErrorResponse{
-			Error: "Активность не найдена",
-		})
+		errors.HTTPErrorHandler(c, errors.NewEntityNotFoundError(idStr, "активность"))
 		return
 	}
 
 	c.JSON(http.StatusOK, dto.ActivityResponse{
 		ActivityID:  activity.ID,
 		Description: activity.Description,
-		IconID:      "", // Пока нет поля в модели, устанавливаем пустое значение
+		IconID:      activity.IconID,
 		Datetime:    activity.CreatedAt,
 	})
 }
 
-// CreateActivity обрабатывает запрос на создание новой активности
-// @Summary Создать новую активность
-// @Description Создает новую активность в рамках указанного мероприятия
+// CreateActivity создает новую запись об активности
+// @Summary Создать активность
+// @Description Создает новую запись об активности в событии
 // @Tags активности
 // @Accept json
 // @Produce json
 // @Param id_event path int true "ID мероприятия"
 // @Param activity body dto.ActivityRequest true "Данные активности"
 // @Success 201 {object} dto.ActivityResponse "Созданная активность"
-// @Failure 400 {object} dto.ErrorResponse "Некорректные данные запроса"
-// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Некорректные данные запроса"
+// @Failure 404 {object} errors.ErrorResponse "Событие не найдено"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/event/{id_event}/activity [post]
 func (h *ActivityHandler) CreateActivity(c *gin.Context) {
 	ctx := c.Request.Context()
@@ -140,37 +134,34 @@ func (h *ActivityHandler) CreateActivity(c *gin.Context) {
 	eventIDStr := c.Param("id_event")
 	eventID, err := strconv.ParseInt(eventIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Некорректный ID мероприятия",
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "некорректный ID события"))
 		return
 	}
 
-	// Получаем данные запроса
+	// Получаем данные активности из тела запроса
 	var request dto.ActivityRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Некорректные данные запроса: " + err.Error(),
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("request_body", err.Error()))
 		return
 	}
 
-	// Преобразуем DTO в модель
+	// Преобразуем DTO в модель для сервиса
 	activity := &models.Activity{
 		EventID:     &eventID,
 		UserID:      request.UserID,
 		Description: request.Description,
+		IconID:      request.IconID,
 		CreatedAt:   time.Now(), // Устанавливаем текущее время
 	}
 
+	// Вызываем сервис для создания активности
 	createdActivity, err := h.service.CreateActivity(ctx, activity)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
-			Error: "Ошибка при создании активности: " + err.Error(),
-		})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при создании активности: %w", err))
 		return
 	}
 
+	// Возвращаем созданную активность
 	c.JSON(http.StatusCreated, dto.ActivityResponse{
 		ActivityID:  createdActivity.ID,
 		Description: createdActivity.Description,
@@ -189,9 +180,9 @@ func (h *ActivityHandler) CreateActivity(c *gin.Context) {
 // @Param id_activity path int true "ID активности"
 // @Param activity body dto.ActivityRequest true "Данные активности"
 // @Success 200 {object} dto.ActivityResponse "Обновленная активность"
-// @Failure 400 {object} dto.ErrorResponse "Некорректные данные запроса"
-// @Failure 404 {object} dto.ErrorResponse "Активность не найдена"
-// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Некорректные данные запроса"
+// @Failure 404 {object} errors.ErrorResponse "Активность не найдена"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/event/{id_event}/activity/{id_activity} [put]
 func (h *ActivityHandler) UpdateActivity(c *gin.Context) {
 	ctx := c.Request.Context()
@@ -200,28 +191,22 @@ func (h *ActivityHandler) UpdateActivity(c *gin.Context) {
 	idStr := c.Param("id_activity")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Некорректный ID активности",
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_activity", "некорректный ID активности"))
 		return
 	}
 
-	// Получаем ID мероприятия из URL
+	// Получаем ID события из URL
 	eventIDStr := c.Param("id_event")
 	eventID, err := strconv.ParseInt(eventIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Некорректный ID мероприятия",
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "некорректный ID события"))
 		return
 	}
 
 	// Получаем данные запроса
 	var request dto.ActivityRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Некорректные данные запроса: " + err.Error(),
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("request_body", err.Error()))
 		return
 	}
 
@@ -230,21 +215,16 @@ func (h *ActivityHandler) UpdateActivity(c *gin.Context) {
 		EventID:     &eventID,
 		UserID:      request.UserID,
 		Description: request.Description,
-		// Не обновляем CreatedAt
 	}
 
 	updatedActivity, err := h.service.UpdateActivity(ctx, id, activity)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
-			Error: "Ошибка при обновлении активности: " + err.Error(),
-		})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при обновлении активности: %w", err))
 		return
 	}
 
 	if updatedActivity == nil {
-		c.JSON(http.StatusNotFound, dto.ErrorResponse{
-			Error: "Активность не найдена",
-		})
+		errors.HTTPErrorHandler(c, errors.NewEntityNotFoundError(idStr, "активность"))
 		return
 	}
 
@@ -265,8 +245,8 @@ func (h *ActivityHandler) UpdateActivity(c *gin.Context) {
 // @Param id_event path int true "ID мероприятия"
 // @Param id_activity path int true "ID активности"
 // @Success 200 {object} dto.SuccessResponse "Активность успешно удалена"
-// @Failure 400 {object} dto.ErrorResponse "Некорректный ID активности"
-// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Некорректный ID активности"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/event/{id_event}/activity/{id_activity} [delete]
 func (h *ActivityHandler) DeleteActivity(c *gin.Context) {
 	ctx := c.Request.Context()
@@ -275,16 +255,12 @@ func (h *ActivityHandler) DeleteActivity(c *gin.Context) {
 	idStr := c.Param("id_activity")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: "Некорректный ID активности",
-		})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_activity", "некорректный ID активности"))
 		return
 	}
 
 	if err := h.service.DeleteActivity(ctx, id); err != nil {
-		c.JSON(http.StatusInternalServerError, dto.ErrorResponse{
-			Error: "Ошибка при удалении активности: " + err.Error(),
-		})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при удалении активности: %w", err))
 		return
 	}
 

@@ -15,7 +15,7 @@ import _ "github.com/ivasnev/FinFlow/ff-split/docs"
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
 // @host localhost:8085
-// @BasePath /api/v1
+// @BasePath /
 
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
