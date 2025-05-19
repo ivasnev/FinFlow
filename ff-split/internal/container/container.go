@@ -200,7 +200,7 @@ func (c *Container) RegisterRoutes() {
 	v1 := c.Router.Group("/api/v1")
 
 	// Middleware для авторизации
-	//authMiddleware := auth.AuthMiddleware(c.AuthClient)
+	authMiddleware := auth.AuthMiddleware(c.AuthClient)
 
 	// Middleware для TVM
 	//tvmMiddleware := tvmmiddleware.NewTVMMiddleware(c.TVMClient)
@@ -214,7 +214,7 @@ func (c *Container) RegisterRoutes() {
 	}
 
 	// Мероприятия
-	eventRoutes := v1.Group("/event")
+	eventRoutes := v1.Group("/event", authMiddleware)
 	{
 		// Список мероприятий
 		eventRoutes.GET("/", c.EventHandler.GetEvents)

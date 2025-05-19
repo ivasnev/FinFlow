@@ -102,6 +102,8 @@ type TransactionRepository interface {
 	// Работа с долгами
 	GetDebtsByTransactionID(transactionID int) ([]models.Debt, error)
 	GetDebtsByEventID(eventID int64) ([]models.Debt, error)
+	GetDebtsByEventIDFromUser(eventID int64, userID int64) ([]models.Debt, error)
+	GetDebtsByEventIDToUser(eventID int64, userID int64) ([]models.Debt, error)
 	CreateDebts(debts []models.Debt) error
 	DeleteDebtsByTransactionID(transactionID int) error
 
