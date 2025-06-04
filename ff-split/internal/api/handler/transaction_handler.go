@@ -255,8 +255,15 @@ func (h *TransactionHandler) GetOptimizedDebtsByEventID(c *gin.Context) {
 		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "неверный формат ID мероприятия"))
 		return
 	}
+	var userID *int64
 
-	optimizedDebts, err := h.service.GetOptimizedDebtsByEventID(c.Request.Context(), eventID)
+	if id, exist := c.Get("user_id"); exist {
+		if idInt, parsed := id.(int64); parsed {
+			userID = &idInt
+		}
+	}
+
+	optimizedDebts, err := h.service.GetOptimizedDebtsByEventID(c.Request.Context(), eventID, userID)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении оптимизированных долгов: %w", err))
 		return

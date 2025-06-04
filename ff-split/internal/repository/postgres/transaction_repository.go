@@ -163,10 +163,28 @@ func (r *TransactionRepository) GetOptimizedDebtsByEventID(eventID int64) ([]mod
 	return debts, nil
 }
 
+// GetOptimizedDebtsByEventIDWithUsers возвращает оптимизированные долги по ID мероприятия с загрузкой пользователей
+func (r *TransactionRepository) GetOptimizedDebtsByEventIDWithUsers(eventID int64) ([]models.OptimizedDebt, error) {
+	var debts []models.OptimizedDebt
+	if err := r.db.Preload("FromUser").Preload("ToUser").Where("event_id = ?", eventID).Find(&debts).Error; err != nil {
+		return nil, err
+	}
+	return debts, nil
+}
+
 // GetOptimizedDebtsByUserID возвращает оптимизированные долги по ID пользователя в мероприятии
 func (r *TransactionRepository) GetOptimizedDebtsByUserID(eventID, userID int64) ([]models.OptimizedDebt, error) {
 	var debts []models.OptimizedDebt
 	if err := r.db.Where("event_id = ? AND (from_user_id = ? OR to_user_id = ?)", eventID, userID, userID).Find(&debts).Error; err != nil {
+		return nil, err
+	}
+	return debts, nil
+}
+
+// GetOptimizedDebtsByUserIDWithUsers возвращает оптимизированные долги по ID пользователя в мероприятии с загрузкой пользователей
+func (r *TransactionRepository) GetOptimizedDebtsByUserIDWithUsers(eventID, userID int64) ([]models.OptimizedDebt, error) {
+	var debts []models.OptimizedDebt
+	if err := r.db.Preload("FromUser").Preload("ToUser").Where("event_id = ? AND (from_user_id = ? OR to_user_id = ?)", eventID, userID, userID).Find(&debts).Error; err != nil {
 		return nil, err
 	}
 	return debts, nil

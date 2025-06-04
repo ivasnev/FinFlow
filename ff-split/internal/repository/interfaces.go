@@ -109,7 +109,9 @@ type TransactionRepository interface {
 
 	// Работа с оптимизированными долгами
 	GetOptimizedDebtsByEventID(eventID int64) ([]models.OptimizedDebt, error)
+	GetOptimizedDebtsByEventIDWithUsers(eventID int64) ([]models.OptimizedDebt, error)
 	GetOptimizedDebtsByUserID(eventID, userID int64) ([]models.OptimizedDebt, error)
+	GetOptimizedDebtsByUserIDWithUsers(eventID, userID int64) ([]models.OptimizedDebt, error)
 	SaveOptimizedDebts(eventID int64, debts []models.OptimizedDebt) error
 	DeleteOptimizedDebtsByEventID(eventID int64) error
 }
