@@ -77,6 +77,9 @@ type UserServiceInterface interface {
 	// GetUsersByInternalUserIDs получает пользователей по UserID (ID из сервиса идентификации)
 	GetUsersByInternalUserIDs(ctx context.Context, userIDs []int64) ([]models.User, error)
 
+	// GetInternalUserIdsByExternalUserIds получает внутренние ID пользователей по внешним ID
+	GetInternalUserIdsByExternalUserIds(ctx context.Context, externalUserIds []int64) ([]int64, error)
+
 	// GetUsersByEventID получает всех пользователей мероприятия
 	GetUsersByEventID(ctx context.Context, eventID int64) ([]models.User, error)
 

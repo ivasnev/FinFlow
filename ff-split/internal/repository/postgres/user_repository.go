@@ -50,7 +50,6 @@ func (r *UserRepository) BatchCreateOrUpdate(ctx context.Context, users []*model
 }
 
 func (r *UserRepository) BatchCreate(ctx context.Context, users []*models.User) error {
-
 	return db.GetTx(ctx, r.db).WithContext(ctx).Create(users).Error
 }
 

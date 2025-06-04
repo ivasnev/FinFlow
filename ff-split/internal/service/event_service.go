@@ -68,17 +68,27 @@ func (s *EventService) CreateEvent(ctx context.Context, request *dto.EventReques
 		if err != nil {
 			return fmt.Errorf("Ошибка при создании мероприятия: %w", err)
 		}
-
+		var internalIds []int64
 		if request.Members.DummiesNames != nil {
-			if _, err := s.userService.BatchCreateDummyUsers(ctx, request.Members.DummiesNames, event.ID); err != nil {
-				return fmt.Errorf("ошибка при создании dummy пользователей: %w", err)
+			dummies, createErr := s.userService.BatchCreateDummyUsers(ctx, request.Members.DummiesNames, event.ID)
+			if createErr != nil {
+				return fmt.Errorf("ошибка при создании dummy пользователей: %w", createErr)
+			}
+			for _, dummy := range dummies {
+				internalIds = append(internalIds, dummy.ID)
 			}
 		}
 
 		if request.Members.UserIDs != nil {
-			if err := s.userService.AddUsersToEvent(ctx, request.Members.UserIDs, event.ID); err != nil {
-				return fmt.Errorf("ошибка при добавлении пользователей в мероприятие: %w", err)
+			userIds, err := s.userService.GetInternalUserIdsByExternalUserIds(ctx, request.Members.UserIDs)
+			if err != nil {
+				return fmt.Errorf("ошибка при получении внутренних ID пользователей: %w", err)
 			}
+			internalIds = append(internalIds, userIds...)
+		}
+		err = s.userService.AddUsersToEvent(ctx, internalIds, event.ID)
+		if err != nil {
+			return fmt.Errorf("ошибка при добавлении пользователей в мероприятие: %w", err)
 		}
 		return nil
 	})

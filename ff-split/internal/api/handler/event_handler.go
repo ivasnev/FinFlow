@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -125,7 +126,7 @@ func (h *EventHandler) GetEventByID(c *gin.Context) {
 // @Success 201 {object} dto.EventResponse "Созданное мероприятие"
 // @Failure 400 {object} errors.ErrorResponse "Неверный формат данных запроса"
 // @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/user/{id_user}/event [post]
+// @Router /api/v1/event/ [post]
 func (h *EventHandler) CreateEvent(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -134,6 +135,11 @@ func (h *EventHandler) CreateEvent(c *gin.Context) {
 	if err := c.ShouldBindJSON(&request); err != nil {
 		errors.HTTPErrorHandler(c, errors.NewValidationError("event", "некорректные данные запроса"))
 		return
+	}
+	if rawID, ok := c.Get("user_id"); ok {
+		if idInt, ok := rawID.(int64); ok && !slices.Contains(request.Members.UserIDs, idInt) {
+			request.Members.UserIDs = append(request.Members.UserIDs, idInt)
+		}
 	}
 
 	event, err := h.service.CreateEvent(ctx, &request)
