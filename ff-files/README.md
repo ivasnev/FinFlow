@@ -1,167 +1,271 @@
-# FF-Files Service
+# FF-Files (File Storage Microservice)
 
-FF-Files - это микросервис для управления файлами в экосистеме FinFlow. Сервис предоставляет возможности загрузки, хранения, получения и управления файлами с поддержкой метаданных и временных URL.
+FF-Files - это сервис для безопасного хранения и управления файлами в системе FinFlow. Сервис обеспечивает контроль доступа к файлам через интеграцию с FF-TVM.
 
-## Функциональность
+## Архитектура
 
-### Загрузка файлов
-- Загрузка файлов через форму
-- Загрузка файлов по URL
-- Валидация размера файла и MIME-типов
-- Сохранение метаданных файла
+```mermaid
+sequenceDiagram
+    participant Client
+    participant FF-ID
+    participant FF-Files
+    participant FF-TVM
+    participant Storage
+    participant PostgreSQL
 
-### Получение файлов
-- Получение файла по ID
-- Получение метаданных файла
-- Получение файла по временному URL
+    Client->>FF-ID: Аутентификация
+    FF-ID->>FF-TVM: Запрос тикета для FF-Files
+    FF-TVM-->>FF-ID: Тикет доступа
+    FF-ID-->>Client: Токен доступа + Тикет
 
-### Управление файлами
-- Мягкое удаление файлов
-- Автоматическая очистка удаленных файлов
-- Управление временными URL
+    Client->>FF-Files: Загрузка файла + Тикет
+    FF-Files->>FF-TVM: Валидация тикета
+    FF-TVM-->>FF-Files: Подтверждение
+    FF-Files->>Storage: Сохранение файла
+    FF-Files->>PostgreSQL: Сохранение метаданных
+    FF-Files-->>Client: Идентификатор файла
 
-## API Endpoints
-
-### Загрузка файлов
-```
-POST /upload
-Content-Type: multipart/form-data
-Body: file=@file.jpg
-
-POST /upload/url
-Content-Type: application/json
-{
-    "url": "https://example.com/file.jpg"
-}
+    Client->>FF-Files: Запрос файла + Тикет
+    FF-Files->>FF-TVM: Валидация тикета
+    FF-TVM-->>FF-Files: Подтверждение
+    FF-Files->>Storage: Получение файла
+    FF-Files-->>Client: Файл
 ```
 
-### Работа с файлами
-```
-GET /file/:id
-GET /file/:id/meta
-DELETE /file/:id
-```
+## Основные компоненты
 
-### Временные URL
-```
-POST /file/:id/url
-Content-Type: application/json
-{
-    "duration": "24h"
-}
+1. **Менеджер файлов**
+   - Загрузка файлов
+   - Скачивание файлов
+   - Удаление файлов
+   - Управление метаданными
 
-GET /temp/:id
+2. **Менеджер доступа**
+   - Интеграция с FF-TVM
+   - Проверка тикетов доступа
+   - Управление правами доступа к файлам
+
+3. **Хранилище**
+   - Локальное хранение файлов
+   - Управление директориями
+   - Очистка временных файлов
+
+## API
+
+### Swagger Спецификация
+
+```yaml
+openapi: 3.0.0
+info:
+  title: FF-Files API
+  version: 1.0.0
+  description: API для управления файлами
+
+paths:
+  /files/upload:
+    post:
+      summary: Загрузка файла
+      security:
+        - TvmTicket: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                metadata:
+                  type: object
+                  properties:
+                    description:
+                      type: string
+      responses:
+        '201':
+          description: Файл успешно загружен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  size:
+                    type: integer
+                  created_at:
+                    type: string
+                    format: date-time
+
+  /files/{id}:
+    get:
+      summary: Получение файла
+      security:
+        - TvmTicket: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Файл
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+    delete:
+      summary: Удаление файла
+      security:
+        - TvmTicket: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Файл успешно удален
+
+  /files/{id}/metadata:
+    get:
+      summary: Получение метаданных файла
+      security:
+        - TvmTicket: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Метаданные файла
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  size:
+                    type: integer
+                  created_at:
+                    type: string
+                    format: date-time
+                  metadata:
+                    type: object
+
+components:
+  securitySchemes:
+    TvmTicket:
+      type: apiKey
+      in: header
+      name: X-TVM-Ticket
 ```
 
 ## Конфигурация
 
-Сервис настраивается через конфигурационный файл со следующими параметрами:
-
 ```yaml
 server:
-  port: ":8082"
+  port: ":8082"  # Порт сервера
 
 database:
-  host: "localhost"
-  port: "5432"
-  user: "postgres"
-  password: "postgres"
-  dbname: "ff_files"
+  host: "localhost"  # Хост PostgreSQL
+  port: "5432"      # Порт PostgreSQL
+  user: "postgres"  # Пользователь
+  password: "postgres"  # Пароль
+  dbname: "ff_files"  # Имя базы данных
 
 storage:
-  basePath: "./storage"
-  maxFileSize: 10485760  # 10MB
-  allowedMimeTypes:
-    - "image/jpeg"
-    - "image/png"
-    - "image/gif"
-    - "application/pdf"
-    - "text/plain"
-  tempURLExpiration: "24h"
-  softDeleteTimeout: "720h"  # 30 days
+  path: "/data/files"  # Путь для хранения файлов
+  temp_path: "/data/temp"  # Путь для временных файлов
+  max_file_size: "100MB"  # Максимальный размер файла
+
+tvm:
+  url: "http://ff-tvm:8081"  # URL сервиса TVM
 ```
 
-## Установка и запуск
+## Диаграмма взаимодействия сервисов
 
-1. Клонируйте репозиторий:
-```bash
-git clone https://github.com/ivasnev/FinFlow.git
-cd FinFlow/ff-files
+```mermaid
+graph TD
+    A[Client] -->|Загрузка/Скачивание| B[FF-Files]
+    B -->|Валидация тикета| C[FF-TVM]
+    B -->|Хранение файлов| D[File System]
+    B -->|Метаданные| E[PostgreSQL]
+    F[FF-ID] -->|Запрос тикета| C
+    F -->|Доступ с тикетом| B
 ```
-
-2. Установите зависимости:
-```bash
-go mod download
-```
-
-3. Создайте и настройте конфигурационный файл:
-```bash
-cp config.example.yaml config.yaml
-```
-
-4. Запустите сервис:
-```bash
-go run cmd/app/main.go
-```
-
-## Зависимости
-
-- Go 1.21+
-- PostgreSQL
-- Gin Web Framework
-- GORM
-- Viper
 
 ## Безопасность
 
-- Валидация размера файлов и MIME-типов
-- Генерация уникальных идентификаторов для файлов
-- Поддержка временных URL с ограниченным сроком действия
-- Мягкое удаление файлов с отложенной очисткой
+1. **Контроль доступа**
+   - Валидация тикетов через FF-TVM
+   - Проверка прав доступа к файлам
+   - Изоляция файлов разных сервисов
 
-## Интеграция
+2. **Хранение**
+   - Безопасное хранение файлов
+   - Разделение метаданных и контента
+   - Очистка временных файлов
 
-Для интеграции с сервисом используйте предоставленные API endpoints. Пример интеграции:
+3. **Аудит**
+   - Логирование операций с файлами
+   - Отслеживание доступа к файлам
+   - История изменений метаданных
 
-```go
-package main
+## Развертывание
 
-import (
-    "bytes"
-    "encoding/json"
-    "net/http"
-)
+### Docker
 
-func uploadFile(filename string, content []byte) error {
-    body := &bytes.Buffer{}
-    writer := multipart.NewWriter(body)
-    part, err := writer.CreateFormFile("file", filename)
-    if err != nil {
-        return err
-    }
-    _, err = part.Write(content)
-    if err != nil {
-        return err
-    }
-    writer.Close()
+```bash
+# Сборка образа
+docker build -t ff-files .
 
-    req, err := http.NewRequest("POST", "http://localhost:8082/upload", body)
-    if err != nil {
-        return err
-    }
-    req.Header.Set("Content-Type", writer.FormDataContentType())
-
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        return err
-    }
-    defer resp.Body.Close()
-
-    return nil
-}
+# Запуск
+docker run -p 8082:8082 \
+  -v /data/files:/data/files \
+  -v /data/temp:/data/temp \
+  -e DB_HOST=postgres \
+  -e DB_PORT=5432 \
+  -e TVM_URL=http://ff-tvm:8081 \
+  ff-files
 ```
 
-## Мониторинг
+### Docker Compose
 
-Сервис предоставляет базовое логирование операций и ошибок. В будущих версиях планируется добавление метрик и трейсинга. 
+См. docker-compose.yml в корневой директории проекта.
+
+## Разработка
+
+### Требования
+
+- Go 1.21+
+- PostgreSQL 16+
+- Достаточно места на диске для хранения файлов
+
+### Локальный запуск
+
+```bash
+# Установка зависимостей
+go mod download
+
+# Запуск
+go run cmd/app/main.go
+```
+
+### Тесты
+
+```bash
+go test ./...
+``` 

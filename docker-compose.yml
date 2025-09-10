@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_MULTIPLE_DATABASES: ff_id,ff_tvm,ff_files
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  ff-tvm:
+    build:
+      context: ./ff-tvm
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      - TVM_DB_HOST=postgres
+      - TVM_DB_PORT=5432
+      - TVM_DB_USER=postgres
+      - TVM_DB_PASSWORD=postgres
+      - TVM_DB_NAME=ff_tvm
+      - TVM_REDIS_HOST=redis
+      - TVM_REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  ff-files:
+    build:
+      context: ./ff-files
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - FILES_DB_HOST=postgres
+      - FILES_DB_PORT=5432
+      - FILES_DB_USER=postgres
+      - FILES_DB_PASSWORD=postgres
+      - FILES_DB_NAME=ff_files
+      - FILES_TVM_URL=http://ff-tvm:8083
+    volumes:
+      - files_storage:/app/storage
+    depends_on:
+      ff-tvm:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+
+  ff-id:
+    build:
+      context: ./ff-id
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - ID_DB_HOST=postgres
+      - ID_DB_PORT=5432
+      - ID_DB_USER=postgres
+      - ID_DB_PASSWORD=postgres
+      - ID_DB_NAME=ff_id
+      - ID_TVM_URL=http://ff-tvm:8083
+      - ID_FILES_URL=http://ff-files:8082
+    depends_on:
+      ff-tvm:
+        condition: service_started
+      ff-files:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+  files_storage: 

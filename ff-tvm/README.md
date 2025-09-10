@@ -1,134 +1,312 @@
-# FF-TVM Service (Trusted Verification Module)
+# FF-TVM (Ticket Validation Microservice)
 
-Сервис для управления авторизацией между микросервисами в экосистеме FinFlow. Реализует механизм тикетов для безопасного взаимодействия сервисов.
+FF-TVM - это сервис управления доступом между микросервисами в системе FinFlow. Он использует Ed25519 для подписи и проверки тикетов доступа.
 
-## Функциональность
+## Архитектура
 
-- Регистрация микросервисов
-- Управление доступами между сервисами
-- Выдача и валидация тикетов
-- Управление ключами (RSA)
-- Ротация ключей
+```mermaid
+sequenceDiagram
+    participant Service A
+    participant FF-TVM
+    participant Redis
+    participant PostgreSQL
+    
+    Service A->>FF-TVM: Регистрация сервиса
+    FF-TVM->>PostgreSQL: Сохранение данных сервиса
+    PostgreSQL-->>FF-TVM: Подтверждение
+    FF-TVM-->>Service A: Данные регистрации + Публичный ключ
 
-## Технологии
-
-- Go 1.21+
-- PostgreSQL
-- Redis
-- Gin Web Framework
-- GORM
-- JWT (RS256)
-
-## Зависимости
-
-- PostgreSQL 14+
-- Redis 6+
-
-## Установка и запуск
-
-1. Клонируйте репозиторий:
-```bash
-git clone https://github.com/ivasnev/FinFlow.git
-cd FinFlow/ff-tvm
+    Service A->>FF-TVM: Запрос тикета для Service B
+    FF-TVM->>PostgreSQL: Проверка прав доступа
+    PostgreSQL-->>FF-TVM: Подтверждение
+    FF-TVM->>FF-TVM: Генерация тикета
+    FF-TVM->>Redis: Кеширование тикета
+    FF-TVM-->>Service A: Тикет доступа
 ```
 
-2. Установите зависимости:
-```bash
-go mod download
+## Основные компоненты
+
+1. **Менеджер ключей**
+   - Генерация пар ключей Ed25519
+   - Ротация ключей
+   - Хранение истории ключей
+
+2. **Менеджер доступа**
+   - Управление правами доступа между сервисами
+   - Валидация запросов на доступ
+   - Аудит доступа
+
+3. **Менеджер тикетов**
+   - Выдача тикетов доступа
+   - Валидация тикетов
+   - Кеширование тикетов в Redis
+
+## API
+
+### Swagger Спецификация
+
+```yaml
+openapi: 3.0.0
+info:
+  title: FF-TVM API
+  version: 1.0.0
+  description: API для управления доступом между микросервисами
+
+paths:
+  /tvm/register:
+    post:
+      summary: Регистрация нового сервиса
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Сервис успешно зарегистрирован
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  public_key:
+                    type: string
+
+  /tvm/access/grant:
+    post:
+      summary: Предоставление доступа
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source_service_id:
+                  type: integer
+                target_service_id:
+                  type: integer
+      responses:
+        '200':
+          description: Доступ успешно предоставлен
+
+  /tvm/access/revoke:
+    post:
+      summary: Отзыв доступа
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source_service_id:
+                  type: integer
+                target_service_id:
+                  type: integer
+      responses:
+        '200':
+          description: Доступ успешно отозван
+
+  /tvm/ticket/issue:
+    post:
+      summary: Выдача тикета
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source_service_id:
+                  type: integer
+                target_service_id:
+                  type: integer
+      responses:
+        '200':
+          description: Тикет успешно выдан
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket:
+                    type: string
+
+  /tvm/ticket/validate:
+    post:
+      summary: Валидация тикета
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ticket:
+                  type: string
+      responses:
+        '200':
+          description: Тикет валиден
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  claims:
+                    type: object
+
+  /tvm/key/{service_id}:
+    get:
+      summary: Получение публичного ключа сервиса
+      parameters:
+        - name: service_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Публичный ключ получен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  public_key:
+                    type: string
+
+    post:
+      summary: Ротация ключей сервиса
+      parameters:
+        - name: service_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ключи успешно обновлены
 ```
 
-3. Настройте конфигурацию в файле `config.yaml`
+## Формат тикета
 
-4. Запустите PostgreSQL и Redis
-
-5. Запустите сервис:
-```bash
-go run cmd/app/main.go
+```json
+{
+  "claims": {
+    "source_id": 1,
+    "target_id": 2,
+    "issued_at": 1234567890,
+    "expires_at": 1234571490
+  },
+  "signature": "base64-encoded-ed25519-signature"
+}
 ```
 
-## API Endpoints
+## Конфигурация
 
-### Управление сервисами
+```yaml
+server:
+  port: ":8081"  # Порт сервера
 
-- `POST /tvm/register` - Регистрация нового сервиса
-  ```json
-  {
-    "name": "service-name",
-    "description": "Service description"
-  }
-  ```
+database:
+  host: "localhost"  # Хост PostgreSQL
+  port: "5432"      # Порт PostgreSQL
+  user: "postgres"  # Пользователь
+  password: "postgres"  # Пароль
+  dbname: "ff_tvm"  # Имя базы данных
 
-- `POST /tvm/access/grant` - Предоставление доступа
-  ```json
-  {
-    "source_service_id": 1,
-    "target_service_id": 2
-  }
-  ```
+redis:
+  host: "localhost"  # Хост Redis
+  port: "6379"      # Порт Redis
+  password: ""      # Пароль Redis
+  db: 0            # Номер базы данных
 
-- `POST /tvm/access/revoke` - Отзыв доступа
-  ```json
-  {
-    "source_service_id": 1,
-    "target_service_id": 2
-  }
-  ```
-
-### Управление тикетами
-
-- `POST /tvm/ticket` - Получение тикета
-  ```json
-  {
-    "source_service_id": 1,
-    "target_service_id": 2
-  }
-  ```
-
-- `POST /tvm/validate` - Проверка тикета
-  ```json
-  {
-    "ticket": "jwt-token"
-  }
-  ```
-
-### Управление ключами
-
-- `GET /tvm/public-key/:service_id` - Получение публичного ключа
-- `POST /tvm/rotate-keys/:service_id` - Ротация ключей
-
-## Структура проекта
-
+tvm:
+  ticket_ttl: "1h"  # Время жизни тикета
 ```
-ff-tvm/
-├── cmd/
-│   └── app/
-│       └── main.go
-├── internal/
-│   ├── config/
-│   ├── handler/
-│   ├── models/
-│   ├── repository/
-│   └── service/
-├── pkg/
-│   └── crypto/
-├── go.mod
-├── go.sum
-└── README.md
+
+## Диаграмма взаимодействия сервисов
+
+```mermaid
+graph TD
+    A[FF-ID] -->|Запрос тикета| B[FF-TVM]
+    C[FF-Files] -->|Запрос тикета| B
+    B -->|Валидация тикета| B
+    B -->|Кеширование| D[Redis]
+    B -->|Хранение данных| E[PostgreSQL]
+    A -->|Доступ с тикетом| C
 ```
 
 ## Безопасность
 
-- Использование RSA для подписи тикетов
-- Проверка прав доступа при выдаче тикетов
-- Кеширование тикетов в Redis
-- Ротация ключей
-- Валидация всех входящих запросов
+1. **Криптография**
+   - Ed25519 для подписи/проверки тикетов
+   - Безопасное хранение приватных ключей
+   - Регулярная ротация ключей
 
-## Интеграция
+2. **Валидация**
+   - Проверка срока действия тикетов
+   - Проверка подписи
+   - Проверка прав доступа
 
-Для интеграции с FF-TVM другие сервисы должны:
+3. **Аудит**
+   - Логирование всех операций
+   - История ротаций ключей
+   - Отслеживание попыток несанкционированного доступа
 
-1. Зарегистрироваться в TVM и получить ID
-2. Получить тикет для доступа к целевому сервису
-3. Использовать тикет в заголовке запроса
-4. Целевой сервис должен проверять тикет через TVM 
+## Развертывание
+
+### Docker
+
+```bash
+# Сборка образа
+docker build -t ff-tvm .
+
+# Запуск
+docker run -p 8081:8081 \
+  -e DB_HOST=postgres \
+  -e DB_PORT=5432 \
+  -e REDIS_HOST=redis \
+  ff-tvm
+```
+
+### Docker Compose
+
+См. docker-compose.yml в корневой директории проекта.
+
+## Разработка
+
+### Требования
+
+- Go 1.21+
+- PostgreSQL 16+
+- Redis 7+
+
+### Локальный запуск
+
+```bash
+# Установка зависимостей
+go mod download
+
+# Запуск
+go run cmd/app/main.go
+```
+
+### Тесты
+
+```bash
+go test ./...
+``` 

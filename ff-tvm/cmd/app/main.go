@@ -1,12 +1,12 @@
 package main
 
 import (
+	"ff-tvm/internal/config"
+	"ff-tvm/internal/handler"
+	"ff-tvm/internal/models"
+	"ff-tvm/internal/repository"
+	"ff-tvm/internal/service"
 	"github.com/gin-gonic/gin"
-	"github.com/ivasnev/FinFlow/ff-tvm/internal/config"
-	"github.com/ivasnev/FinFlow/ff-tvm/internal/handler"
-	"github.com/ivasnev/FinFlow/ff-tvm/internal/models"
-	"github.com/ivasnev/FinFlow/ff-tvm/internal/repository"
-	"github.com/ivasnev/FinFlow/ff-tvm/internal/service"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -75,4 +75,5 @@ func main() {
 	if err := router.Run(cfg.Server.Port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
-} 
+
+}
