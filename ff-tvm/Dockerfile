@@ -1,36 +1,33 @@
-# Build stage
-FROM golang:1.23-alpine AS builder
+# Этап сборки
+FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
-# Установка зависимостей для сборки
-RUN apk add --no-cache git
-
-# Копирование и загрузка зависимостей
+# Копируем файлы с зависимостями
 COPY go.mod go.sum ./
+
+# Скачиваем зависимости
 RUN go mod download
 
-# Копирование исходного кода
+# Копируем исходный код
 COPY . .
 
-# Сборка приложения
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/ff-tvm ./cmd/app
+# Собираем приложение
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server ./cmd/server
 
-# Final stage
+# Финальный этап
 FROM alpine:latest
 
 WORKDIR /app
 
-# Копирование бинарного файла из этапа сборки
-COPY --from=builder /app/ff-tvm .
-COPY config.yaml .
+# Копируем бинарный файл из этапа сборки
+COPY --from=builder /app/server .
 
-# Создание пользователя без прав root
-RUN adduser -D appuser && \
-    chown -R appuser:appuser /app
+# Копируем миграции
+COPY migrations ./migrations
 
-USER appuser
+# Открываем порт
+EXPOSE 8080
 
-EXPOSE 8083
-
-CMD ["./ff-tvm"] 
+# Запускаем приложение
+CMD ["./server"] 
