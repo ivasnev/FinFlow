@@ -1,0 +1,143 @@
+{
+	"info": {
+		"_postman_id": "ff-tvm-collection",
+		"name": "TVM API",
+		"description": "Коллекция для тестирования TVM API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Создание сервиса",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"test-service\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/service",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["service"]
+				},
+				"description": "Создает новый сервис и возвращает его идентификатор и ключи"
+			}
+		},
+		{
+			"name": "Получение публичного ключа",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/service/{{service_id}}/key",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["service", "{{service_id}}", "key"]
+				},
+				"description": "Возвращает публичный ключ сервиса по его ID"
+			}
+		},
+		{
+			"name": "Предоставление доступа",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"from\": {{from_service_id}},\n    \"to\": {{to_service_id}}\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/access/grant",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["access", "grant"]
+				},
+				"description": "Предоставляет доступ от одного сервиса к другому"
+			}
+		},
+		{
+			"name": "Отзыв доступа",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"from\": {{from_service_id}},\n    \"to\": {{to_service_id}}\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/access/revoke",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["access", "revoke"]
+				},
+				"description": "Отзывает доступ от одного сервиса к другому"
+			}
+		},
+		{
+			"name": "Генерация тикета",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"from\": {{from_service_id}},\n    \"to\": {{to_service_id}},\n    \"secret\": \"{{private_key}}\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/ticket",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["ticket"]
+				},
+				"description": "Генерирует тикет для доступа от одного сервиса к другому"
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "service_id",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "from_service_id",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "to_service_id",
+			"value": "2",
+			"type": "string"
+		},
+		{
+			"key": "private_key",
+			"value": "your-private-key",
+			"type": "string"
+		}
+	]
+} 

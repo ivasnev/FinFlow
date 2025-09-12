@@ -1,0 +1,38 @@
+### Создание сервиса
+POST http://localhost:8080/service
+Content-Type: application/json
+
+{
+    "name": "test-service"
+}
+
+### Получение публичного ключа
+GET http://localhost:8080/service/1/key
+
+### Предоставление доступа
+POST http://localhost:8080/access/grant
+Content-Type: application/json
+
+{
+    "from": 1,
+    "to": 2
+}
+
+### Отзыв доступа
+POST http://localhost:8080/access/revoke
+Content-Type: application/json
+
+{
+    "from": 1,
+    "to": 2
+}
+
+### Генерация тикета
+POST http://localhost:8080/ticket
+Content-Type: application/json
+
+{
+    "from": 1,
+    "to": 2,
+    "secret": "your-private-key"
+} 
