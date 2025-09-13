@@ -68,11 +68,11 @@ func TestEncodeDecodeKeys(t *testing.T) {
 	// Декодируем ключи обратно
 	decodedPublicKey, err := DecodeKey(publicKeyStr)
 	assert.NoError(t, err)
-	assert.Equal(t, publicKey, decodedPublicKey)
+	assert.Equal(t, publicKey, ed25519.PublicKey(decodedPublicKey))
 
 	decodedPrivateKey, err := DecodeKey(privateKeyStr)
 	assert.NoError(t, err)
-	assert.Equal(t, privateKey, decodedPrivateKey)
+	assert.Equal(t, privateKey, ed25519.PrivateKey(decodedPrivateKey))
 
 	// Проверяем, что декодированные ключи работают
 	data := []byte("test data")

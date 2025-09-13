@@ -25,7 +25,7 @@ func NewTicketService(repo ServiceRepository, keyManager KeyManager, accessManag
 }
 
 // GenerateTicket генерирует новый тикет
-func (s *ticketServiceImpl) GenerateTicket(ctx context.Context, from, to int64, secret string) (*Ticket, error) {
+func (s *ticketServiceImpl) GenerateTicket(ctx context.Context, from, to int, secret string) (*Ticket, error) {
 	// Проверяем доступ
 	if !s.accessManager.CheckAccess(from, to) {
 		return nil, ErrAccessDenied
@@ -50,8 +50,8 @@ func (s *ticketServiceImpl) GenerateTicket(ctx context.Context, from, to int64, 
 
 	// Создаем данные для подписи
 	data := struct {
-		From int64 `json:"from"`
-		To   int64 `json:"to"`
+		From int   `json:"from"`
+		To   int   `json:"to"`
 		TTL  int64 `json:"ttl"`
 	}{
 		From: from,
@@ -78,56 +78,6 @@ func (s *ticketServiceImpl) GenerateTicket(ctx context.Context, from, to int64, 
 		Signature: EncodeKey(signature),
 		Metadata:  "{}",
 	}, nil
-}
-
-// ValidateTicket проверяет валидность тикета
-func (s *ticketServiceImpl) ValidateTicket(ctx context.Context, ticket *Ticket) error {
-	// Проверяем TTL
-	if time.Now().Unix() > ticket.TTL {
-		return ErrTicketExpired
-	}
-
-	// Получаем публичный ключ сервиса-отправителя
-	publicKeyStr, err := s.repo.GetPublicKey(ctx, ticket.From)
-	if err != nil {
-		return err
-	}
-
-	// Декодируем публичный ключ
-	publicKey, err := DecodeKey(publicKeyStr)
-	if err != nil {
-		return err
-	}
-
-	// Создаем данные для проверки подписи
-	data := struct {
-		From int64 `json:"from"`
-		To   int64 `json:"to"`
-		TTL  int64 `json:"ttl"`
-	}{
-		From: ticket.From,
-		To:   ticket.To,
-		TTL:  ticket.TTL,
-	}
-
-	// Сериализуем данные в JSON
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-
-	// Декодируем подпись
-	signature, err := DecodeKey(ticket.Signature)
-	if err != nil {
-		return err
-	}
-
-	// Проверяем подпись
-	if !s.keyManager.Verify(jsonData, signature, publicKey) {
-		return ErrInvalidSignature
-	}
-
-	return nil
 }
 
 // ValidateTicketSignature проверяет подпись тикета

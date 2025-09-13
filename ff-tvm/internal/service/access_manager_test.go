@@ -19,7 +19,7 @@ func TestCheckAccess(t *testing.T) {
 
 	// Тест 1: Доступ разрешен
 	mock.ExpectQuery("SELECT EXISTS").
-		WithArgs(int64(1), int64(2)).
+		WithArgs(int(1), int(2)).
 		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 
 	hasAccess := manager.CheckAccess(1, 2)
@@ -27,7 +27,7 @@ func TestCheckAccess(t *testing.T) {
 
 	// Тест 2: Доступ запрещен
 	mock.ExpectQuery("SELECT EXISTS").
-		WithArgs(int64(2), int64(1)).
+		WithArgs(int(2), int(1)).
 		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 
 	hasAccess = manager.CheckAccess(2, 1)
@@ -49,7 +49,7 @@ func TestGrantAccess(t *testing.T) {
 
 	// Тест: Успешное предоставление доступа
 	mock.ExpectExec("INSERT INTO service_access").
-		WithArgs(int64(1), int64(2)).
+		WithArgs(int(1), int(2)).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	err = manager.GrantAccess(1, 2)
@@ -71,7 +71,7 @@ func TestRevokeAccess(t *testing.T) {
 
 	// Тест: Успешное отзыв доступа
 	mock.ExpectExec("DELETE FROM service_access").
-		WithArgs(int64(1), int64(2)).
+		WithArgs(int(1), int(2)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	err = manager.RevokeAccess(1, 2)

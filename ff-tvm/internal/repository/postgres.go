@@ -9,7 +9,7 @@ type PostgresRepository struct {
 	db *sql.DB
 }
 
-func (r *PostgresRepository) GrantAccess(ctx context.Context, from, to int64) error {
+func (r *PostgresRepository) GrantAccess(ctx context.Context, from, to int) error {
 	query := `
 		INSERT INTO service_access (from_id, to_id)
 		VALUES ($1, $2)
@@ -19,7 +19,7 @@ func (r *PostgresRepository) GrantAccess(ctx context.Context, from, to int64) er
 	return err
 }
 
-func (r *PostgresRepository) RevokeAccess(ctx context.Context, from, to int64) error {
+func (r *PostgresRepository) RevokeAccess(ctx context.Context, from, to int) error {
 	query := `
 		DELETE FROM service_access
 		WHERE from_id = $1 AND to_id = $2

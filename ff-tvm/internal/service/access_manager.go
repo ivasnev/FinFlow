@@ -12,7 +12,7 @@ func NewAccessManager(db *sql.DB) AccessManager {
 	return &accessManagerImpl{db: db}
 }
 
-func (m *accessManagerImpl) CheckAccess(from, to int64) bool {
+func (m *accessManagerImpl) CheckAccess(from, to int) bool {
 	var exists bool
 	err := m.db.QueryRow(
 		"SELECT EXISTS(SELECT 1 FROM service_access WHERE from_id = $1 AND to_id = $2)",
@@ -24,7 +24,7 @@ func (m *accessManagerImpl) CheckAccess(from, to int64) bool {
 	return exists
 }
 
-func (m *accessManagerImpl) GrantAccess(from, to int64) error {
+func (m *accessManagerImpl) GrantAccess(from, to int) error {
 	_, err := m.db.Exec(
 		"INSERT INTO service_access (from_id, to_id) VALUES ($1, $2)",
 		from, to,
@@ -32,7 +32,7 @@ func (m *accessManagerImpl) GrantAccess(from, to int64) error {
 	return err
 }
 
-func (m *accessManagerImpl) RevokeAccess(from, to int64) error {
+func (m *accessManagerImpl) RevokeAccess(from, to int) error {
 	_, err := m.db.Exec(
 		"DELETE FROM service_access WHERE from_id = $1 AND to_id = $2",
 		from, to,

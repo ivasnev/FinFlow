@@ -22,7 +22,7 @@ func NewTVMClient(baseURL string) *TVMClient {
 	}
 }
 
-func (c *TVMClient) GetPublicKey(serviceID int64) (string, error) {
+func (c *TVMClient) GetPublicKey(serviceID int) (string, error) {
 	url := fmt.Sprintf("%s/service/%d/pub_key", c.baseURL, serviceID)
 
 	resp, err := c.httpClient.Get(url)
@@ -46,12 +46,12 @@ func (c *TVMClient) GetPublicKey(serviceID int64) (string, error) {
 	return result.PublicKey, nil
 }
 
-func (c *TVMClient) GenerateTicket(from, to int64) (string, error) {
+func (c *TVMClient) GenerateTicket(from, to int) (string, error) {
 	url := fmt.Sprintf("%s/ticket", c.baseURL)
 
 	reqBody := struct {
-		From int64 `json:"from"`
-		To   int64 `json:"to"`
+		From int `json:"from"`
+		To   int `json:"to"`
 	}{
 		From: from,
 		To:   to,
