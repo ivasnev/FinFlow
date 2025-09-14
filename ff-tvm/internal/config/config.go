@@ -12,7 +12,7 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
-		DatabaseURL: getEnvOrDefault("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/finflow?sslmode=disable"),
+		DatabaseURL: getEnvOrDefault("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/ff_tvm?sslmode=disable"),
 		Port:        getEnvOrDefault("PORT", "8080"),
 		Environment: getEnvOrDefault("ENVIRONMENT", "development"),
 	}
