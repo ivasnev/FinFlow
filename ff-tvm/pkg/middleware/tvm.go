@@ -5,15 +5,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-tvm/internal/service"
 )
 
 const (
-	HeaderServiceID  = "X-FF-Id-Service"
-	HeaderTicket     = "X-FF-Service-Ticket"
-	ServiceIDContext = "service_id"
+	HeaderServiceTicket = "X-FF-Service-Ticket"
+	ServiceIDContext    = "service_id"
 )
 
 type TVMClient interface {
@@ -32,29 +32,39 @@ func NewTVMMiddleware(client TVMClient) *TVMMiddleware {
 
 func (m *TVMMiddleware) ValidateTicket() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Получаем ID сервиса из заголовка
-		serviceID := c.GetHeader(HeaderServiceID)
-		if serviceID == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "service ID is required"})
-			c.Abort()
-			return
-		}
-
-		fromID, err := strconv.Atoi(serviceID) // Placeholder
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "service ID is must be int"})
-		}
-
 		// Получаем тикет из заголовка
-		ticketStr := c.GetHeader(HeaderTicket)
+		ticketStr := c.GetHeader(HeaderServiceTicket)
 		if ticketStr == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "ticket is required"})
 			c.Abort()
 			return
 		}
 
+		// Парсим строку тикета
+		parts := strings.Split(ticketStr, ":")
+		if len(parts) != 3 || parts[0] != "serv" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid ticket format"})
+			c.Abort()
+			return
+		}
+
+		// Декодируем ID сервиса из base64
+		serviceIDBytes, err := base64.StdEncoding.DecodeString(parts[1])
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid service ID format"})
+			c.Abort()
+			return
+		}
+
+		fromID, err := strconv.Atoi(string(serviceIDBytes))
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "service ID must be int"})
+			c.Abort()
+			return
+		}
+
 		// Декодируем тикет из base64
-		ticketData, err := base64.StdEncoding.DecodeString(ticketStr)
+		ticketData, err := base64.StdEncoding.DecodeString(parts[2])
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid ticket format"})
 			c.Abort()

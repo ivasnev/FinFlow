@@ -292,17 +292,3 @@ func (mr *MockTicketServiceMockRecorder) GenerateTicket(ctx, from, to, secret in
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateTicket", reflect.TypeOf((*MockTicketService)(nil).GenerateTicket), ctx, from, to, secret)
 }
-
-// ValidateTicket mocks base method.
-func (m *MockTicketService) ValidateTicket(ctx context.Context, ticket *Ticket) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ValidateTicket", ctx, ticket)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ValidateTicket indicates an expected call of ValidateTicket.
-func (mr *MockTicketServiceMockRecorder) ValidateTicket(ctx, ticket interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateTicket", reflect.TypeOf((*MockTicketService)(nil).ValidateTicket), ctx, ticket)
-}

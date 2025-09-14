@@ -11,14 +11,16 @@ import (
 type TVMClient struct {
 	baseURL    string
 	httpClient *http.Client
+	secret     string
 }
 
-func NewTVMClient(baseURL string) *TVMClient {
+func NewTVMClient(baseURL string, secret string) *TVMClient {
 	return &TVMClient{
 		baseURL: baseURL,
 		httpClient: &http.Client{
 			Timeout: time.Second * 5,
 		},
+		secret: secret,
 	}
 }
 
@@ -50,11 +52,13 @@ func (c *TVMClient) GenerateTicket(from, to int) (string, error) {
 	url := fmt.Sprintf("%s/ticket", c.baseURL)
 
 	reqBody := struct {
-		From int `json:"from"`
-		To   int `json:"to"`
+		From   int    `json:"from"`
+		To     int    `json:"to"`
+		Secret string `json:"secret"`
 	}{
-		From: from,
-		To:   to,
+		From:   from,
+		To:     to,
+		Secret: c.secret,
 	}
 
 	jsonData, err := json.Marshal(reqBody)
