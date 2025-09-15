@@ -4,16 +4,19 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/ivasnev/FinFlow/ff-tvm/internal/config"
 	"github.com/ivasnev/FinFlow/ff-tvm/internal/service"
 )
 
 type DevHandlers struct {
 	ticketService service.TicketService
+	config        *config.Config
 }
 
-func NewDevHandlers(ticketService service.TicketService) *DevHandlers {
+func NewDevHandlers(ticketService service.TicketService, cfg *config.Config) *DevHandlers {
 	return &DevHandlers{
 		ticketService: ticketService,
+		config:        cfg,
 	}
 }
 
@@ -29,10 +32,7 @@ func (h *DevHandlers) GenerateDevTicket(c *gin.Context) {
 		return
 	}
 
-	// Используем специальный секрет для разработки
-	devSecret := "dev_secret_key" // В реальном приложении это должно быть в конфиге
-
-	ticket, err := h.ticketService.GenerateTicket(c.Request.Context(), req.From, req.To, devSecret)
+	ticket, err := h.ticketService.GenerateTicket(c.Request.Context(), req.From, req.To, h.config.Dev.Secret)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

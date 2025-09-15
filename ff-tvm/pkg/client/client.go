@@ -25,7 +25,7 @@ func NewTVMClient(baseURL string, secret string) *TVMClient {
 }
 
 func (c *TVMClient) GetPublicKey(serviceID int) (string, error) {
-	url := fmt.Sprintf("%s/service/%d/pub_key", c.baseURL, serviceID)
+	url := fmt.Sprintf("%s/service/%d/key", c.baseURL, serviceID)
 
 	resp, err := c.httpClient.Get(url)
 	if err != nil {

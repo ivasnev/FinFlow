@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -41,7 +44,21 @@ func (h *Handlers) CreateTicket(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, ticket)
+	// Сериализуем тикет в JSON
+	ticketJSON, err := json.Marshal(ticket)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to serialize ticket"})
+		return
+	}
+
+	// Кодируем ID сервиса и тикет в base64
+	serviceIDBase64 := base64.StdEncoding.EncodeToString([]byte(strconv.Itoa(req.From)))
+	ticketBase64 := base64.StdEncoding.EncodeToString(ticketJSON)
+
+	// Формируем строку в формате "serv:base64(serviceID):base64(ticket)"
+	ticketStr := fmt.Sprintf("serv:%s:%s", serviceIDBase64, ticketBase64)
+
+	c.JSON(http.StatusOK, gin.H{"ticket": ticketStr})
 }
 
 func (h *Handlers) GetServicePublicKey(c *gin.Context) {

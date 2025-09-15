@@ -8,11 +8,11 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var (
-	Logger *zap.Logger
-)
+type Logger struct {
+	*zap.Logger
+}
 
-func init() {
+func New() (*Logger, error) {
 	// Настройка конфигурации логгера
 	config := zap.NewProductionConfig()
 	config.OutputPaths = []string{"stdout"}
@@ -21,11 +21,12 @@ func init() {
 	config.EncoderConfig.StacktraceKey = "stacktrace"
 
 	// Создание логгера
-	var err error
-	Logger, err = config.Build()
+	zapLogger, err := config.Build()
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
+
+	return &Logger{zapLogger}, nil
 }
 
 // getCallerInfo возвращает информацию о вызывающем коде
@@ -39,53 +40,53 @@ func getCallerInfo() zap.Field {
 }
 
 // Info логирует информационное сообщение
-func Info(msg string, fields ...zap.Field) {
+func (l *Logger) Info(msg string, fields ...zap.Field) {
 	fields = append(fields, getCallerInfo())
-	Logger.Info(msg, fields...)
+	l.Logger.Info(msg, fields...)
 }
 
 // Error логирует сообщение об ошибке
-func Error(msg string, fields ...zap.Field) {
+func (l *Logger) Error(msg string, fields ...zap.Field) {
 	fields = append(fields, getCallerInfo())
-	Logger.Error(msg, fields...)
+	l.Logger.Error(msg, fields...)
 }
 
 // Fatal логирует критическую ошибку и завершает программу
-func Fatal(msg string, fields ...zap.Field) {
+func (l *Logger) Fatal(msg string, fields ...zap.Field) {
 	fields = append(fields, getCallerInfo())
-	Logger.Fatal(msg, fields...)
+	l.Logger.Fatal(msg, fields...)
 }
 
 // Debug логирует отладочное сообщение
-func Debug(msg string, fields ...zap.Field) {
+func (l *Logger) Debug(msg string, fields ...zap.Field) {
 	fields = append(fields, getCallerInfo())
-	Logger.Debug(msg, fields...)
+	l.Logger.Debug(msg, fields...)
 }
 
 // With создает новый логгер с дополнительными полями
-func With(fields ...zap.Field) *zap.Logger {
-	return Logger.With(fields...)
+func (l *Logger) With(fields ...zap.Field) *Logger {
+	return &Logger{l.Logger.With(fields...)}
 }
 
 // Sync синхронизирует буфер логгера
-func Sync() error {
-	return Logger.Sync()
+func (l *Logger) Sync() error {
+	return l.Logger.Sync()
 }
 
 // ErrorWithStack логирует ошибку со стектрейсом
-func ErrorWithStack(msg string, err error) {
+func (l *Logger) ErrorWithStack(msg string, err error) {
 	fields := []zap.Field{
 		zap.Error(err),
 		getCallerInfo(),
 	}
-	Logger.Error(msg, fields...)
+	l.Logger.Error(msg, fields...)
 }
 
 // FatalWithStack логирует критическую ошибку со стектрейсом
-func FatalWithStack(msg string, err error) {
+func (l *Logger) FatalWithStack(msg string, err error) {
 	fields := []zap.Field{
 		zap.Error(err),
 		getCallerInfo(),
 	}
-	Logger.Fatal(msg, fields...)
+	l.Logger.Fatal(msg, fields...)
 }

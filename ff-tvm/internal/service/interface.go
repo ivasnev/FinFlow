@@ -15,13 +15,17 @@ type Service struct {
 	PrivateKeyHash string `json:"-"`
 }
 
+type TicketPayload struct {
+	From     int    `json:"from"`
+	To       int    `json:"to"`
+	TTL      int64  `json:"ttl"`
+	Metadata string `json:"metadata"`
+}
+
 // Ticket представляет тикет авторизации
 type Ticket struct {
-	From      int    `json:"from"`
-	To        int    `json:"to"`
-	TTL       int64  `json:"ttl"`
-	Signature string `json:"signature"`
-	Metadata  string `json:"metadata"`
+	Payload   TicketPayload `json:"payload"`
+	Signature string        `json:"signature"`
 }
 
 // ServiceRepository интерфейс для работы с хранилищем сервисов
