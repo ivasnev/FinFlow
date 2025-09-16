@@ -1,21 +1,30 @@
+# Этап сборки
 FROM golang:1.23-alpine AS builder
 
-WORKDIR /app
+WORKDIR /ff-files
 
-# Копируем файлы проекта
+# Копируем файлы с зависимостями
+COPY go.mod go.sum ./
+
+# Скачиваем зависимости
+RUN go mod download
+
+# Копируем исходный код
 COPY . .
 
 # Собираем приложение
-RUN go mod download
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -o /ff-files/cmd ./cmd/server
 
-# Создаем финальный образ
+# Финальный этап
 FROM alpine:latest
 
-WORKDIR /app
+WORKDIR /ff-files
 
-# Копируем бинарный файл из builder
-COPY --from=builder /app/server .
+# Копируем бинарный файл из этапа сборки
+COPY --from=builder /ff-files/server .
+
+# Открываем порт
+EXPOSE 8082
 
 # Запускаем приложение
-CMD ["./server"] 
+CMD ["./server"]
