@@ -1,4 +1,4 @@
-module ff-common
+module github.com/ivasnev/FinFlow/ff-common
 
 go 1.24.1
 
