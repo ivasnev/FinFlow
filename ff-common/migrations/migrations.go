@@ -1,9 +1,9 @@
 package migrations
 
 import (
-	"FinFlow/ff-common/logger"
 	"database/sql"
 	"errors"
+	"ff-common/logger"
 	"fmt"
 	"github.com/golang-migrate/migrate/v4"
 	migratepostgres "github.com/golang-migrate/migrate/v4/database/postgres"
