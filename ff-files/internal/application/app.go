@@ -1,11 +1,11 @@
 package application
 
 import (
-	"ff-files/internal/common/config"
-	"ff-files/internal/handler"
-	"ff-files/internal/service/minio"
 	"github.com/gin-gonic/gin"
-	"github.com/ivasnev/FinFlow/ff-common"
+	"github.com/ivasnev/FinFlow/ff-common/logger"
+	"github.com/ivasnev/FinFlow/ff-files/internal/common/config"
+	"github.com/ivasnev/FinFlow/ff-files/internal/handler"
+	"github.com/ivasnev/FinFlow/ff-files/internal/service/minio"
 	"github.com/ivasnev/FinFlow/ff-tvm/pkg/client"
 	"github.com/ivasnev/FinFlow/ff-tvm/pkg/middleware"
 	"os"

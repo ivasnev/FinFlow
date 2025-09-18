@@ -1,7 +1,7 @@
 package minioHandler
 
 import (
-	"FinFlow/ff-files/internal/service/minio"
+	"github.com/ivasnev/FinFlow/ff-files/internal/service/minio"
 )
 
 type Handler struct {

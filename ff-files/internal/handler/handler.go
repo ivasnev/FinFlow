@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"FinFlow/ff-files/internal/handler/minioHandler"
-	"FinFlow/ff-files/internal/service/minio"
 	"github.com/gin-gonic/gin"
+	"github.com/ivasnev/FinFlow/ff-files/internal/handler/minioHandler"
+	"github.com/ivasnev/FinFlow/ff-files/internal/service/minio"
 )
 
 // Services структура всех сервисов, которые используются в хендлерах

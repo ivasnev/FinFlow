@@ -71,7 +71,7 @@ func loadFromYAML(cfg *Config) error {
 	}
 
 	// Строим путь к файлу конфигурации относительно рабочей директории
-	configPath := filepath.Join(wd, "ff-files", "config", "config.yaml")
+	configPath := filepath.Join(wd, "config", "config.yaml")
 
 	// Открываем файл
 	if data, err := os.ReadFile(configPath); err == nil {

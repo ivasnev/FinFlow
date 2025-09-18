@@ -25,6 +25,7 @@ COPY --from=builder /app/server .
 
 # Копируем миграции
 COPY migrations ./migrations
+COPY config/ ./config
 
 # Открываем порт
 EXPOSE 8080
