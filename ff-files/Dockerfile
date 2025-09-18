@@ -13,7 +13,7 @@ RUN go mod download
 COPY . .
 
 # Собираем приложение
-RUN CGO_ENABLED=0 GOOS=linux go build -o /ff-files/cmd ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -o /ff-files/app ./cmd/
 
 # Финальный этап
 FROM alpine:latest
@@ -21,7 +21,7 @@ FROM alpine:latest
 WORKDIR /ff-files
 
 # Копируем бинарный файл из этапа сборки
-COPY --from=builder /ff-files/server .
+COPY --from=builder /ff-files/ .
 
 COPY config/ ./config
 
@@ -29,4 +29,4 @@ COPY config/ ./config
 EXPOSE 8082
 
 # Запускаем приложение
-CMD ["./server"]
+CMD ["./app"]
