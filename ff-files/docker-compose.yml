@@ -4,26 +4,23 @@ services:
   app:
     build: .
     ports:
-      - "8080:8080"
-#    environment:
-#      - SERVER_PORT=8080
-#      - POSTGRES_HOST=postgres
-#      - POSTGRES_PORT=5432
-#      - POSTGRES_USER=postgres
-#      - POSTGRES_PASSWORD=postgres
-#      - POSTGRES_DB=ff_files
-#      - MINIO_ENDPOINT=minio:9000
-#      - MINIO_ACCESS_KEY=minioadmin
-#      - MINIO_SECRET_KEY=minioadmin
-#      - MINIO_BUCKET=ff-files
+      - "8082:8082"
+    environment:
+      - SERVER_PORT=8082
+      - MINIO_ENDPOINT=localhost:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET=ff-files
+      - MINIO_INTERNAL_ENDPOINT=http://minio:9000
 #      - REDIS_HOST=redis
 #      - REDIS_PORT=6379
-#      - TVM_BASE_URL=http://tvm:8081
-#      - TVM_SERVICE_ID=1
+      - TVM_BASE_URL=http://host.docker.internal:8081
+      - TVM_SERVICE_ID=3
     networks:
       - shared_network
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
 
   minio:
     image: minio/minio

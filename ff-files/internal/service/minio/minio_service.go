@@ -9,7 +9,9 @@ import (
 	helpers2 "github.com/ivasnev/FinFlow/ff-files/internal/service/minio/helpers"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"log"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 )
@@ -32,10 +34,24 @@ func (m *minioService) InitMinio(cfg *config.MinIO) error {
 	ctx := context.Background()
 	m.cfg = cfg
 
+	// Указываем прокси-сервер
+	proxyURL, err := url.Parse(cfg.InternalEndpoint)
+	if err != nil {
+		log.Fatalf("Invalid proxy URL: %v", err)
+	}
+
+	fmt.Println(proxyURL)
+
+	// Создаём http.Transport с прокси
+	transport := &http.Transport{
+		Proxy: http.ProxyURL(proxyURL),
+	}
+
 	// Подключение к Minio с использованием имени пользователя и пароля
 	client, err := minio.New(cfg.Endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(cfg.RootUser, cfg.RootPassword, ""),
-		Secure: cfg.UseSSL,
+		Creds:     credentials.NewStaticV4(cfg.RootUser, cfg.RootPassword, ""),
+		Secure:    cfg.UseSSL,
+		Transport: transport,
 	})
 	if err != nil {
 		return err

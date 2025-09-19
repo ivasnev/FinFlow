@@ -10,6 +10,7 @@ import (
 
 type MinIO struct {
 	Endpoint           string `yaml:"endpoint" env:"MINIO_ENDPOINT" env-default:"localhost:9000"`
+	InternalEndpoint   string `yaml:"internal_endpoint" env:"MINIO_INTERNAL_ENDPOINT" env-default:"localhost:9000"`
 	AccessKeyID        string `yaml:"access_key" env:"MINIO_ACCESS_KEY" env-default:"minioadmin"`
 	SecretAccessKey    string `yaml:"secret_key" env:"MINIO_SECRET_KEY" env-default:"minioadmin"`
 	BucketName         string `yaml:"bucket" env:"MINIO_BUCKET" env-default:"ff-files"`
@@ -94,6 +95,7 @@ func loadFromEnv(cfg *Config) {
 	cfg.Postgres.DBName = getEnv("POSTGRES_DB", cfg.Postgres.DBName)
 
 	cfg.MinIO.Endpoint = getEnv("MINIO_ENDPOINT", cfg.MinIO.Endpoint)
+	cfg.MinIO.InternalEndpoint = getEnv("MINIO_INTERNAL_ENDPOINT", cfg.MinIO.InternalEndpoint)
 	cfg.MinIO.AccessKeyID = getEnv("MINIO_ACCESS_KEY", cfg.MinIO.AccessKeyID)
 	cfg.MinIO.SecretAccessKey = getEnv("MINIO_SECRET_KEY", cfg.MinIO.SecretAccessKey)
 	cfg.MinIO.BucketName = getEnv("MINIO_BUCKET", cfg.MinIO.BucketName)
