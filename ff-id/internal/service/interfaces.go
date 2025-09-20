@@ -1,16 +1,16 @@
-package interfaces
+package service
 
 import (
 	"context"
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/ivasnev/FinFlow/ff-id/dto"
+	"github.com/ivasnev/FinFlow/ff-id/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-id/internal/models"
 )
 
-// AuthService определяет методы для аутентификации и авторизации
-type AuthService interface {
+// AuthServiceInterface определяет методы для аутентификации и авторизации
+type AuthServiceInterface interface {
 	// Register регистрирует нового пользователя
 	Register(ctx context.Context, req dto.RegisterRequest) (*dto.AuthResponse, error)
 
@@ -33,8 +33,8 @@ type AuthService interface {
 	RecordLogin(ctx context.Context, userID int64, r *http.Request) error
 }
 
-// UserService определяет методы для работы с пользователями
-type UserService interface {
+// UserServiceInterface определяет методы для работы с пользователями
+type UserServiceInterface interface {
 	// GetUserByID получает пользователя по ID
 	GetUserByID(ctx context.Context, id int64) (*dto.UserDTO, error)
 
@@ -51,8 +51,8 @@ type UserService interface {
 	DeleteUser(ctx context.Context, userID int64) error
 }
 
-// SessionService определяет методы для работы с сессиями
-type SessionService interface {
+// SessionServiceInterface определяет методы для работы с сессиями
+type SessionServiceInterface interface {
 	// GetUserSessions получает все сессии пользователя
 	GetUserSessions(ctx context.Context, userID int64) ([]dto.SessionDTO, error)
 
@@ -63,14 +63,14 @@ type SessionService interface {
 	TerminateAllSessions(ctx context.Context, userID int64) error
 }
 
-// LoginHistoryService определяет методы для работы с историей входов
-type LoginHistoryService interface {
+// LoginHistoryServiceInterface определяет методы для работы с историей входов
+type LoginHistoryServiceInterface interface {
 	// GetUserLoginHistory получает историю входов пользователя
 	GetUserLoginHistory(ctx context.Context, userID int64, limit, offset int) ([]dto.LoginHistoryDTO, error)
 }
 
-// DeviceService определяет методы для работы с устройствами
-type DeviceService interface {
+// DeviceServiceInterface определяет методы для работы с устройствами
+type DeviceServiceInterface interface {
 	// GetUserDevices получает все устройства пользователя
 	GetUserDevices(ctx context.Context, userID int64) ([]dto.DeviceDTO, error)
 

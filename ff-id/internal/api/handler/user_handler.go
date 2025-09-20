@@ -5,17 +5,17 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ivasnev/FinFlow/ff-id/dto"
-	"github.com/ivasnev/FinFlow/ff-id/interfaces"
+	"github.com/ivasnev/FinFlow/ff-id/internal/api/dto"
+	"github.com/ivasnev/FinFlow/ff-id/internal/service"
 )
 
 // UserHandler обрабатывает запросы, связанные с пользователями
 type UserHandler struct {
-	userService interfaces.UserService
+	userService service.UserServiceInterface
 }
 
 // NewUserHandler создает новый UserHandler
-func NewUserHandler(userService interfaces.UserService) *UserHandler {
+func NewUserHandler(userService service.UserServiceInterface) *UserHandler {
 	return &UserHandler{
 		userService: userService,
 	}

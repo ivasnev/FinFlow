@@ -4,17 +4,17 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ivasnev/FinFlow/ff-id/dto"
-	"github.com/ivasnev/FinFlow/ff-id/interfaces"
+	"github.com/ivasnev/FinFlow/ff-id/internal/api/dto"
+	"github.com/ivasnev/FinFlow/ff-id/internal/service"
 )
 
 // AuthHandler обрабатывает запросы, связанные с аутентификацией
 type AuthHandler struct {
-	authService interfaces.AuthService
+	authService service.AuthService
 }
 
 // NewAuthHandler создает новый AuthHandler
-func NewAuthHandler(authService interfaces.AuthService) *AuthHandler {
+func NewAuthHandler(authService service.AuthService) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
 	}

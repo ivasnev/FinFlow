@@ -6,19 +6,19 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/ivasnev/FinFlow/ff-id/interfaces"
+	"github.com/ivasnev/FinFlow/ff-id/internal/service"
 )
 
 // SessionHandler обрабатывает запросы, связанные с сессиями пользователей
 type SessionHandler struct {
-	sessionService      interfaces.SessionService
-	loginHistoryService interfaces.LoginHistoryService
+	sessionService      service.SessionServiceInterface
+	loginHistoryService service.LoginHistoryServiceInterface
 }
 
 // NewSessionHandler создает новый SessionHandler
 func NewSessionHandler(
-	sessionService interfaces.SessionService,
-	loginHistoryService interfaces.LoginHistoryService,
+	sessionService service.SessionServiceInterface,
+	loginHistoryService service.LoginHistoryServiceInterface,
 ) *SessionHandler {
 	return &SessionHandler{
 		sessionService:      sessionService,

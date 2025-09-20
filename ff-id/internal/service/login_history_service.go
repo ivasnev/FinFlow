@@ -4,18 +4,18 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ivasnev/FinFlow/ff-id/dto"
-	"github.com/ivasnev/FinFlow/ff-id/interfaces"
+	"github.com/ivasnev/FinFlow/ff-id/internal/api/dto"
+	"github.com/ivasnev/FinFlow/ff-id/internal/repository/postgres"
 )
 
 // LoginHistoryService реализует интерфейс для работы с историей входов
 type LoginHistoryService struct {
-	loginHistoryRepository interfaces.LoginHistoryRepository
+	loginHistoryRepository postgres.LoginHistoryRepositoryInterface
 }
 
 // NewLoginHistoryService создает новый сервис истории входов
 func NewLoginHistoryService(
-	loginHistoryRepository interfaces.LoginHistoryRepository,
+	loginHistoryRepository postgres.LoginHistoryRepositoryInterface,
 ) *LoginHistoryService {
 	return &LoginHistoryService{
 		loginHistoryRepository: loginHistoryRepository,

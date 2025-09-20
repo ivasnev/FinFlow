@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/ivasnev/FinFlow/ff-id/internal/app"
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ivasnev/FinFlow/ff-id/app"
-	"github.com/ivasnev/FinFlow/ff-id/container"
 	"github.com/ivasnev/FinFlow/ff-id/internal/common/config"
+	"github.com/ivasnev/FinFlow/ff-id/internal/container"
 )
 
 func main() {

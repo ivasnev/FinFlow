@@ -2,14 +2,13 @@ package container
 
 import (
 	"fmt"
+	"github.com/ivasnev/FinFlow/ff-id/internal/api/middleware"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ivasnev/FinFlow/ff-id/handler"
-	"github.com/ivasnev/FinFlow/ff-id/interfaces"
+	"github.com/ivasnev/FinFlow/ff-id/internal/api/handler"
 	"github.com/ivasnev/FinFlow/ff-id/internal/common/config"
-	"github.com/ivasnev/FinFlow/ff-id/middleware"
-	pg_repos "github.com/ivasnev/FinFlow/ff-id/repository/postgres"
-	"github.com/ivasnev/FinFlow/ff-id/service"
+	pg_repos "github.com/ivasnev/FinFlow/ff-id/internal/repository/postgres"
+	"github.com/ivasnev/FinFlow/ff-id/internal/service"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -21,19 +20,19 @@ type Container struct {
 	DB     *gorm.DB
 
 	// Репозитории
-	UserRepository         interfaces.UserRepository
-	RoleRepository         interfaces.RoleRepository
-	SessionRepository      interfaces.SessionRepository
-	LoginHistoryRepository interfaces.LoginHistoryRepository
-	DeviceRepository       interfaces.DeviceRepository
-	AvatarRepository       interfaces.AvatarRepository
+	UserRepository         interfaces.UserRepositoryInterface
+	RoleRepository         interfaces.RoleRepositoryInterface
+	SessionRepository      interfaces.SessionRepositoryInterface
+	LoginHistoryRepository interfaces.LoginHistoryRepositoryInterface
+	DeviceRepository       interfaces.DeviceRepositoryInterface
+	AvatarRepository       interfaces.AvatarRepositoryInterface
 
 	// Сервисы
-	AuthService         interfaces.AuthService
-	UserService         interfaces.UserService
-	SessionService      interfaces.SessionService
-	LoginHistoryService interfaces.LoginHistoryService
-	DeviceService       interfaces.DeviceService
+	AuthService         service.AuthServiceInterface
+	UserService         service.UserServiceInterface
+	SessionService      service.SessionServiceInterface
+	LoginHistoryService service.LoginHistoryServiceInterface
+	DeviceService       service.DeviceServiceInterface
 
 	// Обработчики
 	AuthHandler    *handler.AuthHandler
