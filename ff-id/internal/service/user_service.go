@@ -3,219 +3,230 @@ package service
 import (
 	"context"
 	"errors"
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/ivasnev/FinFlow/ff-id/internal/config"
-	"github.com/ivasnev/FinFlow/ff-id/internal/models"
-	"github.com/ivasnev/FinFlow/ff-id/internal/repository"
-	"golang.org/x/crypto/bcrypt"
-	"math/rand"
+	"fmt"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/ivasnev/FinFlow/ff-id/dto"
+	"github.com/ivasnev/FinFlow/ff-id/interfaces"
+	"github.com/ivasnev/FinFlow/ff-id/internal/models"
+	"golang.org/x/crypto/bcrypt"
 )
 
-var (
-	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrUserNotFound      = errors.New("user not found")
-	ErrEmailTaken       = errors.New("email already taken")
-)
-
-type UserService interface {
-	Register(ctx context.Context, email, password, firstName, lastName string) error
-	Login(ctx context.Context, email, password string) (string, string, error)
-	RefreshToken(ctx context.Context, refreshToken string) (string, string, error)
-	GetUserByID(ctx context.Context, id uint) (*models.User, error)
-	UpdateUser(ctx context.Context, user *models.User) error
-	DeleteUser(ctx context.Context, id uint) error
-	SendVerificationCode(ctx context.Context, userID uint, codeType string) error
-	VerifyCode(ctx context.Context, userID uint, code, codeType string) error
-	UpdateAvatar(ctx context.Context, userID string, avatarID string) error
+// UserService реализует интерфейс для работы с пользователями
+type UserService struct {
+	userRepository   interfaces.UserRepository
+	avatarRepository interfaces.AvatarRepository
 }
 
-type userService struct {
-	repo   repository.UserRepository
-	config *config.Config
-}
-
-func NewUserService(repo repository.UserRepository, cfg *config.Config) UserService {
-	return &userService{
-		repo:   repo,
-		config: cfg,
+// NewUserService создает новый сервис пользователей
+func NewUserService(
+	userRepository interfaces.UserRepository,
+	avatarRepository interfaces.AvatarRepository,
+) *UserService {
+	return &UserService{
+		userRepository:   userRepository,
+		avatarRepository: avatarRepository,
 	}
 }
 
-func (s *userService) Register(ctx context.Context, email, password, firstName, lastName string) error {
-	// Check if user exists
-	if _, err := s.repo.FindByEmail(ctx, email); err == nil {
-		return ErrEmailTaken
-	}
-
-	// Hash password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+// GetUserByID получает пользователя по ID
+func (s *UserService) GetUserByID(ctx context.Context, id int64) (*dto.UserDTO, error) {
+	user, err := s.userRepository.GetByID(ctx, id)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("ошибка получения пользователя: %w", err)
 	}
 
-	user := &models.User{
-		Email:     email,
-		Password:  string(hashedPassword),
-		FirstName: firstName,
-		LastName:  lastName,
-		Role:      models.RoleUser,
+	// Получаем роли пользователя
+	roles, err := s.userRepository.GetRoles(ctx, user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка получения ролей пользователя: %w", err)
 	}
 
-	return s.repo.Create(ctx, user)
+	// Преобразуем роли в строки
+	roleStrings := make([]string, len(roles))
+	for i, role := range roles {
+		roleStrings[i] = role.Name
+	}
+
+	// Формируем DTO для пользователя
+	userDTO := &dto.UserDTO{
+		ID:        user.ID,
+		Email:     user.Email,
+		Nickname:  user.Nickname,
+		Roles:     roleStrings,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}
+
+	if user.Phone.Valid {
+		phone := user.Phone.String
+		userDTO.Phone = &phone
+	}
+
+	if user.Name.Valid {
+		name := user.Name.String
+		userDTO.Name = &name
+	}
+
+	if user.Birthdate.Valid {
+		birthdate := user.Birthdate.Time
+		userDTO.Birthdate = &birthdate
+	}
+
+	if user.AvatarID.Valid {
+		avatarID := user.AvatarID.UUID
+		userDTO.AvatarID = &avatarID
+	}
+
+	return userDTO, nil
 }
 
-func (s *userService) Login(ctx context.Context, email, password string) (string, string, error) {
-	user, err := s.repo.FindByEmail(ctx, email)
+// GetUserByNickname получает пользователя по никнейму
+func (s *UserService) GetUserByNickname(ctx context.Context, nickname string) (*dto.UserDTO, error) {
+	user, err := s.userRepository.GetByNickname(ctx, nickname)
 	if err != nil {
-		return "", "", ErrInvalidCredentials
+		return nil, fmt.Errorf("ошибка получения пользователя: %w", err)
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return "", "", ErrInvalidCredentials
-	}
-
-	// Generate tokens
-	accessToken, err := s.generateAccessToken(user)
+	// Получаем роли пользователя
+	roles, err := s.userRepository.GetRoles(ctx, user.ID)
 	if err != nil {
-		return "", "", err
+		return nil, fmt.Errorf("ошибка получения ролей пользователя: %w", err)
 	}
 
-	refreshToken, err := s.generateRefreshToken()
-	if err != nil {
-		return "", "", err
+	// Преобразуем роли в строки
+	roleStrings := make([]string, len(roles))
+	for i, role := range roles {
+		roleStrings[i] = role.Name
 	}
 
-	// Save session
-	session := &models.UserSession{
-		UserID:       user.ID,
-		RefreshToken: refreshToken,
-		ExpiresAt:    time.Now().Add(time.Duration(s.config.JWT.RefreshTTL) * time.Minute),
+	// Формируем DTO для пользователя
+	userDTO := &dto.UserDTO{
+		ID:        user.ID,
+		Email:     user.Email,
+		Nickname:  user.Nickname,
+		Roles:     roleStrings,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 	}
 
-	if err := s.repo.CreateSession(ctx, session); err != nil {
-		return "", "", err
+	if user.Phone.Valid {
+		phone := user.Phone.String
+		userDTO.Phone = &phone
 	}
 
-	return accessToken, refreshToken, nil
+	if user.Name.Valid {
+		name := user.Name.String
+		userDTO.Name = &name
+	}
+
+	if user.Birthdate.Valid {
+		birthdate := user.Birthdate.Time
+		userDTO.Birthdate = &birthdate
+	}
+
+	if user.AvatarID.Valid {
+		avatarID := user.AvatarID.UUID
+		userDTO.AvatarID = &avatarID
+	}
+
+	return userDTO, nil
 }
 
-func (s *userService) RefreshToken(ctx context.Context, refreshToken string) (string, string, error) {
-	session, err := s.repo.FindSessionByToken(ctx, refreshToken)
+// UpdateUser обновляет данные пользователя
+func (s *UserService) UpdateUser(ctx context.Context, userID int64, req dto.UpdateUserRequest) (*dto.UserDTO, error) {
+	// Получаем пользователя по ID
+	user, err := s.userRepository.GetByID(ctx, userID)
 	if err != nil {
-		return "", "", err
+		return nil, fmt.Errorf("ошибка получения пользователя: %w", err)
 	}
 
-	if time.Now().After(session.ExpiresAt) {
-		return "", "", errors.New("refresh token expired")
+	// Обновляем email, если указан
+	if req.Email != nil {
+		// Проверяем, не занят ли email другим пользователем
+		if *req.Email != user.Email {
+			existingUser, err := s.userRepository.GetByEmail(ctx, *req.Email)
+			if err == nil && existingUser != nil && existingUser.ID != user.ID {
+				return nil, errors.New("указанный email уже используется")
+			}
+			user.Email = *req.Email
+		}
 	}
 
-	user, err := s.repo.FindByID(ctx, session.UserID)
-	if err != nil {
-		return "", "", err
+	// Обновляем телефон, если указан
+	if req.Phone != nil {
+		user.Phone.String = *req.Phone
+		user.Phone.Valid = true
 	}
 
-	// Generate new tokens
-	newAccessToken, err := s.generateAccessToken(user)
-	if err != nil {
-		return "", "", err
+	// Обновляем имя, если указано
+	if req.Name != nil {
+		user.Name.String = *req.Name
+		user.Name.Valid = true
 	}
 
-	newRefreshToken, err := s.generateRefreshToken()
-	if err != nil {
-		return "", "", err
+	// Обновляем дату рождения, если указана
+	if req.Birthdate != nil {
+		user.Birthdate.Time = *req.Birthdate
+		user.Birthdate.Valid = true
 	}
 
-	// Update session
-	if err := s.repo.DeleteSession(ctx, refreshToken); err != nil {
-		return "", "", err
+	// Обновляем пароль, если указан
+	if req.Password != nil {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(*req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, fmt.Errorf("ошибка хеширования пароля: %w", err)
+		}
+		user.PasswordHash = string(hashedPassword)
 	}
 
-	newSession := &models.UserSession{
-		UserID:       user.ID,
-		RefreshToken: newRefreshToken,
-		ExpiresAt:    time.Now().Add(time.Duration(s.config.JWT.RefreshTTL) * time.Minute),
+	// Обновляем время изменения
+	user.UpdatedAt = time.Now()
+
+	// Сохраняем изменения
+	if err := s.userRepository.Update(ctx, user); err != nil {
+		return nil, fmt.Errorf("ошибка обновления пользователя: %w", err)
 	}
 
-	if err := s.repo.CreateSession(ctx, newSession); err != nil {
-		return "", "", err
-	}
-
-	return newAccessToken, newRefreshToken, nil
+	// Получаем обновленного пользователя
+	return s.GetUserByID(ctx, user.ID)
 }
 
-func (s *userService) GetUserByID(ctx context.Context, id uint) (*models.User, error) {
-	return s.repo.FindByID(ctx, id)
-}
-
-func (s *userService) UpdateUser(ctx context.Context, user *models.User) error {
-	return s.repo.Update(ctx, user)
-}
-
-func (s *userService) DeleteUser(ctx context.Context, id uint) error {
-	return s.repo.Delete(ctx, id)
-}
-
-func (s *userService) SendVerificationCode(ctx context.Context, userID uint, codeType string) error {
-	code := generateVerificationCode()
-	verificationCode := &models.VerificationCode{
-		UserID:    userID,
-		Code:      code,
-		Type:      codeType,
-		ExpiresAt: time.Now().Add(15 * time.Minute),
-	}
-
-	// TODO: Send code via email or SMS
-
-	return s.repo.CreateVerificationCode(ctx, verificationCode)
-}
-
-func (s *userService) VerifyCode(ctx context.Context, userID uint, code, codeType string) error {
-	verificationCode, err := s.repo.FindVerificationCode(ctx, userID, codeType)
+// ChangeAvatar изменяет аватар пользователя
+func (s *UserService) ChangeAvatar(ctx context.Context, userID int64, fileID uuid.UUID) error {
+	// Получаем пользователя по ID
+	user, err := s.userRepository.GetByID(ctx, userID)
 	if err != nil {
-		return err
+		return fmt.Errorf("ошибка получения пользователя: %w", err)
 	}
 
-	if time.Now().After(verificationCode.ExpiresAt) {
-		return errors.New("verification code expired")
+	// Создаем новую аватарку
+	avatarID := uuid.New()
+	avatar := &models.UserAvatar{
+		ID:         avatarID,
+		UserID:     user.ID,
+		FileID:     fileID,
+		UploadedAt: time.Now(),
 	}
 
-	if verificationCode.Code != code {
-		return errors.New("invalid verification code")
+	if err := s.avatarRepository.Create(ctx, avatar); err != nil {
+		return fmt.Errorf("ошибка создания аватарки: %w", err)
+	}
+
+	// Обновляем пользователя
+	user.AvatarID.UUID = avatarID
+	user.AvatarID.Valid = true
+	user.UpdatedAt = time.Now()
+
+	if err := s.userRepository.Update(ctx, user); err != nil {
+		return fmt.Errorf("ошибка обновления пользователя: %w", err)
 	}
 
 	return nil
 }
 
-func (s *userService) generateAccessToken(user *models.User) (string, error) {
-	claims := jwt.MapClaims{
-		"user_id": user.ID,
-		"role":    user.Role,
-		"exp":     time.Now().Add(time.Duration(s.config.JWT.AccessTTL) * time.Minute).Unix(),
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(s.config.JWT.AccessSecret))
+// DeleteUser удаляет пользователя
+func (s *UserService) DeleteUser(ctx context.Context, userID int64) error {
+	return s.userRepository.Delete(ctx, userID)
 }
-
-func (s *userService) generateRefreshToken() (string, error) {
-	token := jwt.New(jwt.SigningMethodHS256)
-	return token.SignedString([]byte(s.config.JWT.RefreshSecret))
-}
-
-func generateVerificationCode() string {
-	return rand.New(rand.NewSource(time.Now().UnixNano())).
-		Int31n(900000 + 100000).
-		String()
-}
-
-// UpdateAvatar обновляет ID аватара пользователя
-func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatarID string) error {
-	user, err := s.GetUserByID(ctx, userID)
-	if err != nil {
-		return err
-	}
-
-	user.AvatarID = avatarID
-	return s.repo.Update(ctx, user)
-} 
