@@ -10,11 +10,11 @@ import (
 
 // AuthHandler обрабатывает запросы, связанные с аутентификацией
 type AuthHandler struct {
-	authService service.AuthService
+	authService service.AuthServiceInterface
 }
 
 // NewAuthHandler создает новый AuthHandler
-func NewAuthHandler(authService service.AuthService) *AuthHandler {
+func NewAuthHandler(authService service.AuthServiceInterface) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
 	}

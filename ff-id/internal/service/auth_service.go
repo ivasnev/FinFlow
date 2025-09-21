@@ -126,13 +126,11 @@ func (s *AuthService) Register(ctx context.Context, req dto.RegisterRequest) (*d
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresAt:    time.Unix(expiresAt, 0),
-		User: dto.UserDTO{
-			ID:        user.ID,
-			Email:     user.Email,
-			Nickname:  user.Nickname,
-			Roles:     []string{string(models.RoleUser)},
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
+		User: dto.ShortUserDTO{
+			ID:       user.ID,
+			Email:    user.Email,
+			Nickname: user.Nickname,
+			Roles:    []string{string(models.RoleUser)},
 		},
 	}, nil
 }
@@ -206,33 +204,16 @@ func (s *AuthService) Login(ctx context.Context, req dto.LoginRequest, r *http.R
 	}
 
 	// Формируем DTO для пользователя
-	userDTO := dto.UserDTO{
-		ID:        user.ID,
-		Email:     user.Email,
-		Nickname:  user.Nickname,
-		Roles:     roleStrings,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-	}
-
-	if user.Phone.Valid {
-		phone := user.Phone.String
-		userDTO.Phone = &phone
+	userDTO := dto.ShortUserDTO{
+		ID:       user.ID,
+		Email:    user.Email,
+		Nickname: user.Nickname,
+		Roles:    roleStrings,
 	}
 
 	if user.Name.Valid {
 		name := user.Name.String
 		userDTO.Name = &name
-	}
-
-	if user.Birthdate.Valid {
-		birthdate := user.Birthdate.Time
-		userDTO.Birthdate = &birthdate
-	}
-
-	if user.AvatarID.Valid {
-		avatarID := user.AvatarID.UUID
-		userDTO.AvatarID = &avatarID
 	}
 
 	// Формируем ответ
@@ -305,33 +286,16 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*d
 	}
 
 	// Формируем DTO для пользователя
-	userDTO := dto.UserDTO{
-		ID:        user.ID,
-		Email:     user.Email,
-		Nickname:  user.Nickname,
-		Roles:     roleStrings,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-	}
-
-	if user.Phone.Valid {
-		phone := user.Phone.String
-		userDTO.Phone = &phone
+	userDTO := dto.ShortUserDTO{
+		ID:       user.ID,
+		Email:    user.Email,
+		Nickname: user.Nickname,
+		Roles:    roleStrings,
 	}
 
 	if user.Name.Valid {
 		name := user.Name.String
 		userDTO.Name = &name
-	}
-
-	if user.Birthdate.Valid {
-		birthdate := user.Birthdate.Time
-		userDTO.Birthdate = &birthdate
-	}
-
-	if user.AvatarID.Valid {
-		avatarID := user.AvatarID.UUID
-		userDTO.AvatarID = &avatarID
 	}
 
 	// Формируем ответ

@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/ivasnev/FinFlow/ff-id/internal/app"
 	"log"
+
+	"github.com/ivasnev/FinFlow/ff-id/internal/app"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-id/internal/common/config"

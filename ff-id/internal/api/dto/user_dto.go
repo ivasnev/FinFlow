@@ -20,6 +20,15 @@ type UserDTO struct {
 	UpdatedAt time.Time  `json:"updated_at"`
 }
 
+// ShortUserDTO представляет основные данные пользователя, возвращаемые в API
+type ShortUserDTO struct {
+	ID       int64    `json:"id"`
+	Email    string   `json:"email"`
+	Nickname string   `json:"nickname"`
+	Name     *string  `json:"name,omitempty"`
+	Roles    []string `json:"roles"`
+}
+
 // UpdateUserRequest представляет запрос на обновление данных пользователя
 type UpdateUserRequest struct {
 	Email     *string    `json:"email,omitempty" binding:"omitempty,email"`
