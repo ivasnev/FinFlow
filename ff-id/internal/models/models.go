@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -20,23 +19,18 @@ const (
 
 // User представляет пользователя системы
 type User struct {
-	ID           int64          `gorm:"primaryKey;autoIncrement;column:id" json:"id"`
-	Email        string         `gorm:"type:text;unique;not null;column:email" json:"email"`
-	Phone        sql.NullString `gorm:"type:text;unique;column:phone" json:"phone,omitempty"`
-	PasswordHash string         `gorm:"type:text;not null;column:password_hash" json:"-"`
-	Nickname     string         `gorm:"type:text;unique;not null;column:nickname" json:"nickname"`
-	Name         sql.NullString `gorm:"type:text;column:name" json:"name,omitempty"`
-	Birthdate    sql.NullTime   `gorm:"type:date;column:birthdate" json:"birthdate,omitempty"`
-	AvatarID     uuid.NullUUID  `gorm:"type:uuid;column:avatar" json:"avatar_id,omitempty"`
-	CreatedAt    time.Time      `gorm:"type:timestamp;not null;default:now();column:created_at" json:"created_at"`
-	UpdatedAt    time.Time      `gorm:"type:timestamp;not null;default:now();column:updated_at" json:"updated_at"`
+	ID        int64          `gorm:"primaryKey;autoIncrement;column:id" json:"id"`
+	Email     string         `gorm:"type:text;unique;not null;column:email" json:"email"`
+	Phone     sql.NullString `gorm:"type:text;unique;column:phone" json:"phone,omitempty"`
+	Nickname  string         `gorm:"type:text;unique;not null;column:nickname" json:"nickname"`
+	Name      sql.NullString `gorm:"type:text;column:name" json:"name,omitempty"`
+	Birthdate sql.NullTime   `gorm:"type:date;column:birthdate" json:"birthdate,omitempty"`
+	AvatarID  uuid.NullUUID  `gorm:"type:uuid;column:avatar" json:"avatar_id,omitempty"`
+	CreatedAt time.Time      `gorm:"type:timestamp;not null;default:now();column:created_at" json:"created_at"`
+	UpdatedAt time.Time      `gorm:"type:timestamp;not null;default:now();column:updated_at" json:"updated_at"`
 
 	// Связи
-	Roles        []UserRole     `gorm:"foreignKey:UserID" json:"roles,omitempty"`
-	Sessions     []Session      `gorm:"foreignKey:UserID" json:"sessions,omitempty"`
-	LoginHistory []LoginHistory `gorm:"foreignKey:UserID" json:"login_history,omitempty"`
-	Devices      []Device       `gorm:"foreignKey:UserID" json:"devices,omitempty"`
-	Avatars      []UserAvatar   `gorm:"foreignKey:UserID" json:"avatars,omitempty"`
+	Avatars []UserAvatar `gorm:"foreignKey:UserID" json:"avatars,omitempty"`
 }
 
 // TableName устанавливает имя таблицы для модели User
@@ -61,69 +55,4 @@ type UserAvatar struct {
 // TableName устанавливает имя таблицы для модели UserAvatar
 func (UserAvatar) TableName() string {
 	return "user_avatars"
-}
-
-// RoleEntity представляет роль в системе
-type RoleEntity struct {
-	ID   int    `gorm:"primaryKey;autoIncrement;column:id" json:"id"`
-	Name string `gorm:"type:text;unique;not null;column:name" json:"name"`
-}
-
-// TableName устанавливает имя таблицы для модели RoleEntity
-func (RoleEntity) TableName() string {
-	return "roles"
-}
-
-// UserRole представляет связь между пользователем и ролью
-type UserRole struct {
-	UserID int64 `gorm:"primaryKey;column:user_id" json:"user_id"`
-	RoleID int   `gorm:"primaryKey;column:role_id" json:"role_id"`
-}
-
-// TableName устанавливает имя таблицы для модели UserRole
-func (UserRole) TableName() string {
-	return "user_roles"
-}
-
-// Session представляет активную сессию пользователя
-type Session struct {
-	ID           uuid.UUID      `gorm:"type:uuid;primaryKey;column:id" json:"id"`
-	UserID       int64          `gorm:"type:bigint;not null;column:user_id" json:"user_id"`
-	RefreshToken string         `gorm:"type:text;unique;not null;column:refresh_token" json:"-"`
-	IPAddress    pq.StringArray `gorm:"type:inet;column:ip_address" json:"ip_address"`
-	ExpiresAt    time.Time      `gorm:"type:timestamp;not null;column:expires_at" json:"expires_at"`
-	CreatedAt    time.Time      `gorm:"type:timestamp;not null;default:now();column:created_at" json:"created_at"`
-}
-
-// TableName устанавливает имя таблицы для модели Session
-func (Session) TableName() string {
-	return "sessions"
-}
-
-// LoginHistory представляет историю входов пользователя
-type LoginHistory struct {
-	ID        int       `gorm:"primaryKey;autoIncrement;column:id" json:"id"`
-	UserID    int64     `gorm:"type:bigint;not null;column:user_id" json:"user_id"`
-	IPAddress string    `gorm:"type:inet;not null;column:ip_address" json:"ip_address"`
-	UserAgent string    `gorm:"type:text;column:user_agent" json:"user_agent"`
-	CreatedAt time.Time `gorm:"type:timestamp;not null;default:now();column:created_at" json:"created_at"`
-}
-
-// TableName устанавливает имя таблицы для модели LoginHistory
-func (LoginHistory) TableName() string {
-	return "login_history"
-}
-
-// Device представляет устройство, с которого пользователь входил в систему
-type Device struct {
-	ID        int       `gorm:"primaryKey;autoIncrement;column:id" json:"id"`
-	UserID    int64     `gorm:"type:bigint;not null;column:user_id" json:"user_id"`
-	DeviceID  string    `gorm:"type:text;unique;not null;column:device_id" json:"device_id"`
-	UserAgent string    `gorm:"type:text;not null;column:user_agent" json:"user_agent"`
-	LastLogin time.Time `gorm:"type:timestamp;not null;default:now();column:last_login" json:"last_login"`
-}
-
-// TableName устанавливает имя таблицы для модели Device
-func (Device) TableName() string {
-	return "devices"
 }

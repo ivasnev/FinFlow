@@ -45,50 +45,33 @@ func (h *UserHandler) GetUserByNickname(c *gin.Context) {
 
 // UpdateUser обрабатывает запрос на обновление профиля пользователя
 // @Summary Update user profile
-// @Description Update current user's profile
+// @Description Update user's profile by ID
 // @Tags users
 // @Accept json
 // @Produce json
+// @Param id path int true "User ID"
 // @Param request body dto.UpdateUserRequest true "User update data"
 // @Success 200 {object} dto.UserDTO
 // @Failure 400 {object} gin.H
-// @Failure 401 {object} gin.H
+// @Failure 404 {object} gin.H
 // @Failure 500 {object} gin.H
-// @Router /users/me [patch]
+// @Router /users/{id} [patch]
 func (h *UserHandler) UpdateUser(c *gin.Context) {
+	// Получаем ID пользователя из URL
+	userIDStr := c.Param("id")
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+
 	var req dto.UpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Получаем ID пользователя из контекста, установленного middleware
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
-
-	// Преобразуем ID в int64, если необходимо
-	var userIDInt64 int64
-	switch v := userID.(type) {
-	case int64:
-		userIDInt64 = v
-	case float64:
-		userIDInt64 = int64(v)
-	case string:
-		var err error
-		userIDInt64, err = strconv.ParseInt(v, 10, 64)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID format"})
-			return
-		}
-	default:
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID type"})
-		return
-	}
-
-	updatedUser, err := h.userService.UpdateUser(c.Request.Context(), userIDInt64, req)
+	updatedUser, err := h.userService.UpdateUser(c.Request.Context(), userID, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
