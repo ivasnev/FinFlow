@@ -5,10 +5,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/api/handler"
-	"github.com/ivasnev/FinFlow/ff-auth/internal/api/middleware"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/common/config"
 	pg_repos "github.com/ivasnev/FinFlow/ff-auth/internal/repository/postgres"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
+	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -25,6 +25,9 @@ type Container struct {
 	SessionRepository      pg_repos.SessionRepositoryInterface
 	LoginHistoryRepository pg_repos.LoginHistoryRepositoryInterface
 	DeviceRepository       pg_repos.DeviceRepositoryInterface
+
+	// Токен менеджер
+	TokenManager *service.ED25519TokenManager
 
 	// Сервисы
 	AuthService         service.AuthServiceInterface
@@ -50,6 +53,13 @@ func NewContainer(cfg *config.Config, router *gin.Engine) (*Container, error) {
 	if err := container.initDB(); err != nil {
 		return nil, fmt.Errorf("ошибка инициализации базы данных: %w", err)
 	}
+
+	// Инициализируем TokenManager
+	tokenManager, err := service.NewED25519TokenManager()
+	if err != nil {
+		return nil, fmt.Errorf("ошибка инициализации менеджера токенов: %w", err)
+	}
+	container.TokenManager = tokenManager
 
 	// Инициализируем репозитории
 	container.initRepositories()
@@ -104,6 +114,7 @@ func (c *Container) initServices() {
 		c.SessionRepository,
 		c.DeviceService,
 		c.LoginHistoryRepository,
+		c.TokenManager,
 	)
 	c.UserService = service.NewUserService(c.UserRepository)
 	c.SessionService = service.NewSessionService(c.SessionRepository)
@@ -112,7 +123,7 @@ func (c *Container) initServices() {
 
 // initHandlers инициализирует обработчики
 func (c *Container) initHandlers() {
-	c.AuthHandler = handler.NewAuthHandler(c.AuthService)
+	c.AuthHandler = handler.NewAuthHandler(c.AuthService, c.TokenManager)
 	c.UserHandler = handler.NewUserHandler(c.UserService)
 	c.SessionHandler = handler.NewSessionHandler(c.SessionService, c.LoginHistoryService)
 }
@@ -123,19 +134,20 @@ func (c *Container) RegisterRoutes() {
 	v1 := c.Router.Group("/api/v1")
 
 	// Middleware для авторизации
-	authMiddleware := middleware.AuthMiddleware(c.AuthService)
+	authMiddleware := auth.AuthMiddleware(c.TokenManager)
 
 	// Группа маршрутов для аутентификации
-	auth := v1.Group("/auth")
+	authGroup := v1.Group("/auth")
 	{
 		// Публичные маршруты
-		auth.POST("/register", c.AuthHandler.Register)
-		auth.POST("/login", c.AuthHandler.Login)
-		auth.POST("/refresh", c.AuthHandler.RefreshToken)
+		authGroup.POST("/register", c.AuthHandler.Register)
+		authGroup.POST("/login", c.AuthHandler.Login)
+		authGroup.POST("/refresh", c.AuthHandler.RefreshToken)
+		authGroup.GET("/public-key", c.AuthHandler.PublicKeyHandler)
 
 		// Защищенные маршруты
-		auth.Use(authMiddleware)
-		auth.POST("/logout", c.AuthHandler.Logout)
+		authGroup.Use(authMiddleware)
+		authGroup.POST("/logout", c.AuthHandler.Logout)
 	}
 
 	// Группа маршрутов для пользователей

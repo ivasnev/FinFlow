@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/base64"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -10,13 +11,15 @@ import (
 
 // AuthHandler обрабатывает запросы, связанные с аутентификацией
 type AuthHandler struct {
-	authService service.AuthServiceInterface
+	authService  service.AuthServiceInterface
+	tokenManager *service.ED25519TokenManager
 }
 
 // NewAuthHandler создает новый AuthHandler
-func NewAuthHandler(authService service.AuthServiceInterface) *AuthHandler {
+func NewAuthHandler(authService service.AuthServiceInterface, tokenManager *service.ED25519TokenManager) *AuthHandler {
 	return &AuthHandler{
-		authService: authService,
+		authService:  authService,
+		tokenManager: tokenManager,
 	}
 }
 
@@ -130,4 +133,14 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "successfully logged out"})
+}
+
+// PublicKeyHandler возвращает текущий публичный ключ
+func (h *AuthHandler) PublicKeyHandler(c *gin.Context) {
+	publicKey := h.tokenManager.GetPublicKey()
+
+	// Кодируем ключ в base64
+	encodedKey := base64.StdEncoding.EncodeToString(publicKey)
+
+	c.String(http.StatusOK, encodedKey)
 }
