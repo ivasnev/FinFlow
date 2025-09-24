@@ -26,8 +26,8 @@ redis:
 
 tvm:
   base_url: http://localhost:8081
-  service_id: 1
-  service_secret: secret
+  service_id: 3
+  service_secret: "pVwO2XHfyyA8DdM0RCaTkiQfMuFoTeA+Qkwt15c7Xbai4FlXNQE+oCP/pqXJblBNqTVOqkFxWLRsbBrQw6JuyQ=="
 
 migrations:
   path: migrations 

@@ -14,6 +14,7 @@ import (
 	"github.com/ivasnev/FinFlow/ff-auth/internal/common/config"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/models"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/repository/postgres"
+	idclient "github.com/ivasnev/FinFlow/ff-id/pkg/client"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -26,6 +27,7 @@ type AuthService struct {
 	deviceService          DeviceServiceInterface
 	loginHistoryRepository postgres.LoginHistoryRepositoryInterface
 	tokenManager           *ED25519TokenManager
+	idClient               *idclient.Client
 }
 
 // NewAuthService создает новый сервис аутентификации
@@ -37,6 +39,7 @@ func NewAuthService(
 	deviceService DeviceServiceInterface,
 	loginHistoryRepository postgres.LoginHistoryRepositoryInterface,
 	tokenManager *ED25519TokenManager,
+	idClient *idclient.Client,
 ) *AuthService {
 	return &AuthService{
 		config:                 config,
@@ -46,6 +49,7 @@ func NewAuthService(
 		deviceService:          deviceService,
 		loginHistoryRepository: loginHistoryRepository,
 		tokenManager:           tokenManager,
+		idClient:               idClient,
 	}
 }
 
@@ -81,6 +85,21 @@ func (s *AuthService) Register(ctx context.Context, req dto.RegisterRequest) (*d
 	// Сохраняем пользователя в базе данных
 	if err := s.userRepository.Create(ctx, user); err != nil {
 		return nil, fmt.Errorf("ошибка создания пользователя: %w", err)
+	}
+
+	reqRegister := &idclient.RegisterUserRequest{
+		Email:    user.Email,
+		Nickname: user.Nickname,
+		UserID:   user.ID,
+	}
+
+	_, err = s.idClient.RegisterUser(ctx, reqRegister)
+	if err != nil {
+		dbErr := s.userRepository.Delete(ctx, user.ID)
+		if dbErr != nil {
+			return nil, fmt.Errorf("ошибка удаления пользователя из базы данных: %w", dbErr)
+		}
+		return nil, fmt.Errorf("ошибка регистрации пользователя в ID: %w", err)
 	}
 
 	// Назначаем пользователю роль "user"

@@ -14,9 +14,9 @@ redis:
   password: ""
 
 auth:
-  host: localhost
+  host: http://localhost
   port: 8084
-  update_interval: 120
+  update_interval: 10
 
 file_service:
   base_url: http://localhost:8082
@@ -25,7 +25,7 @@ file_service:
 tvm:
   base_url: http://localhost:8081
   service_id: 2
-  service_secret: secret
+  service_secret: "/OdF44bzQKMBZOLk+3p8NCR+7MCw8Vafr4Y9uzhMQwaqmLyyVdy0p/ajOk7i1WCv9iYb32SRsObZJu0Oo/FhMw=="
 
 migrations:
   path: migrations 

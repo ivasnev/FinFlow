@@ -19,7 +19,7 @@ type Config struct {
 		Port     int    `yaml:"port" env:"POSTGRES_PORT" env-default:"5432"`
 		User     string `yaml:"user" env:"POSTGRES_USER" env-default:"postgres"`
 		Password string `yaml:"password" env:"POSTGRES_PASSWORD" env-default:"postgres"`
-		DBName   string `yaml:"dbname" env:"POSTGRES_DB" env-default:"ff_id"`
+		DBName   string `yaml:"dbname" env:"POSTGRES_DB" env-default:"ff_auth"`
 	} `yaml:"postgres"`
 
 	Auth struct {
@@ -29,6 +29,11 @@ type Config struct {
 		PasswordMinLength    int    `yaml:"password_min_length" env:"PASSWORD_MIN_LENGTH" env-default:"8"`
 		PasswordHashCost     int    `yaml:"password_hash_cost" env:"PASSWORD_HASH_COST" env-default:"10"`
 	} `yaml:"auth"`
+
+	IDClient struct {
+		BaseURL string `yaml:"base_url" env:"ID_BASE_URL" env-default:"http://localhost:8083"`
+		TVMID   int    `yaml:"tvm_id" env:"ID_TVM_ID" env-default:"4"`
+	} `yaml:"id_client"`
 
 	TVM struct {
 		BaseURL       string `yaml:"base_url" env:"TVM_BASE_URL" env-default:"http://localhost:8081"`
@@ -88,6 +93,9 @@ func loadFromEnv(cfg *Config) {
 	cfg.Auth.RefreshTokenDuration = getEnvAsInt("REFRESH_TOKEN_DURATION", cfg.Auth.RefreshTokenDuration)
 	cfg.Auth.PasswordMinLength = getEnvAsInt("PASSWORD_MIN_LENGTH", cfg.Auth.PasswordMinLength)
 	cfg.Auth.PasswordHashCost = getEnvAsInt("PASSWORD_HASH_COST", cfg.Auth.PasswordHashCost)
+
+	cfg.IDClient.BaseURL = getEnv("ID_BASE_URL", cfg.IDClient.BaseURL)
+	cfg.IDClient.TVMID = getEnvAsInt("ID_TVM_ID", cfg.IDClient.TVMID)
 
 	cfg.TVM.BaseURL = getEnv("TVM_BASE_URL", cfg.TVM.BaseURL)
 	cfg.TVM.ServiceID = getEnvAsInt("TVM_SERVICE_ID", cfg.TVM.ServiceID)

@@ -48,10 +48,10 @@ func TestGenerateTicket(t *testing.T) {
 	ticket, err := svc.GenerateTicket(context.Background(), 1, 2, EncodeKey(privateKey))
 	assert.NoError(t, err)
 	assert.NotNil(t, ticket)
-	assert.Equal(t, 1, ticket.From)
-	assert.Equal(t, 2, ticket.To)
+	assert.Equal(t, 1, ticket.Payload.From)
+	assert.Equal(t, 2, ticket.Payload.To)
 	assert.NotEmpty(t, ticket.Signature)
-	assert.NotEmpty(t, ticket.Metadata)
+	assert.NotEmpty(t, ticket.Payload.Metadata)
 
 	// Тест: Отказ в доступе
 	accessManager.EXPECT().CheckAccess(1, 2).Return(false)

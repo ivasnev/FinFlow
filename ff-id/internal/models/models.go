@@ -8,15 +8,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// Role определяет роль пользователя в системе
-type Role string
-
-const (
-	RoleAdmin     Role = "admin"
-	RoleUser      Role = "user"
-	RoleModerator Role = "moderator"
-)
-
 // User представляет пользователя системы
 type User struct {
 	ID        int64          `gorm:"primaryKey;autoIncrement;column:id" json:"id"`
