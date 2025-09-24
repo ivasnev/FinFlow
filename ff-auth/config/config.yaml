@@ -1,5 +1,5 @@
 server:
-  port: 8083
+  port: 8084
 
 postgres:
   host: localhost
@@ -8,21 +8,12 @@ postgres:
   password: postgres
   dbname: ff_id
 
-redis:
-  host: localhost
-  port: 6379
-  password: ""
-
 auth:
   jwt_secret: "super_secret_key_change_in_production"
   access_token_duration: 15
   refresh_token_duration: 10080
   password_min_length: 8
   password_hash_cost: 10
-
-file_service:
-  base_url: http://localhost:8082
-  service_id: 2
 
 tvm:
   base_url: http://localhost:8081

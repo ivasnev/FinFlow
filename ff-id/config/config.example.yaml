@@ -14,11 +14,9 @@ redis:
   password: ""
 
 auth:
-  jwt_secret: "your_secure_jwt_secret_should_be_long_and_random"
-  access_token_duration: 15      # в минутах
-  refresh_token_duration: 10080  # в минутах (7 дней)
-  password_min_length: 8
-  password_hash_cost: 10
+  host: localhost
+  port: 8084
+  update_interval: 120
 
 file_service:
   base_url: "http://localhost:8082"

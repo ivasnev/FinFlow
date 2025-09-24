@@ -28,12 +28,10 @@ type Config struct {
 		Password string `yaml:"password" env:"REDIS_PASSWORD" env-default:""`
 	} `yaml:"redis"`
 
-	Auth struct {
-		JWTSecret            string `yaml:"jwt_secret" env:"JWT_SECRET" env-default:"default_jwt_secret"`
-		AccessTokenDuration  int    `yaml:"access_token_duration" env:"ACCESS_TOKEN_DURATION" env-default:"15"`      // в минутах
-		RefreshTokenDuration int    `yaml:"refresh_token_duration" env:"REFRESH_TOKEN_DURATION" env-default:"10080"` // в минутах (по умолчанию 7 дней)
-		PasswordMinLength    int    `yaml:"password_min_length" env:"PASSWORD_MIN_LENGTH" env-default:"8"`
-		PasswordHashCost     int    `yaml:"password_hash_cost" env:"PASSWORD_HASH_COST" env-default:"10"`
+	AuthClient struct {
+		Host           string `yaml:"host" env:"AUTH_CLIENT_HOST" env-default:"localhost"`
+		Port           int    `yaml:"port" env:"AUTH_CLIENT_PORT" env-default:"8084"`
+		UpdateInterval int    `yaml:"update_interval" env:"UPDATE_INTERVAL" env-default:"60"`
 	} `yaml:"auth"`
 
 	FileService struct {
@@ -98,11 +96,9 @@ func loadFromEnv(cfg *Config) {
 	cfg.Redis.Port = getEnvAsInt("REDIS_PORT", cfg.Redis.Port)
 	cfg.Redis.Password = getEnv("REDIS_PASSWORD", cfg.Redis.Password)
 
-	cfg.Auth.JWTSecret = getEnv("JWT_SECRET", cfg.Auth.JWTSecret)
-	cfg.Auth.AccessTokenDuration = getEnvAsInt("ACCESS_TOKEN_DURATION", cfg.Auth.AccessTokenDuration)
-	cfg.Auth.RefreshTokenDuration = getEnvAsInt("REFRESH_TOKEN_DURATION", cfg.Auth.RefreshTokenDuration)
-	cfg.Auth.PasswordMinLength = getEnvAsInt("PASSWORD_MIN_LENGTH", cfg.Auth.PasswordMinLength)
-	cfg.Auth.PasswordHashCost = getEnvAsInt("PASSWORD_HASH_COST", cfg.Auth.PasswordHashCost)
+	cfg.AuthClient.Host = getEnv("AUTH_CLIENT_HOST", cfg.AuthClient.Host)
+	cfg.AuthClient.Port = getEnvAsInt("AUTH_CLIENT_PORT", cfg.AuthClient.Port)
+	cfg.AuthClient.UpdateInterval = getEnvAsInt("UPDATE_INTERVAL", cfg.AuthClient.UpdateInterval)
 
 	cfg.FileService.BaseURL = getEnv("FILE_SERVICE_BASE_URL", cfg.FileService.BaseURL)
 	cfg.FileService.ServiceID = getEnvAsInt("FILE_SERVICE_ID", cfg.FileService.ServiceID)
