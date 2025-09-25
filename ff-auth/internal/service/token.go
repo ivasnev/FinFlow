@@ -1,14 +1,20 @@
 package service
 
 import (
+	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
+	"fmt"
+	"log"
 	"sync"
 	"time"
+
+	"github.com/ivasnev/FinFlow/ff-auth/internal/models"
+	pg_repos "github.com/ivasnev/FinFlow/ff-auth/internal/repository/postgres"
+	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
 )
 
 // TokenValidator определяет интерфейс для валидации токенов
@@ -24,37 +30,111 @@ type TokenGenerator interface {
 
 // ED25519TokenManager реализует TokenValidator и TokenGenerator с использованием Ed25519
 type ED25519TokenManager struct {
-	publicKey  ed25519.PublicKey
-	privateKey ed25519.PrivateKey
-	mutex      sync.RWMutex
+	publicKey    ed25519.PublicKey
+	privateKey   ed25519.PrivateKey
+	mutex        sync.RWMutex
+	keyPairRepo  pg_repos.KeyPairRepositoryInterface
+	loadedFromDB bool
 }
 
 // NewED25519TokenManager создает новый менеджер токенов с использованием Ed25519
-func NewED25519TokenManager() (*ED25519TokenManager, error) {
-	// Генерируем новую пару ключей
-	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
-	if err != nil {
+func NewED25519TokenManager(keyPairRepo pg_repos.KeyPairRepositoryInterface) (*ED25519TokenManager, error) {
+	manager := &ED25519TokenManager{
+		keyPairRepo:  keyPairRepo,
+		loadedFromDB: false,
+	}
+
+	// Загрузка ключей из БД или генерация новых
+	if err := manager.LoadOrGenerateKeys(); err != nil {
 		return nil, err
 	}
 
-	return &ED25519TokenManager{
-		publicKey:  publicKey,
-		privateKey: privateKey,
-	}, nil
+	return manager, nil
 }
 
-// RegenerateKeys создает новую пару ключей для подписи токенов
+// LoadOrGenerateKeys загружает ключи из БД или генерирует новые, если в БД их нет
+func (m *ED25519TokenManager) LoadOrGenerateKeys() error {
+	// Попытка загрузить активную пару ключей из БД
+	keyPair, err := m.keyPairRepo.GetActive(context.Background())
+	if err != nil {
+		return fmt.Errorf("ошибка при загрузке ключей: %w", err)
+	}
+
+	if keyPair != nil {
+		// Ключи найдены в БД, используем их
+		publicKeyBytes, err := base64.StdEncoding.DecodeString(keyPair.PublicKey)
+		if err != nil {
+			return fmt.Errorf("ошибка декодирования публичного ключа: %w", err)
+		}
+
+		privateKeyBytes, err := base64.StdEncoding.DecodeString(keyPair.PrivateKey)
+		if err != nil {
+			return fmt.Errorf("ошибка декодирования приватного ключа: %w", err)
+		}
+
+		m.mutex.Lock()
+		m.publicKey = ed25519.PublicKey(publicKeyBytes)
+		m.privateKey = ed25519.PrivateKey(privateKeyBytes)
+		m.loadedFromDB = true
+		m.mutex.Unlock()
+
+		log.Println("Ключи успешно загружены из базы данных")
+	} else {
+		// Ключей в БД нет, генерируем новые
+		if err := m.RegenerateKeys(); err != nil {
+			return fmt.Errorf("ошибка при генерации ключей: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// RegenerateKeys создает новую пару ключей для подписи токенов и сохраняет в БД
 func (m *ED25519TokenManager) RegenerateKeys() error {
+	// Генерируем новую пару ключей
 	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		return err
 	}
 
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	// Кодируем ключи в base64 для сохранения в БД
+	publicKeyStr := base64.StdEncoding.EncodeToString(publicKey)
+	privateKeyStr := base64.StdEncoding.EncodeToString(privateKey)
 
+	m.mutex.Lock()
 	m.publicKey = publicKey
 	m.privateKey = privateKey
+	m.mutex.Unlock()
+
+	// Сохраняем ключи в БД
+	keyPair := &models.KeyPair{
+		PublicKey:  publicKeyStr,
+		PrivateKey: privateKeyStr,
+		IsActive:   true,
+	}
+
+	ctx := context.Background()
+	// Если уже есть активный ключ, деактивируем его
+	if m.loadedFromDB {
+		existing, err := m.keyPairRepo.GetActive(ctx)
+		if err != nil {
+			return fmt.Errorf("ошибка при получении текущего активного ключа: %w", err)
+		}
+		if existing != nil {
+			existing.IsActive = false
+			if err := m.keyPairRepo.Update(ctx, existing); err != nil {
+				return fmt.Errorf("ошибка при деактивации текущего ключа: %w", err)
+			}
+		}
+	}
+
+	// Сохраняем новый ключ
+	if err := m.keyPairRepo.Create(ctx, keyPair); err != nil {
+		return fmt.Errorf("ошибка при сохранении ключей в БД: %w", err)
+	}
+
+	m.loadedFromDB = true
+	log.Println("Сгенерированы и сохранены новые ключи в базе данных")
 
 	return nil
 }

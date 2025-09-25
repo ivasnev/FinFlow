@@ -7,8 +7,8 @@ toolchain go1.24.1
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
-	github.com/ivasnev/FinFlow/ff-id v0.0.0-20250413001105-de6af4703bcc
-	github.com/ivasnev/FinFlow/ff-tvm v0.0.0-20250413133539-2d33aba94c53
+	github.com/ivasnev/FinFlow/ff-id v0.0.0-20250413153156-d6d5db6116c5
+	github.com/ivasnev/FinFlow/ff-tvm v0.0.0-20250413153156-d6d5db6116c5
 	github.com/lib/pq v1.10.9
 	golang.org/x/crypto v0.37.0
 	gopkg.in/yaml.v3 v3.0.1

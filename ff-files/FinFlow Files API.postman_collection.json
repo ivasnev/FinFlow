@@ -1,0 +1,181 @@
+{
+	"info": {
+		"_postman_id": "8aa8f375-8e87-4f9b-a49b-e4a1f221b382",
+		"name": "FinFlow Files API",
+		"description": "API для работы с файлами в FinFlow",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "43146034"
+	},
+	"item": [
+		{
+			"name": "Загрузка файла",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-TVM-Ticket",
+						"value": "{{tvm_ticket}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "multipart/form-data",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": []
+						},
+						{
+							"key": "metadata",
+							"value": "{\n    \"description\": \"Описание файла\",\n    \"tags\": [\"важный\", \"документ\"],\n    \"category\": \"финансы\"\n}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/upload",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"upload"
+					]
+				},
+				"description": "Загрузка нового файла. Поддерживаемые типы: изображения, PDF, DOC, DOCX, XLS, XLSX, TXT. Максимальный размер: 100MB. Метаданные передаются в формате JSON"
+			},
+			"response": []
+		},
+		{
+			"name": "Получение файла",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-TVM-Ticket",
+						"value": "{{tvm_ticket}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/files/{{file_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"files",
+						"{{file_id}}"
+					]
+				},
+				"description": "Получение файла по его ID. Файл будет скачан с оригинальным именем"
+			},
+			"response": []
+		},
+		{
+			"name": "Получение метаданных файла",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-TVM-Ticket",
+						"value": "{{tvm_ticket}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/files/{{file_id}}/metadata",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"files",
+						"{{file_id}}",
+						"metadata"
+					]
+				},
+				"description": "Получение метаданных файла по его ID. Возвращает информацию о файле, включая размер, тип, владельца и дополнительные метаданные"
+			},
+			"response": []
+		},
+		{
+			"name": "Удаление файла",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "X-TVM-Ticket",
+						"value": "{{tvm_ticket}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/files/{{file_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"files",
+						"{{file_id}}"
+					]
+				},
+				"description": "Удаление файла по его ID. Выполняет мягкое удаление (soft delete)"
+			},
+			"response": []
+		},
+		{
+			"name": "Генерация временной ссылки",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-TVM-Ticket",
+						"value": "{{tvm_ticket}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/files/{{file_id}}/temporary-url?expires_in=3600",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"files",
+						"{{file_id}}",
+						"temporary-url"
+					],
+					"query": [
+						{
+							"key": "expires_in",
+							"value": "3600",
+							"description": "Время жизни ссылки в секундах (по умолчанию 1 час)"
+						}
+					]
+				},
+				"description": "Генерация временной ссылки для доступа к файлу. Ссылка действительна указанное время в секундах"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "tvm_ticket",
+			"value": "your-tvm-ticket-here",
+			"type": "string"
+		},
+		{
+			"key": "file_id",
+			"value": "26296f14-3f08-4f79-b453-09ebc4eac98d",
+			"type": "default"
+		}
+	]
+}
