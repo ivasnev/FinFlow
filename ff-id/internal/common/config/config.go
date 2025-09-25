@@ -9,6 +9,17 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// LogLevel представляет уровень логирования
+type LogLevel string
+
+// Константы для уровней логирования
+const (
+	LogLevelSilent LogLevel = "silent"
+	LogLevelError  LogLevel = "error"
+	LogLevelWarn   LogLevel = "warn"
+	LogLevelInfo   LogLevel = "info" // По умолчанию
+)
+
 type Config struct {
 	Server struct {
 		Port int `yaml:"port" env:"SERVER_PORT" env-default:"8083"`
@@ -48,6 +59,10 @@ type Config struct {
 	Migrations struct {
 		Path string `yaml:"path" env:"MIGRATIONS_PATH" env-default:"migrations"`
 	} `yaml:"migrations"`
+
+	Logger struct {
+		Level LogLevel `yaml:"level" env:"LOG_LEVEL" env-default:"info"`
+	} `yaml:"logger"`
 }
 
 func Load() *Config {
@@ -108,6 +123,11 @@ func loadFromEnv(cfg *Config) {
 	cfg.TVM.ServiceSecret = getEnv("TVM_SERVICE_SECRET", cfg.TVM.ServiceSecret)
 
 	cfg.Migrations.Path = getEnv("MIGRATIONS_PATH", cfg.Migrations.Path)
+
+	// Устанавливаем уровень логирования
+	if logLevel := LogLevel(getEnv("LOG_LEVEL", string(cfg.Logger.Level))); logLevel != "" {
+		cfg.Logger.Level = logLevel
+	}
 }
 
 // getEnv получает строковую переменную окружения или возвращает значение по умолчанию

@@ -22,6 +22,7 @@ type User struct {
 
 	// Связи
 	Avatars []UserAvatar `gorm:"foreignKey:UserID" json:"avatars,omitempty"`
+	Friends []UserFriend `gorm:"foreignKey:UserID" json:"-"`
 }
 
 // TableName устанавливает имя таблицы для модели User
@@ -46,4 +47,22 @@ type UserAvatar struct {
 // TableName устанавливает имя таблицы для модели UserAvatar
 func (UserAvatar) TableName() string {
 	return "user_avatars"
+}
+
+// UserFriend представляет связь дружбы между пользователями
+type UserFriend struct {
+	ID        int64     `gorm:"primaryKey;autoIncrement;column:id" json:"id"`
+	UserID    int64     `gorm:"type:bigint;not null;column:user_id;index:idx_user_friend" json:"user_id"`
+	FriendID  int64     `gorm:"type:bigint;not null;column:friend_id;index:idx_user_friend" json:"friend_id"`
+	Status    string    `gorm:"type:varchar(20);not null;column:status;default:'pending'" json:"status"`
+	CreatedAt time.Time `gorm:"type:timestamp;not null;default:now();column:created_at" json:"created_at"`
+
+	// Связи
+	User   User `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Friend User `gorm:"foreignKey:FriendID" json:"friend,omitempty"`
+}
+
+// TableName устанавливает имя таблицы для модели UserFriend
+func (UserFriend) TableName() string {
+	return "user_friends"
 }

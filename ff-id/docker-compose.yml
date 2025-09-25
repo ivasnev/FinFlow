@@ -16,6 +16,7 @@ services:
       - AUTH_CLIENT_HOST=http://host.docker.internal
       - AUTH_CLIENT_PORT=8084
       - UPDATE_INTERVAL=10
+      - LOG_LEVEL=error
     networks:
       - shared_network
 

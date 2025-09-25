@@ -28,4 +28,7 @@ tvm:
   service_secret: "/OdF44bzQKMBZOLk+3p8NCR+7MCw8Vafr4Y9uzhMQwaqmLyyVdy0p/ajOk7i1WCv9iYb32SRsObZJu0Oo/FhMw=="
 
 migrations:
-  path: migrations 
+  path: migrations
+
+logger:
+  level: info 

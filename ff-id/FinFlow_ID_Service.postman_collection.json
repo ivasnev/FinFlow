@@ -72,6 +72,221 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Друзья",
+      "description": "Методы для работы с друзьями пользователей",
+      "item": [
+        {
+          "name": "Получение списка друзей",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/{{nickname}}/friends?page=1&page_size=20&friend_name=&status=accepted",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{nickname}}",
+                "friends"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Номер страницы (по умолчанию 1)"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20",
+                  "description": "Количество записей на странице (по умолчанию 20, максимум 100)"
+                },
+                {
+                  "key": "friend_name",
+                  "value": "",
+                  "description": "Фильтр по имени друга (ILIKE поиск)"
+                },
+                {
+                  "key": "status",
+                  "value": "accepted",
+                  "description": "Фильтр по статусу дружбы (accepted, pending, rejected, blocked)"
+                }
+              ]
+            },
+            "description": "Возвращает список друзей пользователя с поддержкой пагинации и фильтрации по имени. Публичный эндпоинт, доступен без авторизации."
+          },
+          "response": []
+        },
+        {
+          "name": "Отправка заявки в друзья",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"friend_nickname\": \"name123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/me/friends",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me",
+                "friends"
+              ]
+            },
+            "description": "Отправляет заявку в друзья указанному пользователю. Требуется авторизация."
+          },
+          "response": []
+        },
+        {
+          "name": "Действие с заявкой в друзья",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"user_id\": 3,\n    \"action\": \"accept\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/me/friends/action",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me",
+                "friends",
+                "action"
+              ]
+            },
+            "description": "Выполняет действие над заявкой в друзья. Доступные действия: accept (принять), reject (отклонить), block (заблокировать). Требуется авторизация."
+          },
+          "response": []
+        },
+        {
+          "name": "Удаление из друзей",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/me/friends/2",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me",
+                "friends",
+                "2"
+              ]
+            },
+            "description": "Удаляет пользователя из списка друзей. Требуется авторизация."
+          },
+          "response": []
+        },
+        {
+          "name": "Получение заявок в друзья",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/me/friend-requests?incoming=true&page=1&page_size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me",
+                "friend-requests"
+              ],
+              "query": [
+                {
+                  "key": "incoming",
+                  "value": "true",
+                  "description": "Тип заявок: true - входящие, false - исходящие"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Номер страницы (по умолчанию 1)"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20",
+                  "description": "Количество записей на странице (по умолчанию 20, максимум 100)"
+                }
+              ]
+            },
+            "description": "Возвращает список входящих или исходящих заявок в друзья с поддержкой пагинации. Требуется авторизация."
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "event": [
