@@ -1,0 +1,38 @@
+server:
+  port: 8085
+
+postgres:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: postgres
+  dbname: ff_split
+
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+
+auth:
+  host: http://localhost
+  port: 8084
+  update_interval: 10
+
+file_service:
+  base_url: http://localhost:8082
+  service_id: 3
+
+id_service:
+  base_url: http://localhost:8083
+  service_id: 2
+
+tvm:
+  base_url: http://localhost:8081
+  service_id: 3
+  service_secret: "your-secret-key-here"
+
+migrations:
+  path: migrations
+
+logger:
+  level: info 

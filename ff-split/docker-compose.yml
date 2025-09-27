@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8085:8085"
+    environment:
+      - SERVER_PORT=8085
+      - POSTGRES_HOST=host.docker.internal
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=ff_split
+      - TVM_BASE_URL=http://host.docker.internal:8081
+      - AUTH_CLIENT_HOST=http://host.docker.internal
+      - AUTH_CLIENT_PORT=8084
+      - ID_SERVICE_BASE_URL=http://host.docker.internal:8083
+      - UPDATE_INTERVAL=10
+      - LOG_LEVEL=error
+    networks:
+      - shared_network
+
+
+networks:
+  shared_network:
+    external: true 
