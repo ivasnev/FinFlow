@@ -151,32 +151,3 @@ func PrintTransactions(transactions map[string]map[string]int) {
 		}
 	}
 }
-
-func main() {
-	// Пример использования
-	debts := map[string]map[string]int{
-		"Гейб": {
-			"Боб":   30,
-			"Дэвид": 10,
-		},
-		"Фред": {
-			"Боб":   10,
-			"Чарли": 30,
-			"Дэвид": 10,
-			"Эма":   10,
-		},
-		"Боб": {
-			"Чарли": 40,
-		},
-		"Чарли": {
-			"Дэвид": 20,
-		},
-		"Дэвид": {
-			"Эма": 50,
-		},
-		"Алиса": {},
-	}
-
-	simplifiedDebts := SimplifyDebts(debts)
-	PrintTransactions(simplifiedDebts)
-}

@@ -2,12 +2,13 @@ package postgres
 
 import (
 	"context"
+	"errors"
 
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"gorm.io/gorm"
 )
 
-// ActivityRepository представляет собой репозиторий для работы с активностями в PostgreSQL
+// ActivityRepository реализует интерфейс repository.ActivityRepository
 type ActivityRepository struct {
 	db *gorm.DB
 }
@@ -19,38 +20,77 @@ func NewActivityRepository(db *gorm.DB) *ActivityRepository {
 	}
 }
 
-// GetActivitiesByEventID возвращает все активности по ID мероприятия
-func (r *ActivityRepository) GetActivitiesByEventID(ctx context.Context, eventID int64) ([]models.Activity, error) {
+// GetByEventID возвращает активности по ID мероприятия
+func (r *ActivityRepository) GetByEventID(ctx context.Context, eventID int64) ([]models.Activity, error) {
 	var activities []models.Activity
-	if err := r.db.WithContext(ctx).Where("id_event = ?", eventID).Find(&activities).Error; err != nil {
+	err := r.db.WithContext(ctx).Where("event_id = ?", eventID).Find(&activities).Error
+	if err != nil {
 		return nil, err
 	}
 	return activities, nil
 }
 
-// GetActivityByID возвращает активность по ID
-func (r *ActivityRepository) GetActivityByID(ctx context.Context, id int) (models.Activity, error) {
+// GetByID возвращает активность по ID
+func (r *ActivityRepository) GetByID(ctx context.Context, id int) (*models.Activity, error) {
 	var activity models.Activity
-	if err := r.db.WithContext(ctx).First(&activity, id).Error; err != nil {
-		return models.Activity{}, err
+	err := r.db.WithContext(ctx).First(&activity, id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil // возвращаем nil, nil если активность не найдена
+		}
+		return nil, err
+	}
+	return &activity, nil
+}
+
+// Create создает новую активность
+func (r *ActivityRepository) Create(ctx context.Context, activity *models.Activity) (*models.Activity, error) {
+	err := r.db.WithContext(ctx).Create(activity).Error
+	if err != nil {
+		return nil, err
 	}
 	return activity, nil
 }
 
-// CreateActivity создает новую активность
-func (r *ActivityRepository) CreateActivity(ctx context.Context, activity models.Activity) (models.Activity, error) {
-	if err := r.db.WithContext(ctx).Create(&activity).Error; err != nil {
-		return models.Activity{}, err
+// Update обновляет активность
+func (r *ActivityRepository) Update(ctx context.Context, id int, activity *models.Activity) (*models.Activity, error) {
+	// Проверяем существование активности
+	var existingActivity models.Activity
+	err := r.db.WithContext(ctx).First(&existingActivity, id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil // возвращаем nil, nil если активность не найдена
+		}
+		return nil, err
 	}
-	return activity, nil
+
+	// Обновляем только указанные поля
+	activity.ID = id // Важно установить ID для правильного обновления
+	err = r.db.WithContext(ctx).Model(&models.Activity{}).Where("id = ?", id).Updates(activity).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// Получаем обновленную активность
+	var updatedActivity models.Activity
+	err = r.db.WithContext(ctx).First(&updatedActivity, id).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &updatedActivity, nil
 }
 
-// UpdateActivity обновляет существующую активность
-func (r *ActivityRepository) UpdateActivity(ctx context.Context, activity models.Activity) error {
-	return r.db.WithContext(ctx).Save(&activity).Error
-}
+// Delete удаляет активность
+func (r *ActivityRepository) Delete(ctx context.Context, id int) error {
+	result := r.db.WithContext(ctx).Delete(&models.Activity{}, id)
+	if result.Error != nil {
+		return result.Error
+	}
 
-// DeleteActivity удаляет активность
-func (r *ActivityRepository) DeleteActivity(ctx context.Context, id int) error {
-	return r.db.WithContext(ctx).Delete(&models.Activity{}, id).Error
+	if result.RowsAffected == 0 {
+		return errors.New("активность не найдена")
+	}
+
+	return nil
 }

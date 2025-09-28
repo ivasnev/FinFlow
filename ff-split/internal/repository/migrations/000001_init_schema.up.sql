@@ -1,94 +1,123 @@
--- Создание таблицы пользователей
-CREATE TABLE IF NOT EXISTS users (
-    id BIGSERIAL PRIMARY KEY,
-    id_user BIGINT UNIQUE,
-    nickname_cashed VARCHAR(255),
-    name_cashed VARCHAR(255),
-    photo_uuid_cashed VARCHAR(255),
-    is_dummy BOOLEAN DEFAULT FALSE
+-- Таблица пользователей
+create table users
+(
+    id                bigserial primary key, -- Внутренний ID пользователя
+    user_id           bigint unique,         -- Внешний ID пользователя из внешней системы
+    nickname_cashed   varchar(255),          -- Кэшированный никнейм
+    name_cashed       varchar(255),          -- Кэшированное имя
+    photo_uuid_cashed varchar(255),          -- UUID аватарки
+    is_dummy          boolean default false  -- Временный/фиктивный пользователь
 );
 
--- Создание таблицы категорий
-CREATE TABLE IF NOT EXISTS categories (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    image_id VARCHAR(255)
+-- Категории (например, еда, поездка и т.д.)
+create table event_categories
+(
+    id       serial primary key,    -- ID категории
+    name     varchar(255) not null, -- Название категории
+    icon_id varchar(255)           -- Иконка категории
 );
 
--- Создание таблицы мероприятий
-CREATE TABLE IF NOT EXISTS events (
-    id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    category_id INT REFERENCES categories(id),
-    image_id VARCHAR(255),
-    status VARCHAR(20) CHECK (status IN ('active', 'archive')) DEFAULT 'active'
+-- События (мероприятия, к которым привязаны транзакции)
+create table events
+(
+    id          bigserial primary key,         -- ID события
+    name        varchar(255) not null,         -- Название события
+    description text,                          -- Описание события
+    category_id integer references event_categories, -- Категория события
+    image_id    varchar(255),                  -- Иконка события
+    status      varchar(20) default 'active'   -- Статус: active | archive
+        check (status in ('active', 'archive'))
 );
 
--- Создание таблицы связи пользователей и мероприятий
-CREATE TABLE IF NOT EXISTS user_event (
-    id_user BIGINT REFERENCES users(id_user),
-    id_event BIGINT REFERENCES events(id),
-    PRIMARY KEY (id_user, id_event)
+create index idx_events_category_id on events (category_id);
+
+-- Связка пользователей с событиями
+create table user_event
+(
+    user_id  bigint not null references users (user_id), -- Пользователь
+    event_id bigint not null references events,          -- Событие
+    primary key (user_id, event_id)                      -- Уникальность участия
 );
 
--- Создание таблицы активностей в мероприятии
-CREATE TABLE IF NOT EXISTS activities (
-    id SERIAL PRIMARY KEY,
-    id_event BIGINT REFERENCES events(id),
-    id_user BIGINT REFERENCES users(id_user),
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- Действия (например, комменты, лог активности)
+create table activities
+(
+    id          serial primary key,                 -- ID действия
+    event_id    bigint references events,           -- Событие
+    user_id     bigint references users (user_id),  -- Автор действия
+    description text,                               -- Текст действия
+    created_at  timestamp default CURRENT_TIMESTAMP -- Время создания
 );
 
--- Создание таблицы для иконок
-CREATE TABLE IF NOT EXISTS icons (
-    id VARCHAR(255) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    file_uuid VARCHAR(255) NOT NULL
+create index idx_activities_event_id on activities (event_id);
+
+-- Иконки для типа транзакций (визуальные теги)
+create table icons
+(
+    id        varchar(255) primary key, -- UUID иконки
+    name      varchar(255) not null,    -- Название иконки
+    file_uuid varchar(255) not null     -- Ссылка на файл (в S3, например)
 );
 
--- Создание таблицы типов транзакций
-CREATE TABLE IF NOT EXISTS transaction_types (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    icon_id VARCHAR(255) REFERENCES icons(id)
+-- Категории транзакций (Еда, напитки и т.д.)
+create table transaction_categories
+(
+    id      serial primary key,           -- ID категории транзакции
+    name    varchar(255) not null,        -- Название категории
+    icon_id varchar(255) references icons -- Иконка категории
 );
 
--- Создание таблицы транзакций
-CREATE TABLE IF NOT EXISTS transactions (
-    id SERIAL PRIMARY KEY,
-    event_id BIGINT REFERENCES events(id),
-    name VARCHAR(255) NOT NULL,
-    transaction_type_id INT REFERENCES transaction_types(id),
-    datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    total_paid DECIMAL(10, 2) NOT NULL,
-    payer_id BIGINT REFERENCES users(id_user)
+-- Транзакции
+create table transactions
+(
+    id                      serial primary key,                                -- ID транзакции
+    event_id                bigint references events,                          -- Привязка к событию
+    name                    varchar(255)   not null,                           -- Название/описание покупки
+    transaction_category_id integer references transaction_categories,         -- Категория (для визуала)
+    datetime                timestamp               default CURRENT_TIMESTAMP, -- Дата и время
+    total_paid              numeric(10, 2) not null,                           -- Сумма потраченного
+    payer_id                bigint references users (user_id),                 -- Кто заплатил
+    split_type              smallint       not null default 0                  -- Тип деления: 0 — поровну, 1 — проценты, 2 — по частям
 );
 
--- Создание таблицы связи пользователей и транзакций
-CREATE TABLE IF NOT EXISTS user_transaction (
-    id SERIAL PRIMARY KEY,
-    transaction_id INT REFERENCES transactions(id),
-    user_id BIGINT REFERENCES users(id_user),
-    user_part DECIMAL(10, 2) NOT NULL
+create index idx_transactions_event_id on transactions (event_id);
+
+-- Участие пользователей в транзакции
+create table transaction_shares
+(
+    id             serial primary key,                               -- ID записи
+    transaction_id integer references transactions on delete cascade,-- Транзакция
+    user_id        bigint references users (user_id),                -- Пользователь-участник
+    value          numeric(10, 2) not null,                          -- Значение (в зависимости от split_type: сумма/процент/часть)
+    constraint uniq_tx_user unique (transaction_id, user_id)         -- Один пользователь — одна доля в одной транзакции
 );
 
--- Создание таблицы задач
-CREATE TABLE IF NOT EXISTS tasks (
-    id SERIAL PRIMARY KEY,
-    user_id BIGINT REFERENCES users(id_user),
-    event_id BIGINT REFERENCES events(id),
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    priority INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+create index idx_transaction_shares_tx_id on transaction_shares (transaction_id);
+
+-- Итоговая таблица долгов (кто кому сколько должен)
+create table debts
+(
+    id             serial primary key,                               -- ID долга
+    transaction_id integer references transactions on delete cascade,-- Транзакция
+    from_user_id   bigint references users (user_id),                -- Кто должен
+    to_user_id     bigint references users (user_id),                -- Кому должен
+    amount         numeric(10, 2) not null,                          -- Сумма долга
+    constraint uniq_debt unique (transaction_id, from_user_id, to_user_id)
 );
 
--- Добавление индексов для оптимизации запросов
-CREATE INDEX IF NOT EXISTS idx_events_category_id ON events(category_id);
-CREATE INDEX IF NOT EXISTS idx_activities_id_event ON activities(id_event);
-CREATE INDEX IF NOT EXISTS idx_transactions_event_id ON transactions(event_id);
-CREATE INDEX IF NOT EXISTS idx_user_transaction_transaction_id ON user_transaction(transaction_id);
-CREATE INDEX IF NOT EXISTS idx_tasks_event_id ON tasks(event_id);
-CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id); 
+create index idx_debts_transaction_id on debts (transaction_id);
+
+-- Таблица заданий (например, задачи в рамках мероприятия)
+create table tasks
+(
+    id          serial primary key,                 -- ID задачи
+    user_id     bigint references users (user_id),  -- Ответственный
+    event_id    bigint references events,           -- Событие
+    title       varchar(255) not null,              -- Название задачи
+    description text,                               -- Описание
+    priority    integer   default 0,                -- Приоритет (чем больше — тем важнее)
+    created_at  timestamp default CURRENT_TIMESTAMP -- Время создания
+);
+
+create index idx_tasks_event_id on tasks (event_id);
+create index idx_tasks_user_id on tasks (user_id);

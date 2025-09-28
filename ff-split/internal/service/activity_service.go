@@ -2,82 +2,44 @@ package service
 
 import (
 	"context"
-	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
-	"time"
 
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
 )
 
-// ActivityServiceImpl реализация сервиса активностей
-type ActivityServiceImpl struct {
-	activityRepo repository.ActivityRepository
+// ActivityService реализует интерфейс service.ActivityServiceInterface
+type ActivityService struct {
+	repo repository.ActivityRepository
 }
 
-// NewActivityService создает новый экземпляр сервиса активностей
-func NewActivityService(activityRepo repository.ActivityRepository) *ActivityServiceImpl {
-	return &ActivityServiceImpl{
-		activityRepo: activityRepo,
+// NewActivityService создает новый экземпляр ActivityServiceInterface
+func NewActivityService(repo repository.ActivityRepository) *ActivityService {
+	return &ActivityService{
+		repo: repo,
 	}
 }
 
-// GetActivitiesByEventID возвращает все активности по ID мероприятия
-func (s *ActivityServiceImpl) GetActivitiesByEventID(ctx context.Context, eventID int64) ([]dto.ActivityResponse, error) {
-	activities, err := s.activityRepo.GetActivitiesByEventID(ctx, eventID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Преобразуем в DTO
-	var response []dto.ActivityResponse
-	for _, activity := range activities {
-		response = append(response, mapActivityToResponse(activity))
-	}
-
-	return response, nil
+// GetActivitiesByEventID получает активности по ID мероприятия
+func (s *ActivityService) GetActivitiesByEventID(ctx context.Context, eventID int64) ([]models.Activity, error) {
+	return s.repo.GetByEventID(ctx, eventID)
 }
 
-// GetActivityByID возвращает активность по ID
-func (s *ActivityServiceImpl) GetActivityByID(ctx context.Context, id int) (dto.ActivityResponse, error) {
-	activity, err := s.activityRepo.GetActivityByID(ctx, id)
-	if err != nil {
-		return dto.ActivityResponse{}, err
-	}
-
-	return mapActivityToResponse(activity), nil
+// GetActivityByID получает активность по ID
+func (s *ActivityService) GetActivityByID(ctx context.Context, id int) (*models.Activity, error) {
+	return s.repo.GetByID(ctx, id)
 }
 
 // CreateActivity создает новую активность
-func (s *ActivityServiceImpl) CreateActivity(ctx context.Context, activity models.Activity) (dto.ActivityResponse, error) {
-	// Установка текущего времени если не указано
-	if activity.CreatedAt.IsZero() {
-		activity.CreatedAt = time.Now()
-	}
-
-	createdActivity, err := s.activityRepo.CreateActivity(ctx, activity)
-	if err != nil {
-		return dto.ActivityResponse{}, err
-	}
-
-	return mapActivityToResponse(createdActivity), nil
+func (s *ActivityService) CreateActivity(ctx context.Context, activity *models.Activity) (*models.Activity, error) {
+	return s.repo.Create(ctx, activity)
 }
 
-// UpdateActivity обновляет существующую активность
-func (s *ActivityServiceImpl) UpdateActivity(ctx context.Context, activity models.Activity) error {
-	return s.activityRepo.UpdateActivity(ctx, activity)
+// UpdateActivity обновляет активность
+func (s *ActivityService) UpdateActivity(ctx context.Context, id int, activity *models.Activity) (*models.Activity, error) {
+	return s.repo.Update(ctx, id, activity)
 }
 
 // DeleteActivity удаляет активность
-func (s *ActivityServiceImpl) DeleteActivity(ctx context.Context, id int) error {
-	return s.activityRepo.DeleteActivity(ctx, id)
-}
-
-// mapActivityToResponse преобразует модель Activity в DTO
-func mapActivityToResponse(activity models.Activity) dto.ActivityResponse {
-	return dto.ActivityResponse{
-		ActivityID:  activity.ID,
-		Description: activity.Description,
-		IconID:      "", // Поле для иконки, может быть заполнено позже
-		DateTime:    activity.CreatedAt,
-	}
+func (s *ActivityService) DeleteActivity(ctx context.Context, id int) error {
+	return s.repo.Delete(ctx, id)
 }

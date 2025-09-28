@@ -1,19 +1,20 @@
--- Удаление индексов
-DROP INDEX IF EXISTS idx_tasks_user_id;
-DROP INDEX IF EXISTS idx_tasks_event_id;
-DROP INDEX IF EXISTS idx_user_transaction_transaction_id;
-DROP INDEX IF EXISTS idx_transactions_event_id;
-DROP INDEX IF EXISTS idx_activities_id_event;
-DROP INDEX IF EXISTS idx_events_category_id;
+-- Удаление таблиц в обратном порядке
+drop table if exists debts cascade;
+drop table if exists transaction_shares cascade;
+drop table if exists transactions cascade;
+drop table if exists transaction_categories cascade;
+drop table if exists icons cascade;
+drop table if exists activities cascade;
+drop table if exists user_event cascade;
+drop table if exists events cascade;
+drop table if exists categories cascade;
+drop table if exists users cascade;
 
--- Удаление таблиц в обратном порядке создания
-DROP TABLE IF EXISTS tasks;
-DROP TABLE IF EXISTS user_transaction;
-DROP TABLE IF EXISTS transactions;
-DROP TABLE IF EXISTS transaction_types;
-DROP TABLE IF EXISTS icons;
-DROP TABLE IF EXISTS activities;
-DROP TABLE IF EXISTS user_event;
-DROP TABLE IF EXISTS events;
-DROP TABLE IF EXISTS categories;
-DROP TABLE IF EXISTS users; 
+-- Удаление индексов, если они существуют
+drop index if exists idx_debts_transaction_id;
+drop index if exists idx_transaction_shares_tx_id;
+drop index if exists idx_transactions_event_id;
+drop index if exists idx_activities_id_event;
+drop index if exists idx_events_category_id;
+drop index if exists idx_tasks_event_id;
+drop index if exists idx_tasks_user_id;
