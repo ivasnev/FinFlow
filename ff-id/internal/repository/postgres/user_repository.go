@@ -38,6 +38,16 @@ func (r *UserRepository) GetByID(ctx context.Context, id int64) (*models.User, e
 	return &user, nil
 }
 
+// GetByIDs находит пользователей по их ID
+func (r *UserRepository) GetByIDs(ctx context.Context, ids []int64) ([]*models.User, error) {
+	var users []*models.User
+	err := r.db.WithContext(ctx).Where("id IN (?)", ids).Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 // GetByEmail находит пользователя по email
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User

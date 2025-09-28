@@ -28,8 +28,8 @@ id_service:
 
 tvm:
   base_url: http://localhost:8081
-  service_id: 3
-  service_secret: "secret"
+  service_id: 4
+  service_secret: "DXRZ2QMo9YKvspsua8FifxToEUFyQ5pyXqfIA49vOaB4QxvNb4MPnQjTfiSg30NctFcbVzyWW1tA6PwtZr35xw=="
 
 migrations:
   path: migrations

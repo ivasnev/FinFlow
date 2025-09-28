@@ -69,6 +69,33 @@ func (s *UserService) GetUserByID(ctx context.Context, id int64) (*dto.UserDTO, 
 	return userDTO, nil
 }
 
+// GetUsersByIds получает пользователей по их ID
+func (s *UserService) GetUsersByIds(ctx context.Context, ids []int64) ([]*dto.UserDTO, error) {
+	users, err := s.userRepository.GetByIDs(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка получения пользователей: %w", err)
+	}
+
+	userDTOs := make([]*dto.UserDTO, len(users))
+	for i, user := range users {
+		userDTOs[i] = &dto.UserDTO{
+			ID:        user.ID,
+			Email:     user.Email,
+			Nickname:  user.Nickname,
+			CreatedAt: user.CreatedAt.Unix(),
+			UpdatedAt: user.UpdatedAt.Unix(),
+		}
+		if user.Name.Valid {
+			userDTOs[i].Name = &user.Name.String
+		}
+		if user.AvatarID.Valid {
+			userDTOs[i].AvatarID = &user.AvatarID.UUID
+		}
+	}
+
+	return userDTOs, nil
+}
+
 // GetUserByNickname получает пользователя по никнейму
 func (s *UserService) GetUserByNickname(ctx context.Context, nickname string) (*dto.UserDTO, error) {
 	user, err := s.userRepository.GetByNickname(ctx, nickname)

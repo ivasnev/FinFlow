@@ -187,13 +187,15 @@ func (c *Container) RegisterRoutes() {
 	}
 
 	// Внутренние маршруты для межсервисного взаимодействия
-	internal := c.Router.Group("/internal")
+	internal := c.Router.Group("/internal", tvmMiddleware.ValidateTicket())
 	{
 		// Защищенные TVM маршруты
-		internalUsers := internal.Group("/users", tvmMiddleware.ValidateTicket())
+		internalUsers := internal.Group("/users")
 		{
 			// Регистрация через другой сервис (backend-to-backend)
 			internalUsers.POST("/register", c.UserHandler.RegisterUserFromService)
+			// Публичные маршруты
+			internalUsers.GET("", c.UserHandler.GetUsersByIds)
 		}
 	}
 }

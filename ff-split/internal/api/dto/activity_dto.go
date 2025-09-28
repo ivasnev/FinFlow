@@ -6,15 +6,15 @@ import "time"
 type ActivityRequest struct {
 	UserID      *int64 `json:"user_id"`
 	Description string `json:"description" binding:"required"`
+	IconID      string `json:"icon_id"`
 }
 
 // ActivityResponse представляет DTO для ответа с данными активности
 type ActivityResponse struct {
-	ID          int       `json:"id"`
-	EventID     *int64    `json:"event_id,omitempty"`
-	UserID      *int64    `json:"user_id,omitempty"`
+	ActivityID  int       `json:"activity_id"`
 	Description string    `json:"description"`
-	CreatedAt   time.Time `json:"created_at"`
+	IconID      string    `json:"icon_id"`
+	Datetime    time.Time `json:"datetime"`
 }
 
 // ActivityListResponse представляет DTO для ответа со списком активностей

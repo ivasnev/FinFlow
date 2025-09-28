@@ -12,6 +12,9 @@ type UserServiceInterface interface {
 	// GetUserByID получает пользователя по ID
 	GetUserByID(ctx context.Context, id int64) (*dto.UserDTO, error)
 
+	// GetUsersByIds получает пользователей по их ID
+	GetUsersByIds(ctx context.Context, ids []int64) ([]*dto.UserDTO, error)
+
 	// GetUserByNickname получает пользователя по никнейму
 	GetUserByNickname(ctx context.Context, nickname string) (*dto.UserDTO, error)
 

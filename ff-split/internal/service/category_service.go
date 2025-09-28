@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	"github.com/ivasnev/FinFlow/ff-split/internal/models"
+	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
 )
 
@@ -20,31 +20,31 @@ func NewCategoryService(repo repository.CategoryRepository) *CategoryService {
 }
 
 // GetCategories получает все категории указанного типа
-func (s *CategoryService) GetCategories(ctx context.Context, categoryType string) ([]models.EventCategory, error) {
+func (s *CategoryService) GetCategories(ctx context.Context, categoryType string) ([]dto.CategoryDTO, error) {
 	return s.repo.GetAll(ctx, categoryType)
 }
 
 // GetCategoryByID получает категорию по ID и типу
-func (s *CategoryService) GetCategoryByID(ctx context.Context, id int, categoryType string) (*models.EventCategory, error) {
-	return s.repo.GetByID(ctx, id, categoryType)
+func (s *CategoryService) GetCategoryByID(ctx context.Context, id int, categoryType string) (*dto.CategoryDTO, error) {
+	return s.repo.GetByID(ctx, categoryType, id)
 }
 
 // CreateCategory создает новую категорию указанного типа
-func (s *CategoryService) CreateCategory(ctx context.Context, category *models.EventCategory, categoryType string) (*models.EventCategory, error) {
-	return s.repo.Create(ctx, category, categoryType)
+func (s *CategoryService) CreateCategory(ctx context.Context, category *dto.CategoryDTO, categoryType string) (*dto.CategoryDTO, error) {
+	return s.repo.Create(ctx, categoryType, category)
 }
 
 // UpdateCategory обновляет категорию указанного типа
-func (s *CategoryService) UpdateCategory(ctx context.Context, id int, category *models.EventCategory, categoryType string) (*models.EventCategory, error) {
-	return s.repo.Update(ctx, id, category, categoryType)
+func (s *CategoryService) UpdateCategory(ctx context.Context, id int, category *dto.CategoryDTO, categoryType string) (*dto.CategoryDTO, error) {
+	return s.repo.Update(ctx, categoryType, category)
 }
 
 // DeleteCategory удаляет категорию указанного типа
 func (s *CategoryService) DeleteCategory(ctx context.Context, id int, categoryType string) error {
-	return s.repo.Delete(ctx, id, categoryType)
+	return s.repo.Delete(ctx, categoryType, id)
 }
 
 // GetCategoryTypes возвращает список доступных типов категорий
-func (s *CategoryService) GetCategoryTypes(ctx context.Context) ([]string, error) {
-	return s.repo.GetCategoryTypes(ctx)
+func (s *CategoryService) GetCategoryTypes() ([]string, error) {
+	return s.repo.GetCategoryTypes()
 }

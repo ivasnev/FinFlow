@@ -9,6 +9,8 @@ drop table if exists user_event cascade;
 drop table if exists events cascade;
 drop table if exists categories cascade;
 drop table if exists users cascade;
+drop table if exists event_categories cascade;
+drop table if exists tasks cascade;
 
 -- Удаление индексов, если они существуют
 drop index if exists idx_debts_transaction_id;

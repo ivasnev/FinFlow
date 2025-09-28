@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
@@ -51,11 +52,10 @@ func (h *ActivityHandler) GetActivitiesByEventID(c *gin.Context) {
 
 	for _, activity := range activities {
 		response.Activities = append(response.Activities, dto.ActivityResponse{
-			ID:          activity.ID,
-			EventID:     activity.EventID,
-			UserID:      activity.UserID,
+			ActivityID:  activity.ID,
 			Description: activity.Description,
-			CreatedAt:   activity.CreatedAt,
+			IconID:      "", // Пока нет поля в модели, устанавливаем пустое значение
+			Datetime:    activity.CreatedAt,
 		})
 	}
 
@@ -92,11 +92,10 @@ func (h *ActivityHandler) GetActivityByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, dto.ActivityResponse{
-		ID:          activity.ID,
-		EventID:     activity.EventID,
-		UserID:      activity.UserID,
+		ActivityID:  activity.ID,
 		Description: activity.Description,
-		CreatedAt:   activity.CreatedAt,
+		IconID:      "", // Пока нет поля в модели, устанавливаем пустое значение
+		Datetime:    activity.CreatedAt,
 	})
 }
 
@@ -128,6 +127,7 @@ func (h *ActivityHandler) CreateActivity(c *gin.Context) {
 		EventID:     &eventID,
 		UserID:      request.UserID,
 		Description: request.Description,
+		CreatedAt:   time.Now(), // Устанавливаем текущее время
 	}
 
 	createdActivity, err := h.service.CreateActivity(ctx, activity)
@@ -139,11 +139,10 @@ func (h *ActivityHandler) CreateActivity(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, dto.ActivityResponse{
-		ID:          createdActivity.ID,
-		EventID:     createdActivity.EventID,
-		UserID:      createdActivity.UserID,
+		ActivityID:  createdActivity.ID,
 		Description: createdActivity.Description,
-		CreatedAt:   createdActivity.CreatedAt,
+		IconID:      request.IconID, // Используем значение из запроса
+		Datetime:    createdActivity.CreatedAt,
 	})
 }
 
@@ -185,6 +184,7 @@ func (h *ActivityHandler) UpdateActivity(c *gin.Context) {
 		EventID:     &eventID,
 		UserID:      request.UserID,
 		Description: request.Description,
+		// Не обновляем CreatedAt
 	}
 
 	updatedActivity, err := h.service.UpdateActivity(ctx, id, activity)
@@ -203,11 +203,10 @@ func (h *ActivityHandler) UpdateActivity(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, dto.ActivityResponse{
-		ID:          updatedActivity.ID,
-		EventID:     updatedActivity.EventID,
-		UserID:      updatedActivity.UserID,
+		ActivityID:  updatedActivity.ID,
 		Description: updatedActivity.Description,
-		CreatedAt:   updatedActivity.CreatedAt,
+		IconID:      request.IconID, // Используем значение из запроса
+		Datetime:    updatedActivity.CreatedAt,
 	})
 }
 

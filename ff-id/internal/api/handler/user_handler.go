@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-id/internal/api/dto"
@@ -18,6 +19,37 @@ func NewUserHandler(userService service.UserServiceInterface) *UserHandler {
 	return &UserHandler{
 		userService: userService,
 	}
+}
+
+// GetUsersByIds обрабатывает запрос на получение информации о пользователях по их ID
+// @Summary Get users by IDs
+// @Description Get user information by their IDs
+// @Tags users
+// @Produce json
+// @Param ids query []int64 true "User IDs"
+// @Success 200 {object} []dto.UserDTO
+// @Failure 400 {object} gin.H
+// @Failure 500 {object} gin.H
+// @Router /internal/users [get]
+func (h *UserHandler) GetUsersByIds(c *gin.Context) {
+	var err error
+	ids := c.QueryArray("user_id")
+	idsInt64 := make([]int64, len(ids))
+	for i, id := range ids {
+		idsInt64[i], err = strconv.ParseInt(id, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+			return
+		}
+	}
+
+	users, err := h.userService.GetUsersByIds(c.Request.Context(), idsInt64)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, users)
 }
 
 // GetUserByNickname обрабатывает запрос на получение информации о пользователе по никнейму

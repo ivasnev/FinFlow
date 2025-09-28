@@ -7,18 +7,18 @@ import (
 // User представляет модель пользователя
 type User struct {
 	ID              int64  `gorm:"column:id;primaryKey;autoIncrement"`
-	UserID          int64  `gorm:"column:user_id;uniqueIndex"`
+	UserID          *int64 `gorm:"column:user_id;uniqueIndex"`
 	NicknameCashed  string `gorm:"column:nickname_cashed"`
 	NameCashed      string `gorm:"column:name_cashed"`
 	PhotoUUIDCashed string `gorm:"column:photo_uuid_cashed"`
 	IsDummy         bool   `gorm:"column:is_dummy;default:false"`
 
 	// Отношения
-	Events       []Event            `gorm:"many2many:user_event;foreignKey:UserID;references:UserID"`
-	Activities   []Activity         `gorm:"foreignKey:UserID;references:UserID"`
+	Events       []Event            `gorm:"many2many:user_event;foreignKey:UserID;references:ID"`
+	Activities   []Activity         `gorm:"foreignKey:UserID;references:ID"`
 	Transactions []Transaction      `gorm:"foreignKey:PayerID;references:UserID"`
-	Tasks        []Task             `gorm:"foreignKey:UserID;references:UserID"`
-	Shares       []TransactionShare `gorm:"foreignKey:UserID;references:UserID"`
+	Tasks        []Task             `gorm:"foreignKey:UserID;references:ID"`
+	Shares       []TransactionShare `gorm:"foreignKey:UserID;references:ID"`
 	DebtsFrom    []Debt             `gorm:"foreignKey:FromUserID;references:UserID"`
 	DebtsTo      []Debt             `gorm:"foreignKey:ToUserID;references:UserID"`
 }
@@ -32,9 +32,10 @@ func (User) TableName() string {
 type EventCategory struct {
 	ID     int    `gorm:"column:id;primaryKey;autoIncrement"`
 	Name   string `gorm:"column:name;not null"`
-	IconID string `gorm:"column:icon_id"`
+	IconID int    `gorm:"column:icon_id"`
 
 	// Отношения
+	Icon   *Icon   `gorm:"foreignKey:IconID"`
 	Events []Event `gorm:"foreignKey:CategoryID"`
 }
 
@@ -86,7 +87,7 @@ type Activity struct {
 
 	// Отношения
 	Event *Event `gorm:"foreignKey:EventID"`
-	User  *User  `gorm:"foreignKey:UserID;references:UserID"`
+	User  *User  `gorm:"foreignKey:UserID;references:ID"`
 }
 
 // TableName задает имя таблицы для модели Activity
@@ -96,7 +97,7 @@ func (Activity) TableName() string {
 
 // Icon представляет иконку для типа транзакции
 type Icon struct {
-	ID       string `gorm:"column:id;primaryKey"`
+	ID       int    `gorm:"column:id;primaryKey"`
 	Name     string `gorm:"column:name;not null"`
 	FileUUID string `gorm:"column:file_uuid;not null"`
 
@@ -113,7 +114,7 @@ func (Icon) TableName() string {
 type TransactionCategory struct {
 	ID     int    `gorm:"column:id;primaryKey;autoIncrement"`
 	Name   string `gorm:"column:name;not null"`
-	IconID string `gorm:"column:icon_id"`
+	IconID int    `gorm:"column:icon_id"`
 
 	// Отношения
 	Icon         *Icon         `gorm:"foreignKey:IconID"`
@@ -158,7 +159,7 @@ type TransactionShare struct {
 
 	// Отношения
 	Transaction *Transaction `gorm:"foreignKey:TransactionID"`
-	User        *User        `gorm:"foreignKey:UserID;references:UserID"`
+	User        *User        `gorm:"foreignKey:UserID;references:ID"`
 }
 
 // TableName задает имя таблицы для модели TransactionShare
@@ -196,7 +197,7 @@ type Task struct {
 	CreatedAt   time.Time `gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
 
 	// Отношения
-	User  *User  `gorm:"foreignKey:UserID;references:UserID"`
+	User  *User  `gorm:"foreignKey:UserID;references:ID"`
 	Event *Event `gorm:"foreignKey:EventID"`
 }
 
