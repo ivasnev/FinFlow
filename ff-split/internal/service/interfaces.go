@@ -8,6 +8,15 @@ import (
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 )
 
+// TaskServiceInterface интерфейс для работы с задачами на уровне бизнес-логики
+type TaskServiceInterface interface {
+	GetTasksByEventID(ctx context.Context, eventID int64) ([]dto.TaskDTO, error)
+	GetTaskByID(ctx context.Context, id uint) (*dto.TaskDTO, error)
+	CreateTask(ctx context.Context, eventID int64, taskRequest *dto.TaskRequest) (*dto.TaskDTO, error)
+	UpdateTask(ctx context.Context, id uint, taskRequest *dto.TaskRequest) (*dto.TaskDTO, error)
+	DeleteTask(ctx context.Context, id uint) error
+}
+
 // IconServiceInterface интерфейс для работы с иконками на уровне бизнес-логики
 type IconServiceInterface interface {
 	GetIcons(ctx context.Context) ([]dto.IconFullDTO, error)

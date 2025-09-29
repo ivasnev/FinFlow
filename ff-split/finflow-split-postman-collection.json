@@ -343,6 +343,193 @@
 			"description": "Операции с активностями мероприятий"
 		},
 		{
+			"name": "Задачи (Tasks)",
+			"item": [
+				{
+					"name": "Получить все задачи мероприятия",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/event/:id_event/task",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"event",
+								":id_event",
+								"task"
+							],
+							"variable": [
+								{
+									"key": "id_event",
+									"value": "1",
+									"description": "ID мероприятия"
+								}
+							]
+						},
+						"description": "Получение списка всех задач для конкретного мероприятия"
+					},
+					"response": []
+				},
+				{
+					"name": "Получить задачу по ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/event/:id_event/task/:id_task",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"event",
+								":id_event",
+								"task",
+								":id_task"
+							],
+							"variable": [
+								{
+									"key": "id_event",
+									"value": "1",
+									"description": "ID мероприятия"
+								},
+								{
+									"key": "id_task",
+									"value": "1",
+									"description": "ID задачи"
+								}
+							]
+						},
+						"description": "Получение информации о конкретной задаче по её ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Создать новую задачу",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": 1,\n    \"title\": \"Купить продукты\",\n    \"description\": \"Нужно купить продукты для мероприятия\",\n    \"priority\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/event/:id_event/task",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"event",
+								":id_event",
+								"task"
+							],
+							"variable": [
+								{
+									"key": "id_event",
+									"value": "1",
+									"description": "ID мероприятия"
+								}
+							]
+						},
+						"description": "Создание новой задачи для мероприятия"
+					},
+					"response": []
+				},
+				{
+					"name": "Обновить задачу",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user_id\": 2,\n    \"title\": \"Обновленное название задачи\",\n    \"description\": \"Обновленное описание задачи\",\n    \"priority\": 3\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/event/:id_event/task/:id_task",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"event",
+								":id_event",
+								"task",
+								":id_task"
+							],
+							"variable": [
+								{
+									"key": "id_event",
+									"value": "1",
+									"description": "ID мероприятия"
+								},
+								{
+									"key": "id_task",
+									"value": "1",
+									"description": "ID задачи"
+								}
+							]
+						},
+						"description": "Обновление существующей задачи"
+					},
+					"response": []
+				},
+				{
+					"name": "Удалить задачу",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/event/:id_event/task/:id_task",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"event",
+								":id_event",
+								"task",
+								":id_task"
+							],
+							"variable": [
+								{
+									"key": "id_event",
+									"value": "1",
+									"description": "ID мероприятия"
+								},
+								{
+									"key": "id_task",
+									"value": "1",
+									"description": "ID задачи"
+								}
+							]
+						},
+						"description": "Удаление задачи по ID"
+					},
+					"response": []
+				}
+			],
+			"description": "Операции с задачами мероприятий"
+		},
+		{
 			"name": "Категории (Categories)",
 			"item": [
 				{
