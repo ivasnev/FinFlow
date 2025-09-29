@@ -35,17 +35,20 @@ type Container struct {
 	EventRepository    *pg_repos.EventRepository
 	ActivityRepository *pg_repos.ActivityRepository
 	UserRepository     *pg_repos.UserRepository
+	IconRepository     *pg_repos.IconRepository
 
 	// Сервисы
 	CategoryService service.CategoryServiceInterface
 	EventService    service.EventServiceInterface
 	ActivityService service.ActivityServiceInterface
 	UserService     service.UserServiceInterface
+	IconService     service.IconServiceInterface
 
 	// Обработчики маршрутов
 	CategoryHandler handler.CategoryHandlerInterface
 	EventHandler    handler.EventHandlerInterface
 	ActivityHandler handler.ActivityHandlerInterface
+	IconHandler     handler.IconHandlerInterface
 
 	// Клиенты внешних сервисов
 	AuthClient *auth.Client
@@ -98,6 +101,7 @@ func (c *Container) initRepositories() {
 	c.EventRepository = pg_repos.NewEventRepository(c.DB)
 	c.ActivityRepository = pg_repos.NewActivityRepository(c.DB)
 	c.UserRepository = pg_repos.NewUserRepository(c.DB)
+	c.IconRepository = pg_repos.NewIconRepository(c.DB)
 }
 
 // initServices инициализирует сервисы
@@ -106,7 +110,7 @@ func (c *Container) initServices() {
 	c.CategoryService = service.NewCategoryService(c.CategoryRepository)
 	c.EventService = service.NewEventService(c.EventRepository, c.DB, c.UserService)
 	c.ActivityService = service.NewActivityService(c.ActivityRepository)
-
+	c.IconService = service.NewIconService(c.IconRepository)
 }
 
 // initHandlers инициализирует обработчики
@@ -114,6 +118,7 @@ func (c *Container) initHandlers() {
 	c.CategoryHandler = handler.NewCategoryHandler(c.CategoryService)
 	c.EventHandler = handler.NewEventHandler(c.EventService, c.UserService)
 	c.ActivityHandler = handler.NewActivityHandler(c.ActivityService)
+	c.IconHandler = handler.NewIconHandler(c.IconService)
 }
 
 // initDB инициализирует подключение к базе данных
@@ -225,9 +230,13 @@ func (c *Container) RegisterRoutes() {
 		}
 
 		// Иконки
-		manageRoutes.Group("/icons")
+		iconsRoutes := manageRoutes.Group("/icons")
 		{
-			// Здесь будут добавлены маршруты для иконок
+			iconsRoutes.GET("", c.IconHandler.GetIcons)
+			iconsRoutes.GET("/:id", c.IconHandler.GetIconByID)
+			iconsRoutes.POST("", c.IconHandler.CreateIcon)
+			iconsRoutes.PUT("/:id", c.IconHandler.UpdateIcon)
+			iconsRoutes.DELETE("/:id", c.IconHandler.DeleteIcon)
 		}
 	}
 

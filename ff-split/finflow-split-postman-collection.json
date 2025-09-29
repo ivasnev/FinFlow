@@ -1,17 +1,11 @@
 {
 	"info": {
-		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-1234567890ab",
+		"_postman_id": "0f5cf816-134a-429e-898c-8ea6cebc7507",
 		"name": "FinFlow Split API",
 		"description": "API коллекция для сервиса FinFlow Split, который обеспечивает управление групповыми расходами и мероприятиями",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "43146034"
 	},
-	"variable": [
-		{
-			"key": "base_url",
-			"value": "http://localhost:8080",
-			"type": "string"
-		}
-	],
 	"item": [
 		{
 			"name": "Мероприятия (Events)",
@@ -33,7 +27,8 @@
 							]
 						},
 						"description": "Получение списка всех мероприятий"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Получить мероприятие по ID",
@@ -60,7 +55,8 @@
 							]
 						},
 						"description": "Получение информации о конкретном мероприятии по его ID"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Создать новое мероприятие",
@@ -88,7 +84,8 @@
 							]
 						},
 						"description": "Создание нового мероприятия"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Обновить мероприятие",
@@ -124,7 +121,8 @@
 							]
 						},
 						"description": "Обновление существующего мероприятия"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Удалить мероприятие",
@@ -151,7 +149,8 @@
 							]
 						},
 						"description": "Удаление мероприятия по ID"
-					}
+					},
+					"response": []
 				}
 			],
 			"description": "Операции с мероприятиями"
@@ -185,7 +184,8 @@
 							]
 						},
 						"description": "Получение списка всех активностей для конкретного мероприятия"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Получить активность по ID",
@@ -219,7 +219,8 @@
 							]
 						},
 						"description": "Получение информации о конкретной активности по её ID"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Создать новую активность",
@@ -256,7 +257,8 @@
 							]
 						},
 						"description": "Создание новой активности для мероприятия"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Обновить активность",
@@ -299,7 +301,8 @@
 							]
 						},
 						"description": "Обновление существующей активности"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Удалить активность",
@@ -333,7 +336,8 @@
 							]
 						},
 						"description": "Удаление активности по ID"
-					}
+					},
+					"response": []
 				}
 			],
 			"description": "Операции с активностями мероприятий"
@@ -358,7 +362,8 @@
 							]
 						},
 						"description": "Получение списка всех категорий"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Получить категорию по ID",
@@ -385,7 +390,8 @@
 							]
 						},
 						"description": "Получение информации о конкретной категории по её ID"
-					}
+					},
+					"response": []
 				}
 			],
 			"description": "Операции с категориями"
@@ -420,7 +426,8 @@
 							]
 						},
 						"description": "Создание новой категории (требуется роль service_admin)"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Обновить категорию",
@@ -457,7 +464,8 @@
 							]
 						},
 						"description": "Обновление существующей категории (требуется роль service_admin)"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Удалить категорию",
@@ -485,10 +493,172 @@
 							]
 						},
 						"description": "Удаление категории по ID (требуется роль service_admin)"
-					}
+					},
+					"response": []
+				},
+				{
+					"name": "Типы категорий",
+					"request": {
+						"method": "OPTIONS",
+						"header": []
+					},
+					"response": []
 				}
 			],
 			"description": "Операции управления, требующие административных прав"
+		},
+		{
+			"name": "Иконки (Icons)",
+			"item": [
+				{
+					"name": "Получить все иконки",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/manage/icons",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"manage",
+								"icons"
+							]
+						},
+						"description": "Получение списка всех иконок"
+					},
+					"response": []
+				},
+				{
+					"name": "Получить иконку по ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/manage/icons/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"manage",
+								"icons",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1",
+									"description": "ID иконки"
+								}
+							]
+						},
+						"description": "Получение информации о конкретной иконке по её ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Создать новую иконку",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Новая иконка\",\n    \"file_uuid\": \"f7e5e4d3-c2b1-a0b9-8f7e-6d5e4c3b2a10\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/manage/icons",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"manage",
+								"icons"
+							]
+						},
+						"description": "Создание новой иконки (требуется роль service_admin)"
+					},
+					"response": []
+				},
+				{
+					"name": "Обновить иконку",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Обновленная иконка\",\n    \"file_uuid\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/manage/icons/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"manage",
+								"icons",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1",
+									"description": "ID иконки"
+								}
+							]
+						},
+						"description": "Обновление существующей иконки (требуется роль service_admin)"
+					},
+					"response": []
+				},
+				{
+					"name": "Удалить иконку",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/manage/icons/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"manage",
+								"icons",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1",
+									"description": "ID иконки"
+								}
+							]
+						},
+						"description": "Удаление иконки по ID (требуется роль service_admin)"
+					},
+					"response": []
+				}
+			],
+			"description": "Операции с иконками"
 		},
 		{
 			"name": "Транзакции (Transactions)",
@@ -519,7 +689,8 @@
 							]
 						},
 						"description": "Получение списка всех транзакций для конкретного мероприятия"
-					}
+					},
+					"response": []
 				},
 				{
 					"name": "Получить итоговые задолженности",
@@ -548,7 +719,8 @@
 							]
 						},
 						"description": "Получение итоговых задолженностей между участниками мероприятия"
-					}
+					},
+					"response": []
 				}
 			],
 			"description": "Операции с транзакциями"
@@ -573,10 +745,23 @@
 							]
 						},
 						"description": "Проверка работоспособности сервиса"
-					}
+					},
+					"response": []
 				}
 			],
 			"description": "Служебные операции"
 		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "id_event",
+			"value": "",
+			"type": "default"
+		}
 	]
-} 
+}

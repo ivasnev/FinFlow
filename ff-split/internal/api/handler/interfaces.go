@@ -2,6 +2,15 @@ package handler
 
 import "github.com/gin-gonic/gin"
 
+// IconHandlerInterface интерфейс для обработки запросов по иконкам
+type IconHandlerInterface interface {
+	GetIcons(c *gin.Context)
+	GetIconByID(c *gin.Context)
+	CreateIcon(c *gin.Context)
+	UpdateIcon(c *gin.Context)
+	DeleteIcon(c *gin.Context)
+}
+
 // CategoryHandlerInterface интерфейс для обработки запросов по категориям
 type CategoryHandlerInterface interface {
 	Options(c *gin.Context)
