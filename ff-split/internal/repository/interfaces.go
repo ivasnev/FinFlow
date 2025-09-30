@@ -49,14 +49,17 @@ type UserRepositoryInterface interface {
 	// CreateOrUpdate создает или обновляет пользователя
 	CreateOrUpdate(ctx context.Context, user *models.User) error
 
-	// GetByUserIDs находит пользователей по UserID (ID из сервиса идентификации)
-	GetByUserIDs(ctx context.Context, ids []int64) ([]models.User, error)
+	// GetByExternalUserIDs находит пользователей по UserID (ID из сервиса идентификации)
+	GetByExternalUserIDs(ctx context.Context, ids []int64) ([]models.User, error)
 
-	// GetByID находит пользователя по внутреннему ID
-	GetByID(ctx context.Context, id int64) (*models.User, error)
+	// GetByInternalUserIDs находит пользователей по UserID (ID из сервиса идентификации)
+	GetByInternalUserIDs(ctx context.Context, ids []int64) ([]models.User, error)
 
-	// GetByUserID находит пользователя по UserID (ID из сервиса идентификации)
-	GetByUserID(ctx context.Context, userID int64) (*models.User, error)
+	// GetByInternalUserID находит пользователя по внутреннему ID
+	GetByInternalUserID(ctx context.Context, id int64) (*models.User, error)
+
+	// GetByExternalUserID находит пользователя по UserID (ID из сервиса идентификации)
+	GetByExternalUserID(ctx context.Context, userID int64) (*models.User, error)
 
 	// GetByEventID находит всех пользователей, связанных с мероприятием
 	GetByEventID(ctx context.Context, eventID int64) ([]models.User, error)

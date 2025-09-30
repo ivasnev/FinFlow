@@ -856,7 +856,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/transactions",
+							"raw": "{{base_url}}/api/v1/event/:id_event/transaction",
 							"host": [
 								"{{base_url}}"
 							],
@@ -865,7 +865,7 @@
 								"v1",
 								"event",
 								":id_event",
-								"transactions"
+								"transaction"
 							],
 							"variable": [
 								{
@@ -880,12 +880,12 @@
 					"response": []
 				},
 				{
-					"name": "Получить итоговые задолженности",
+					"name": "Получить транзакцию по ID",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/transactions/temporal",
+							"raw": "{{base_url}}/api/v1/event/:id_event/transaction/:id_transaction",
 							"host": [
 								"{{base_url}}"
 							],
@@ -894,8 +894,51 @@
 								"v1",
 								"event",
 								":id_event",
-								"transactions",
-								"temporal"
+								"transaction",
+								":id_transaction"
+							],
+							"variable": [
+								{
+									"key": "id_event",
+									"value": "1",
+									"description": "ID мероприятия"
+								},
+								{
+									"key": "id_transaction",
+									"value": "1",
+									"description": "ID транзакции"
+								}
+							]
+						},
+						"description": "Получение информации о конкретной транзакции по её ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Создать транзакцию (проценты)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"percent\",\n    \"from_user\": 1,\n    \"amount\": 240.0,\n    \"name\": \"Обед в ресторане\",\n    \"transaction_category_id\": 1,\n    \"portion\": {\n        \"1\": 20,\n        \"2\": 30,\n        \"3\": 50\n    },\n    \"users\": [1, 2, 3],\n    \"metadata\": {\n        \"note\": \"Бизнес-ланч\",\n        \"tags\": [\"еда\", \"ресторан\"]\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/event/:id_event/transaction",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"event",
+								":id_event",
+								"transaction"
 							],
 							"variable": [
 								{
@@ -905,7 +948,191 @@
 								}
 							]
 						},
-						"description": "Получение итоговых задолженностей между участниками мероприятия"
+						"description": "Создание новой транзакции с распределением по процентам"
+					},
+					"response": []
+				},
+				{
+					"name": "Создать транзакцию (фикс. суммы)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"amount\",\n    \"from_user\": 1,\n    \"amount\": 240.0,\n    \"name\": \"Поход в кино\",\n    \"transaction_category_id\": 2,\n    \"portion\": {\n        \"1\": 100,\n        \"2\": 40,\n        \"3\": 100\n    },\n    \"users\": [1, 2, 3],\n    \"metadata\": {\n        \"note\": \"Билеты в кино\",\n        \"tags\": [\"развлечения\", \"кино\"]\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/event/:id_event/transaction",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"event",
+								":id_event",
+								"transaction"
+							],
+							"variable": [
+								{
+									"key": "id_event",
+									"value": "1",
+									"description": "ID мероприятия"
+								}
+							]
+						},
+						"description": "Создание новой транзакции с распределением по фиксированным суммам"
+					},
+					"response": []
+				},
+				{
+					"name": "Создать транзакцию (доли)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"units\",\n    \"from_user\": 1,\n    \"amount\": 140.0,\n    \"name\": \"Продукты для пикника\",\n    \"transaction_category_id\": 3,\n    \"portion\": {\n        \"1\": 1,\n        \"2\": 3\n    },\n    \"users\": [1, 2, 3, 4],\n    \"metadata\": {\n        \"note\": \"Продукты для пикника на выходных\",\n        \"tags\": [\"еда\", \"отдых\"]\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/event/:id_event/transaction",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"event",
+								":id_event",
+								"transaction"
+							],
+							"variable": [
+								{
+									"key": "id_event",
+									"value": "1",
+									"description": "ID мероприятия"
+								}
+							]
+						},
+						"description": "Создание новой транзакции с распределением по долям"
+					},
+					"response": []
+				},
+				{
+					"name": "Обновить транзакцию",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"percent\",\n    \"from_user\": 1,\n    \"amount\": 300.0,\n    \"name\": \"Обновленное название\",\n    \"transaction_category_id\": 1,\n    \"portion\": {\n        \"1\": 30,\n        \"2\": 30,\n        \"3\": 40\n    },\n    \"users\": [1, 2, 3],\n    \"metadata\": {\n        \"note\": \"Обновленная заметка\",\n        \"tags\": [\"обновлено\", \"еда\"]\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/event/:id_event/transaction/:id_transaction",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"event",
+								":id_event",
+								"transaction",
+								":id_transaction"
+							],
+							"variable": [
+								{
+									"key": "id_event",
+									"value": "1",
+									"description": "ID мероприятия"
+								},
+								{
+									"key": "id_transaction",
+									"value": "1",
+									"description": "ID транзакции"
+								}
+							]
+						},
+						"description": "Обновление существующей транзакции"
+					},
+					"response": []
+				},
+				{
+					"name": "Удалить транзакцию",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/event/:id_event/transaction/:id_transaction",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"event",
+								":id_event",
+								"transaction",
+								":id_transaction"
+							],
+							"variable": [
+								{
+									"key": "id_event",
+									"value": "1",
+									"description": "ID мероприятия"
+								},
+								{
+									"key": "id_transaction",
+									"value": "1",
+									"description": "ID транзакции"
+								}
+							]
+						},
+						"description": "Удаление транзакции по ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Получить долги мероприятия",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/event/:id_event/debts",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"event",
+								":id_event",
+								"debts"
+							],
+							"variable": [
+								{
+									"key": "id_event",
+									"value": "1",
+									"description": "ID мероприятия"
+								}
+							]
+						},
+						"description": "Получение списка всех долгов в рамках мероприятия"
 					},
 					"response": []
 				}
@@ -942,7 +1169,7 @@
 	"variable": [
 		{
 			"key": "base_url",
-			"value": "http://localhost:8080",
+			"value": "http://localhost:8085",
 			"type": "string"
 		},
 		{

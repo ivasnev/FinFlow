@@ -31,27 +31,30 @@ type Container struct {
 	DB     *gorm.DB
 
 	// Репозитории
-	CategoryRepository *category_repository.Repository
-	EventRepository    *pg_repos.EventRepository
-	ActivityRepository *pg_repos.ActivityRepository
-	UserRepository     *pg_repos.UserRepository
-	IconRepository     *pg_repos.IconRepository
-	TaskRepository     *pg_repos.TaskRepository
+	CategoryRepository    *category_repository.Repository
+	EventRepository       *pg_repos.EventRepository
+	ActivityRepository    *pg_repos.ActivityRepository
+	UserRepository        *pg_repos.UserRepository
+	IconRepository        *pg_repos.IconRepository
+	TaskRepository        *pg_repos.TaskRepository
+	TransactionRepository *pg_repos.TransactionRepository
 
 	// Сервисы
-	CategoryService service.CategoryServiceInterface
-	EventService    service.EventServiceInterface
-	ActivityService service.ActivityServiceInterface
-	UserService     service.UserServiceInterface
-	IconService     service.IconServiceInterface
-	TaskService     service.TaskServiceInterface
+	CategoryService    service.CategoryServiceInterface
+	EventService       service.EventServiceInterface
+	ActivityService    service.ActivityServiceInterface
+	UserService        service.UserServiceInterface
+	IconService        service.IconServiceInterface
+	TaskService        service.TaskServiceInterface
+	TransactionService service.TransactionServiceInterface
 
 	// Обработчики маршрутов
-	CategoryHandler handler.CategoryHandlerInterface
-	EventHandler    handler.EventHandlerInterface
-	ActivityHandler handler.ActivityHandlerInterface
-	IconHandler     handler.IconHandlerInterface
-	TaskHandler     handler.TaskHandlerInterface
+	CategoryHandler    handler.CategoryHandlerInterface
+	EventHandler       handler.EventHandlerInterface
+	ActivityHandler    handler.ActivityHandlerInterface
+	IconHandler        handler.IconHandlerInterface
+	TaskHandler        handler.TaskHandlerInterface
+	TransactionHandler handler.TransactionHandlerInterface
 
 	// Клиенты внешних сервисов
 	AuthClient *auth.Client
@@ -106,6 +109,7 @@ func (c *Container) initRepositories() {
 	c.UserRepository = pg_repos.NewUserRepository(c.DB)
 	c.IconRepository = pg_repos.NewIconRepository(c.DB)
 	c.TaskRepository = pg_repos.NewTaskRepository(c.DB)
+	c.TransactionRepository = pg_repos.NewTransactionRepository(c.DB)
 }
 
 // initServices инициализирует сервисы
@@ -116,6 +120,7 @@ func (c *Container) initServices() {
 	c.ActivityService = service.NewActivityService(c.ActivityRepository)
 	c.IconService = service.NewIconService(c.IconRepository)
 	c.TaskService = service.NewTaskService(c.TaskRepository, c.UserService)
+	c.TransactionService = service.NewTransactionService(c.DB, c.TransactionRepository, c.UserService, c.EventService)
 }
 
 // initHandlers инициализирует обработчики
@@ -125,6 +130,7 @@ func (c *Container) initHandlers() {
 	c.ActivityHandler = handler.NewActivityHandler(c.ActivityService)
 	c.IconHandler = handler.NewIconHandler(c.IconService)
 	c.TaskHandler = handler.NewTaskHandler(c.TaskService)
+	c.TransactionHandler = handler.NewTransactionHandler(c.TransactionService)
 }
 
 // initDB инициализирует подключение к базе данных
@@ -227,6 +233,19 @@ func (c *Container) RegisterRoutes() {
 			taskRoutes.PUT("/:id_task", c.TaskHandler.UpdateTask)
 			taskRoutes.DELETE("/:id_task", c.TaskHandler.DeleteTask)
 		}
+
+		// Транзакции мероприятия
+		transactionRoutes := eventRoutes.Group("/:id_event/transaction")
+		{
+			transactionRoutes.GET("", c.TransactionHandler.GetTransactionsByEventID)
+			transactionRoutes.GET("/:id_transaction", c.TransactionHandler.GetTransactionByID)
+			transactionRoutes.POST("", c.TransactionHandler.CreateTransaction)
+			transactionRoutes.PUT("/:id_transaction", c.TransactionHandler.UpdateTransaction)
+			transactionRoutes.DELETE("/:id_transaction", c.TransactionHandler.DeleteTransaction)
+		}
+
+		// Долги мероприятия
+		eventRoutes.GET("/:id_event/debts", c.TransactionHandler.GetDebtsByEventID)
 	}
 
 	// Управление (требуется роль service_admin)

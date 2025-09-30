@@ -36,7 +36,7 @@ func NewUserService(
 
 // CreateUser создает нового пользователя
 func (s *UserService) CreateUser(ctx context.Context, user *models.User) (*models.User, error) {
-	existingUser, err := s.userRepository.GetByUserID(ctx, *user.UserID)
+	existingUser, err := s.userRepository.GetByExternalUserID(ctx, *user.UserID)
 	if err == nil && existingUser != nil {
 		return existingUser, nil // Пользователь уже существует, возвращаем его
 	}
@@ -92,15 +92,23 @@ func (s *UserService) BatchCreateDummyUsers(ctx context.Context, names []string,
 
 // GetUserByID получает пользователя по внутреннему ID
 func (s *UserService) GetUserByID(ctx context.Context, id int64) (*models.User, error) {
-	user, err := s.userRepository.GetByID(ctx, id)
+	user, err := s.userRepository.GetByInternalUserID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при получении пользователя: %w", err)
 	}
 	return user, nil
 }
 
-func (s *UserService) GetUsersByUserIDs(ctx context.Context, userIDs []int64) ([]models.User, error) {
-	users, err := s.userRepository.GetByUserIDs(ctx, userIDs)
+func (s *UserService) GetUsersByExternalUserIDs(ctx context.Context, userIDs []int64) ([]models.User, error) {
+	users, err := s.userRepository.GetByExternalUserIDs(ctx, userIDs)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка при получении пользователей: %w", err)
+	}
+	return users, nil
+}
+
+func (s *UserService) GetUsersByInternalUserIDs(ctx context.Context, userIDs []int64) ([]models.User, error) {
+	users, err := s.userRepository.GetByInternalUserIDs(ctx, userIDs)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при получении пользователей: %w", err)
 	}
@@ -110,7 +118,7 @@ func (s *UserService) GetUsersByUserIDs(ctx context.Context, userIDs []int64) ([
 // GetUserByUserID получает пользователя по UserID (ID из сервиса идентификации)
 func (s *UserService) GetUserByUserID(ctx context.Context, userID int64) (*models.User, error) {
 	// Пытаемся найти пользователя в базе данных
-	user, err := s.userRepository.GetByUserID(ctx, userID)
+	user, err := s.userRepository.GetByExternalUserID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при получении пользователя: %w", err)
 	}
@@ -141,7 +149,7 @@ func (s *UserService) GetDummiesByEventID(ctx context.Context, eventID int64) ([
 // UpdateUser обновляет данные пользователя
 func (s *UserService) UpdateUser(ctx context.Context, user *models.User) (*models.User, error) {
 	// Получаем существующего пользователя
-	existingUser, err := s.userRepository.GetByUserID(ctx, *user.UserID)
+	existingUser, err := s.userRepository.GetByExternalUserID(ctx, *user.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при получении пользователя: %w", err)
 	}
@@ -173,7 +181,7 @@ func (s *UserService) DeleteUser(ctx context.Context, id int64) error {
 
 // AddUsersToEvent добавляет пользователей в мероприятие
 func (s *UserService) AddUsersToEvent(ctx context.Context, ids []int64, eventID int64) error {
-	internalUser, err := s.userRepository.GetByUserIDs(ctx, ids)
+	internalUser, err := s.userRepository.GetByInternalUserIDs(ctx, ids)
 	if err != nil {
 		return fmt.Errorf("ошибка при получении пользователей: %w", err)
 	}
@@ -312,7 +320,7 @@ func (s *UserService) BatchSyncUsersWithIDService(ctx context.Context, userIDs [
 }
 
 func (s *UserService) GetNotExistsUsers(ctx context.Context, ids []int64) ([]int64, error) {
-	users, err := s.userRepository.GetByUserIDs(ctx, ids)
+	users, err := s.userRepository.GetByExternalUserIDs(ctx, ids)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при получении пользователей: %w", err)
 	}
