@@ -65,14 +65,17 @@ type UserServiceInterface interface {
 	// BatchCreateDummyUsers создает dummy-пользователей для мероприятия
 	BatchCreateDummyUsers(ctx context.Context, names []string, eventID int64) ([]*models.User, error)
 
-	// GetUserByID получает пользователя по внутреннему ID
-	GetUserByID(ctx context.Context, id int64) (*models.User, error)
+	// GetUserByInternalUserID получает пользователя по внутреннему ID
+	GetUserByInternalUserID(ctx context.Context, id int64) (*models.User, error)
 
-	// GetUserByUserID получает пользователя по UserID (ID из сервиса идентификации)
-	GetUserByUserID(ctx context.Context, userID int64) (*models.User, error)
+	// GetUserByExternalUserID получает пользователя по UserID (ID из сервиса идентификации)
+	GetUserByExternalUserID(ctx context.Context, userID int64) (*models.User, error)
 
-	// GetUsersByUserIDs получает пользователей по UserID (ID из сервиса идентификации)
+	// GetUsersByExternalUserIDs получает пользователей по UserID (ID из сервиса идентификации)
 	GetUsersByExternalUserIDs(ctx context.Context, userIDs []int64) ([]models.User, error)
+
+	// GetUsersByInternalUserIDs получает пользователей по UserID (ID из сервиса идентификации)
+	GetUsersByInternalUserIDs(ctx context.Context, userIDs []int64) ([]models.User, error)
 
 	// GetUsersByEventID получает всех пользователей мероприятия
 	GetUsersByEventID(ctx context.Context, eventID int64) ([]models.User, error)

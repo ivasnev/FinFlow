@@ -57,3 +57,18 @@ type TransactionHandlerInterface interface {
 	DeleteTransaction(c *gin.Context)
 	GetDebtsByEventID(c *gin.Context)
 }
+
+// UserHandlerInterface интерфейс для обработки запросов по пользователям
+type UserHandlerInterface interface {
+	GetUserByID(c *gin.Context)
+	GetUsersByIDs(c *gin.Context)
+	GetUsersByEventID(c *gin.Context)
+	GetDummiesByEventID(c *gin.Context)
+	SyncUsers(c *gin.Context)
+	CreateDummyUser(c *gin.Context)
+	BatchCreateDummyUsers(c *gin.Context)
+	UpdateUser(c *gin.Context)
+	DeleteUser(c *gin.Context)
+	AddUsersToEvent(c *gin.Context)
+	RemoveUserFromEvent(c *gin.Context)
+}

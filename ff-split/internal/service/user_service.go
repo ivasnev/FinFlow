@@ -91,7 +91,7 @@ func (s *UserService) BatchCreateDummyUsers(ctx context.Context, names []string,
 }
 
 // GetUserByID получает пользователя по внутреннему ID
-func (s *UserService) GetUserByID(ctx context.Context, id int64) (*models.User, error) {
+func (s *UserService) GetUserByInternalUserID(ctx context.Context, id int64) (*models.User, error) {
 	user, err := s.userRepository.GetByInternalUserID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при получении пользователя: %w", err)
@@ -116,7 +116,7 @@ func (s *UserService) GetUsersByInternalUserIDs(ctx context.Context, userIDs []i
 }
 
 // GetUserByUserID получает пользователя по UserID (ID из сервиса идентификации)
-func (s *UserService) GetUserByUserID(ctx context.Context, userID int64) (*models.User, error) {
+func (s *UserService) GetUserByExternalUserID(ctx context.Context, userID int64) (*models.User, error) {
 	// Пытаемся найти пользователя в базе данных
 	user, err := s.userRepository.GetByExternalUserID(ctx, userID)
 	if err != nil {

@@ -55,6 +55,7 @@ type Container struct {
 	IconHandler        handler.IconHandlerInterface
 	TaskHandler        handler.TaskHandlerInterface
 	TransactionHandler handler.TransactionHandlerInterface
+	UserHandler        handler.UserHandlerInterface
 
 	// Клиенты внешних сервисов
 	AuthClient *auth.Client
@@ -131,6 +132,7 @@ func (c *Container) initHandlers() {
 	c.IconHandler = handler.NewIconHandler(c.IconService)
 	c.TaskHandler = handler.NewTaskHandler(c.TaskService)
 	c.TransactionHandler = handler.NewTransactionHandler(c.TransactionService)
+	c.UserHandler = handler.NewUserHandler(c.UserService)
 }
 
 // initDB инициализирует подключение к базе данных
@@ -246,6 +248,19 @@ func (c *Container) RegisterRoutes() {
 
 		// Долги мероприятия
 		eventRoutes.GET("/:id_event/debts", c.TransactionHandler.GetDebtsByEventID)
+
+		// Пользователи мероприятия
+		users := eventRoutes.Group("/:id_event/user")
+		{
+			users.GET("", c.UserHandler.GetUsersByEventID)
+			users.POST("", c.UserHandler.AddUsersToEvent)
+			users.DELETE("/:id_user", c.UserHandler.RemoveUserFromEvent)
+
+			// Dummy-пользователи
+			users.GET("/dummies", c.UserHandler.GetDummiesByEventID)
+			users.POST("/dummy", c.UserHandler.CreateDummyUser)
+			users.POST("/dummies", c.UserHandler.BatchCreateDummyUsers)
+		}
 	}
 
 	// Управление (требуется роль service_admin)
@@ -273,6 +288,16 @@ func (c *Container) RegisterRoutes() {
 			iconsRoutes.PUT("/:id", c.IconHandler.UpdateIcon)
 			iconsRoutes.DELETE("/:id", c.IconHandler.DeleteIcon)
 		}
+	}
+
+	// Пользователи
+	users := v1.Group("/user")
+	{
+		users.GET("/:id_user", c.UserHandler.GetUserByID)
+		users.PUT("/:id_user", c.UserHandler.UpdateUser)
+		users.DELETE("/:id_user", c.UserHandler.DeleteUser)
+		users.POST("/sync", c.UserHandler.SyncUsers)
+		users.POST("/list", c.UserHandler.GetUsersByIDs)
 	}
 
 	// Базовый маршрут для проверки работоспособности сервиса
