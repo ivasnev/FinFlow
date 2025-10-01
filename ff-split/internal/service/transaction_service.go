@@ -2,11 +2,14 @@ package service
 
 import (
 	"context"
+	"math"
+	"strconv"
 	"time"
 
 	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres"
+	"github.com/ivasnev/FinFlow/ff-split/internal/service/debs_optimizer"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service/debt_calculator"
 	"gorm.io/gorm"
 )
@@ -315,6 +318,166 @@ func (s *TransactionService) GetDebtsByEventID(ctx context.Context, eventID int6
 			ToUserID:      debt.ToUserID,
 			Amount:        debt.Amount,
 			TransactionID: debt.TransactionID,
+		}
+	}
+
+	return result, nil
+}
+
+// OptimizeDebts оптимизирует долги для мероприятия и сохраняет результат
+func (s *TransactionService) OptimizeDebts(ctx context.Context, eventID int64) ([]dto.OptimizedDebtDTO, error) {
+	// Проверяем существование мероприятия
+	_, err := s.eventService.GetEventByID(ctx, eventID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Получаем все долги мероприятия
+	debts, err := s.repo.GetDebtsByEventID(eventID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Формируем структуру для оптимизатора
+	debtMap := make(map[string]map[string]int)
+	for _, debt := range debts {
+		fromUserID := strconv.FormatInt(debt.FromUserID, 10)
+		toUserID := strconv.FormatInt(debt.ToUserID, 10)
+
+		if _, exists := debtMap[toUserID]; !exists {
+			debtMap[toUserID] = make(map[string]int)
+		}
+
+		// Округляем до целых для алгоритма оптимизации
+		amount := int(math.Round(debt.Amount))
+		debtMap[toUserID][fromUserID] += amount
+	}
+
+	// Оптимизируем долги
+	optimizedDebts := debs_optimizer.SimplifyDebts(debtMap)
+
+	// Преобразуем результат в модель и DTO
+	result := make([]dto.OptimizedDebtDTO, 0)
+	modelsToSave := make([]models.OptimizedDebt, 0)
+
+	for creditor, debtors := range optimizedDebts {
+		for debtor, amount := range debtors {
+			if amount <= 0 {
+				continue
+			}
+
+			creditorID, _ := strconv.ParseInt(creditor, 10, 64)
+			debtorID, _ := strconv.ParseInt(debtor, 10, 64)
+
+			// Создаем модель для сохранения
+			optimizedDebt := models.OptimizedDebt{
+				EventID:    eventID,
+				FromUserID: debtorID,
+				ToUserID:   creditorID,
+				Amount:     float64(amount),
+				CreatedAt:  time.Now(),
+				UpdatedAt:  time.Now(),
+			}
+			modelsToSave = append(modelsToSave, optimizedDebt)
+
+			// Создаем DTO для ответа
+			result = append(result, dto.OptimizedDebtDTO{
+				FromUserID: debtorID,
+				ToUserID:   creditorID,
+				Amount:     float64(amount),
+				EventID:    eventID,
+			})
+		}
+	}
+
+	// Сохраняем оптимизированные долги в базе
+	if err := s.repo.SaveOptimizedDebts(eventID, modelsToSave); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// GetOptimizedDebtsByEventID возвращает оптимизированные долги по ID мероприятия
+func (s *TransactionService) GetOptimizedDebtsByEventID(ctx context.Context, eventID int64) ([]dto.OptimizedDebtDTO, error) {
+	// Проверяем существование мероприятия
+	_, err := s.eventService.GetEventByID(ctx, eventID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Получаем оптимизированные долги
+	optimizedDebts, err := s.repo.GetOptimizedDebtsByEventID(eventID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Если оптимизированных долгов нет, вызываем оптимизацию
+	if len(optimizedDebts) == 0 {
+		return s.OptimizeDebts(ctx, eventID)
+	}
+
+	// Формируем ответ
+	result := make([]dto.OptimizedDebtDTO, len(optimizedDebts))
+	for i, debt := range optimizedDebts {
+		result[i] = dto.OptimizedDebtDTO{
+			ID:         debt.ID,
+			FromUserID: debt.FromUserID,
+			ToUserID:   debt.ToUserID,
+			Amount:     debt.Amount,
+			EventID:    debt.EventID,
+		}
+	}
+
+	return result, nil
+}
+
+// GetOptimizedDebtsByUserID возвращает оптимизированные долги по ID пользователя в мероприятии
+func (s *TransactionService) GetOptimizedDebtsByUserID(ctx context.Context, eventID, userID int64) ([]dto.OptimizedDebtDTO, error) {
+	// Проверяем существование мероприятия
+	_, err := s.eventService.GetEventByID(ctx, eventID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Проверяем существование пользователя
+	_, err = s.userService.GetUserByInternalUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Получаем оптимизированные долги
+	optimizedDebts, err := s.repo.GetOptimizedDebtsByUserID(eventID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Если оптимизированных долгов нет, вызываем оптимизацию и затем фильтруем
+	if len(optimizedDebts) == 0 {
+		allDebts, err := s.OptimizeDebts(ctx, eventID)
+		if err != nil {
+			return nil, err
+		}
+
+		// Фильтруем долги, связанные с пользователем
+		userDebts := make([]dto.OptimizedDebtDTO, 0)
+		for _, debt := range allDebts {
+			if debt.FromUserID == userID || debt.ToUserID == userID {
+				userDebts = append(userDebts, debt)
+			}
+		}
+		return userDebts, nil
+	}
+
+	// Формируем ответ
+	result := make([]dto.OptimizedDebtDTO, len(optimizedDebts))
+	for i, debt := range optimizedDebts {
+		result[i] = dto.OptimizedDebtDTO{
+			ID:         debt.ID,
+			FromUserID: debt.FromUserID,
+			ToUserID:   debt.ToUserID,
+			Amount:     debt.Amount,
+			EventID:    debt.EventID,
 		}
 	}
 

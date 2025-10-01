@@ -135,3 +135,60 @@ func (h *TransactionHandler) GetDebtsByEventID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, dto.DebtListResponse(debts))
 }
+
+// OptimizeDebts оптимизирует долги мероприятия
+func (h *TransactionHandler) OptimizeDebts(c *gin.Context) {
+	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID мероприятия"})
+		return
+	}
+
+	optimizedDebts, err := h.service.OptimizeDebts(c.Request.Context(), eventID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.OptimizedDebtListResponse(optimizedDebts))
+}
+
+// GetOptimizedDebtsByEventID возвращает оптимизированные долги мероприятия
+func (h *TransactionHandler) GetOptimizedDebtsByEventID(c *gin.Context) {
+	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID мероприятия"})
+		return
+	}
+
+	optimizedDebts, err := h.service.GetOptimizedDebtsByEventID(c.Request.Context(), eventID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.OptimizedDebtListResponse(optimizedDebts))
+}
+
+// GetOptimizedDebtsByUserID возвращает оптимизированные долги пользователя в мероприятии
+func (h *TransactionHandler) GetOptimizedDebtsByUserID(c *gin.Context) {
+	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID мероприятия"})
+		return
+	}
+
+	userID, err := strconv.ParseInt(c.Param("id_user"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID пользователя"})
+		return
+	}
+
+	optimizedDebts, err := h.service.GetOptimizedDebtsByUserID(c.Request.Context(), eventID, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, dto.OptimizedDebtListResponse(optimizedDebts))
+}

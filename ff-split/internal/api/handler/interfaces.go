@@ -56,6 +56,11 @@ type TransactionHandlerInterface interface {
 	UpdateTransaction(c *gin.Context)
 	DeleteTransaction(c *gin.Context)
 	GetDebtsByEventID(c *gin.Context)
+
+	// Методы для оптимизированных долгов
+	OptimizeDebts(c *gin.Context)
+	GetOptimizedDebtsByEventID(c *gin.Context)
+	GetOptimizedDebtsByUserID(c *gin.Context)
 }
 
 // UserHandlerInterface интерфейс для обработки запросов по пользователям

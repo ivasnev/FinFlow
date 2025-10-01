@@ -53,3 +53,15 @@ type ShareDTO struct {
 	Value         float64 `json:"value"`
 	TransactionID int     `json:"transaction_id,omitempty"`
 }
+
+// OptimizedDebtDTO представляет информацию об оптимизированных долгах
+type OptimizedDebtDTO struct {
+	ID         int     `json:"id,omitempty"`
+	FromUserID int64   `json:"from_user_id"`
+	ToUserID   int64   `json:"to_user_id"`
+	Amount     float64 `json:"amount"`
+	EventID    int64   `json:"event_id"`
+}
+
+// OptimizedDebtListResponse представляет ответ со списком оптимизированных долгов
+type OptimizedDebtListResponse []OptimizedDebtDTO

@@ -1135,6 +1135,100 @@
 						"description": "Получение списка всех долгов в рамках мероприятия"
 					},
 					"response": []
+				},
+				{
+					"name": "Получить оптимизированные долги мероприятия",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/event/:id_event/optimized-debts",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"event",
+								":id_event",
+								"optimized-debts"
+							],
+							"variable": [
+								{
+									"key": "id_event",
+									"value": "1",
+									"description": "ID мероприятия"
+								}
+							]
+						},
+						"description": "Получение списка оптимизированных долгов в рамках мероприятия"
+					},
+					"response": []
+				},
+				{
+					"name": "Оптимизировать долги мероприятия",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/event/:id_event/optimized-debts",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"event",
+								":id_event",
+								"optimized-debts"
+							],
+							"variable": [
+								{
+									"key": "id_event",
+									"value": "1",
+									"description": "ID мероприятия"
+								}
+							]
+						},
+						"description": "Запуск оптимизации долгов мероприятия и получение результатов"
+					},
+					"response": []
+				},
+				{
+					"name": "Получить оптимизированные долги пользователя",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/event/:id_event/user/:id_user/optimized-debts",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"event",
+								":id_event",
+								"user",
+								":id_user",
+								"optimized-debts"
+							],
+							"variable": [
+								{
+									"key": "id_event",
+									"value": "1",
+									"description": "ID мероприятия"
+								},
+								{
+									"key": "id_user",
+									"value": "1",
+									"description": "ID пользователя"
+								}
+							]
+						},
+						"description": "Получение списка оптимизированных долгов пользователя в рамках мероприятия"
+					},
+					"response": []
 				}
 			],
 			"description": "Операции с транзакциями"

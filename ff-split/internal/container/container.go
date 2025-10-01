@@ -249,6 +249,11 @@ func (c *Container) RegisterRoutes() {
 		// Долги мероприятия
 		eventRoutes.GET("/:id_event/debts", c.TransactionHandler.GetDebtsByEventID)
 
+		// Оптимизированные долги мероприятия
+		eventRoutes.GET("/:id_event/optimized-debts", c.TransactionHandler.GetOptimizedDebtsByEventID)
+		eventRoutes.POST("/:id_event/optimized-debts", c.TransactionHandler.OptimizeDebts)
+		eventRoutes.GET("/:id_event/user/:id_user/optimized-debts", c.TransactionHandler.GetOptimizedDebtsByUserID)
+
 		// Пользователи мероприятия
 		users := eventRoutes.Group("/:id_event/user")
 		{
