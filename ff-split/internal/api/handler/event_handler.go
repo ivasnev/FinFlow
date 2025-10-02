@@ -24,6 +24,14 @@ func NewEventHandler(service service.EventServiceInterface, userService service.
 }
 
 // GetEvents обрабатывает запрос на получение списка мероприятий
+// @Summary Получить список мероприятий
+// @Description Возвращает список всех мероприятий
+// @Tags мероприятия
+// @Accept json
+// @Produce json
+// @Success 200 {object} dto.EventListResponse "Список мероприятий"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/event [get]
 func (h *EventHandler) GetEvents(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -59,6 +67,17 @@ func (h *EventHandler) GetEvents(c *gin.Context) {
 }
 
 // GetEventByID обрабатывает запрос на получение мероприятия по ID
+// @Summary Получить мероприятие по ID
+// @Description Возвращает информацию о конкретном мероприятии по его ID
+// @Tags мероприятия
+// @Accept json
+// @Produce json
+// @Param id_event path int true "ID мероприятия"
+// @Success 200 {object} dto.EventResponse "Информация о мероприятии"
+// @Failure 400 {object} map[string]string "Неверный формат ID мероприятия"
+// @Failure 404 {object} map[string]string "Мероприятие не найдено"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/event/{id_event} [get]
 func (h *EventHandler) GetEventByID(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -102,6 +121,17 @@ func (h *EventHandler) GetEventByID(c *gin.Context) {
 }
 
 // CreateEvent обрабатывает запрос на создание нового мероприятия
+// @Summary Создать новое мероприятие
+// @Description Создает новое мероприятие с указанным пользователем в качестве создателя
+// @Tags мероприятия
+// @Accept json
+// @Produce json
+// @Param id_user path int true "ID пользователя (создателя)"
+// @Param event body dto.EventRequest true "Данные мероприятия"
+// @Success 201 {object} dto.EventResponse "Созданное мероприятие"
+// @Failure 400 {object} map[string]string "Неверный формат данных запроса"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/user/{id_user}/event [post]
 func (h *EventHandler) CreateEvent(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -125,6 +155,18 @@ func (h *EventHandler) CreateEvent(c *gin.Context) {
 }
 
 // UpdateEvent обрабатывает запрос на обновление мероприятия
+// @Summary Обновить мероприятие
+// @Description Обновляет существующее мероприятие по ID
+// @Tags мероприятия
+// @Accept json
+// @Produce json
+// @Param id_event path int true "ID мероприятия"
+// @Param event body dto.EventRequest true "Данные мероприятия"
+// @Success 200 {object} dto.EventResponse "Обновленное мероприятие"
+// @Failure 400 {object} map[string]string "Неверный формат данных запроса"
+// @Failure 404 {object} map[string]string "Мероприятие не найдено"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/event/{id_event} [put]
 func (h *EventHandler) UpdateEvent(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -158,6 +200,16 @@ func (h *EventHandler) UpdateEvent(c *gin.Context) {
 }
 
 // DeleteEvent обрабатывает запрос на удаление мероприятия
+// @Summary Удалить мероприятие
+// @Description Удаляет мероприятие по ID
+// @Tags мероприятия
+// @Accept json
+// @Produce json
+// @Param id_event path int true "ID мероприятия"
+// @Success 204 "Мероприятие успешно удалено"
+// @Failure 400 {object} map[string]string "Неверный формат ID мероприятия"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/event/{id_event} [delete]
 func (h *EventHandler) DeleteEvent(c *gin.Context) {
 	ctx := c.Request.Context()
 

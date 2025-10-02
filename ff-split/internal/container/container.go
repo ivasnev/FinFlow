@@ -22,6 +22,12 @@ import (
 	//tvmmiddleware "github.com/ivasnev/FinFlow/ff-tvm/pkg/middleware"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	// Импорт сгенерированной Swagger-документации
+	_ "github.com/ivasnev/FinFlow/ff-split/docs"
 )
 
 // Container - контейнер зависимостей для приложения
@@ -187,6 +193,9 @@ func (c *Container) initDB() error {
 
 // RegisterRoutes - регистрирует все маршруты API
 func (c *Container) RegisterRoutes() {
+	// Swagger
+	c.Router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	// API версии v1
 	v1 := c.Router.Group("/api/v1")
 

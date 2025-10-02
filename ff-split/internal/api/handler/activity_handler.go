@@ -24,6 +24,16 @@ func NewActivityHandler(service service.ActivityServiceInterface) *ActivityHandl
 }
 
 // GetActivitiesByEventID обрабатывает запрос на получение списка активностей по ID мероприятия
+// @Summary Получить активности мероприятия
+// @Description Возвращает список всех активностей, связанных с указанным мероприятием
+// @Tags активности
+// @Accept json
+// @Produce json
+// @Param id_event path int true "ID мероприятия"
+// @Success 200 {object} dto.ActivityListResponse "Список активностей"
+// @Failure 400 {object} dto.ErrorResponse "Некорректный ID мероприятия"
+// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /api/v1/event/{id_event}/activity [get]
 func (h *ActivityHandler) GetActivitiesByEventID(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -63,6 +73,18 @@ func (h *ActivityHandler) GetActivitiesByEventID(c *gin.Context) {
 }
 
 // GetActivityByID обрабатывает запрос на получение активности по ID
+// @Summary Получить активность по ID
+// @Description Возвращает информацию о конкретной активности по её ID
+// @Tags активности
+// @Accept json
+// @Produce json
+// @Param id_event path int true "ID мероприятия"
+// @Param id_activity path int true "ID активности"
+// @Success 200 {object} dto.ActivityResponse "Информация об активности"
+// @Failure 400 {object} dto.ErrorResponse "Некорректный ID активности"
+// @Failure 404 {object} dto.ErrorResponse "Активность не найдена"
+// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /api/v1/event/{id_event}/activity/{id_activity} [get]
 func (h *ActivityHandler) GetActivityByID(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -100,6 +122,17 @@ func (h *ActivityHandler) GetActivityByID(c *gin.Context) {
 }
 
 // CreateActivity обрабатывает запрос на создание новой активности
+// @Summary Создать новую активность
+// @Description Создает новую активность в рамках указанного мероприятия
+// @Tags активности
+// @Accept json
+// @Produce json
+// @Param id_event path int true "ID мероприятия"
+// @Param activity body dto.ActivityRequest true "Данные активности"
+// @Success 201 {object} dto.ActivityResponse "Созданная активность"
+// @Failure 400 {object} dto.ErrorResponse "Некорректные данные запроса"
+// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /api/v1/event/{id_event}/activity [post]
 func (h *ActivityHandler) CreateActivity(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -147,6 +180,19 @@ func (h *ActivityHandler) CreateActivity(c *gin.Context) {
 }
 
 // UpdateActivity обрабатывает запрос на обновление активности
+// @Summary Обновить активность
+// @Description Обновляет существующую активность по ID
+// @Tags активности
+// @Accept json
+// @Produce json
+// @Param id_event path int true "ID мероприятия"
+// @Param id_activity path int true "ID активности"
+// @Param activity body dto.ActivityRequest true "Данные активности"
+// @Success 200 {object} dto.ActivityResponse "Обновленная активность"
+// @Failure 400 {object} dto.ErrorResponse "Некорректные данные запроса"
+// @Failure 404 {object} dto.ErrorResponse "Активность не найдена"
+// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /api/v1/event/{id_event}/activity/{id_activity} [put]
 func (h *ActivityHandler) UpdateActivity(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -211,6 +257,17 @@ func (h *ActivityHandler) UpdateActivity(c *gin.Context) {
 }
 
 // DeleteActivity обрабатывает запрос на удаление активности
+// @Summary Удалить активность
+// @Description Удаляет активность по ID
+// @Tags активности
+// @Accept json
+// @Produce json
+// @Param id_event path int true "ID мероприятия"
+// @Param id_activity path int true "ID активности"
+// @Success 200 {object} dto.SuccessResponse "Активность успешно удалена"
+// @Failure 400 {object} dto.ErrorResponse "Некорректный ID активности"
+// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка сервера"
+// @Router /api/v1/event/{id_event}/activity/{id_activity} [delete]
 func (h *ActivityHandler) DeleteActivity(c *gin.Context) {
 	ctx := c.Request.Context()
 

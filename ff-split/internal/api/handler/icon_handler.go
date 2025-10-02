@@ -20,6 +20,14 @@ func NewIconHandler(service service.IconServiceInterface) *IconHandler {
 }
 
 // GetIcons возвращает список всех иконок
+// @Summary Получить все иконки
+// @Description Возвращает список всех доступных иконок в системе
+// @Tags иконки
+// @Accept json
+// @Produce json
+// @Success 200 {array} dto.IconResponse "Список иконок"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/manage/icons [get]
 func (h *IconHandler) GetIcons(c *gin.Context) {
 	icons, err := h.service.GetIcons(c.Request.Context())
 	if err != nil {
@@ -31,6 +39,17 @@ func (h *IconHandler) GetIcons(c *gin.Context) {
 }
 
 // GetIconByID возвращает иконку по ID
+// @Summary Получить иконку по ID
+// @Description Возвращает информацию о конкретной иконке по её ID
+// @Tags иконки
+// @Accept json
+// @Produce json
+// @Param id path int true "ID иконки"
+// @Success 200 {object} dto.IconResponse "Информация об иконке"
+// @Failure 400 {object} map[string]string "Неверный формат ID"
+// @Failure 404 {object} map[string]string "Иконка не найдена"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/manage/icons/{id} [get]
 func (h *IconHandler) GetIconByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -49,6 +68,16 @@ func (h *IconHandler) GetIconByID(c *gin.Context) {
 }
 
 // CreateIcon создает новую иконку
+// @Summary Создать новую иконку
+// @Description Создает новую иконку в системе
+// @Tags иконки
+// @Accept json
+// @Produce json
+// @Param icon body dto.IconFullDTO true "Данные иконки"
+// @Success 201 {object} dto.IconResponse "Созданная иконка"
+// @Failure 400 {object} map[string]string "Неверный формат данных запроса"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/manage/icons [post]
 func (h *IconHandler) CreateIcon(c *gin.Context) {
 	var iconDTO dto.IconFullDTO
 	if err := c.ShouldBindJSON(&iconDTO); err != nil {
@@ -66,6 +95,17 @@ func (h *IconHandler) CreateIcon(c *gin.Context) {
 }
 
 // UpdateIcon обновляет существующую иконку
+// @Summary Обновить иконку
+// @Description Обновляет существующую иконку по ID
+// @Tags иконки
+// @Accept json
+// @Produce json
+// @Param id path int true "ID иконки"
+// @Param icon body dto.IconFullDTO true "Данные иконки"
+// @Success 200 {object} dto.IconResponse "Обновленная иконка"
+// @Failure 400 {object} map[string]string "Неверный формат данных запроса"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/manage/icons/{id} [put]
 func (h *IconHandler) UpdateIcon(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -90,6 +130,16 @@ func (h *IconHandler) UpdateIcon(c *gin.Context) {
 }
 
 // DeleteIcon удаляет иконку по ID
+// @Summary Удалить иконку
+// @Description Удаляет иконку по ID
+// @Tags иконки
+// @Accept json
+// @Produce json
+// @Param id path int true "ID иконки"
+// @Success 204 "Иконка успешно удалена"
+// @Failure 400 {object} map[string]string "Неверный формат ID"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /api/v1/manage/icons/{id} [delete]
 func (h *IconHandler) DeleteIcon(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
