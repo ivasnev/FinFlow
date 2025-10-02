@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
+	"github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 )
 
@@ -27,19 +29,19 @@ func NewTaskHandler(service service.TaskServiceInterface) *TaskHandler {
 // @Produce json
 // @Param id_event path int true "ID мероприятия"
 // @Success 200 {object} dto.TaskListResponse "Список задач"
-// @Failure 400 {object} map[string]string "Неверный формат ID мероприятия"
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID мероприятия"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/event/{id_event}/task [get]
 func (h *TaskHandler) GetTasksByEventID(c *gin.Context) {
 	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID мероприятия"})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "неверный формат ID мероприятия"))
 		return
 	}
 
 	tasks, err := h.service.GetTasksByEventID(c.Request.Context(), eventID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении задач: %w", err))
 		return
 	}
 
@@ -55,21 +57,21 @@ func (h *TaskHandler) GetTasksByEventID(c *gin.Context) {
 // @Param id_event path int true "ID мероприятия"
 // @Param id_task path int true "ID задачи"
 // @Success 200 {object} dto.TaskResponse "Информация о задаче"
-// @Failure 400 {object} map[string]string "Неверный формат ID"
-// @Failure 404 {object} map[string]string "Задача не найдена"
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID"
+// @Failure 404 {object} errors.ErrorResponse "Задача не найдена"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/event/{id_event}/task/{id_task} [get]
 func (h *TaskHandler) GetTaskByID(c *gin.Context) {
 	idStr := c.Param("id_task")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID задачи"})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_task", "неверный формат ID задачи"))
 		return
 	}
 
 	task, err := h.service.GetTaskByID(c.Request.Context(), uint(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении задачи: %w", err))
 		return
 	}
 
@@ -85,25 +87,25 @@ func (h *TaskHandler) GetTaskByID(c *gin.Context) {
 // @Param id_event path int true "ID мероприятия"
 // @Param task body dto.TaskRequest true "Данные задачи"
 // @Success 201 {object} dto.TaskResponse "Созданная задача"
-// @Failure 400 {object} map[string]string "Неверный формат данных запроса"
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Неверный формат данных запроса"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/event/{id_event}/task [post]
 func (h *TaskHandler) CreateTask(c *gin.Context) {
 	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID мероприятия"})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "неверный формат ID мероприятия"))
 		return
 	}
 
 	var taskRequest dto.TaskRequest
 	if err := c.ShouldBindJSON(&taskRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("request_body", err.Error()))
 		return
 	}
 
 	createdTask, err := h.service.CreateTask(c.Request.Context(), eventID, &taskRequest)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при создании задачи: %w", err))
 		return
 	}
 
@@ -120,26 +122,26 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 // @Param id_task path int true "ID задачи"
 // @Param task body dto.TaskRequest true "Данные задачи"
 // @Success 200 {object} dto.TaskResponse "Обновленная задача"
-// @Failure 400 {object} map[string]string "Неверный формат данных запроса"
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Неверный формат данных запроса"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/event/{id_event}/task/{id_task} [put]
 func (h *TaskHandler) UpdateTask(c *gin.Context) {
 	idStr := c.Param("id_task")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID задачи"})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_task", "неверный формат ID задачи"))
 		return
 	}
 
 	var taskRequest dto.TaskRequest
 	if err := c.ShouldBindJSON(&taskRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("request_body", err.Error()))
 		return
 	}
 
 	updatedTask, err := h.service.UpdateTask(c.Request.Context(), uint(id), &taskRequest)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при обновлении задачи: %w", err))
 		return
 	}
 
@@ -155,20 +157,20 @@ func (h *TaskHandler) UpdateTask(c *gin.Context) {
 // @Param id_event path int true "ID мероприятия"
 // @Param id_task path int true "ID задачи"
 // @Success 204 "Задача успешно удалена"
-// @Failure 400 {object} map[string]string "Неверный формат ID"
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/event/{id_event}/task/{id_task} [delete]
 func (h *TaskHandler) DeleteTask(c *gin.Context) {
 	idStr := c.Param("id_task")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID задачи"})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_task", "неверный формат ID задачи"))
 		return
 	}
 
 	err = h.service.DeleteTask(c.Request.Context(), uint(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при удалении задачи: %w", err))
 		return
 	}
 

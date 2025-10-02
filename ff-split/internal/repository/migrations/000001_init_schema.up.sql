@@ -2,7 +2,7 @@
 create table users
 (
     id                bigserial primary key, -- Внутренний ID пользователя
-    user_id           bigint unique null ,         -- Внешний ID пользователя из внешней системы
+    user_id           bigint unique null,    -- Внешний ID пользователя из внешней системы
     nickname_cashed   varchar(255),          -- Кэшированный никнейм
     name_cashed       varchar(255),          -- Кэшированное имя
     photo_uuid_cashed varchar(255),          -- UUID аватарки
@@ -12,9 +12,9 @@ create table users
 -- Иконки для типа транзакций (визуальные теги)
 create table icons
 (
-    id        serial primary key, -- UUID иконки
-    name      varchar(255) not null,    -- Название иконки
-    file_uuid varchar(255) not null     -- UUID иконки (в S3, например)
+    id        serial primary key,    -- UUID иконки
+    name      varchar(255) not null, -- Название иконки
+    file_uuid varchar(255) not null  -- UUID иконки (в S3, например)
 );
 
 -- Категории (например, еда, поездка и т.д.)
@@ -61,6 +61,7 @@ create table activities
     id          serial primary key,                 -- ID действия
     event_id    bigint references events,           -- Событие
     user_id     bigint references users (id),       -- Автор действия
+    icon_id     int references icons (id),          -- ID иконки
     description text,                               -- Текст действия
     created_at  timestamp default CURRENT_TIMESTAMP -- Время создания
 );
@@ -125,13 +126,13 @@ create index idx_tasks_user_id on tasks (user_id);
 -- Оптимизированные долги
 create table optimized_debts
 (
-    id         serial primary key, -- ID оптимизированного долга
-    event_id   bigint references events, -- Событие
-    from_user_id bigint references users (id), -- Кто должен
-    to_user_id bigint references users (id), -- Кому должен
-    amount numeric(10, 2) not null, -- Сумма долга
-    created_at timestamp default CURRENT_TIMESTAMP, -- Время создания
-    updated_at timestamp default CURRENT_TIMESTAMP -- Время обновления
+    id           serial primary key,                  -- ID оптимизированного долга
+    event_id     bigint references events,            -- Событие
+    from_user_id bigint references users (id),        -- Кто должен
+    to_user_id   bigint references users (id),        -- Кому должен
+    amount       numeric(10, 2) not null,             -- Сумма долга
+    created_at   timestamp default CURRENT_TIMESTAMP, -- Время создания
+    updated_at   timestamp default CURRENT_TIMESTAMP  -- Время обновления
 );
 
 create index idx_optimized_debts_event_id on optimized_debts (event_id);

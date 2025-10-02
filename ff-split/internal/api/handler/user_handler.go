@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
+	"github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 )
@@ -29,14 +31,14 @@ func NewUserHandler(service service.UserServiceInterface) *UserHandler {
 // @Param id_user path int true "ID пользователя"
 // @Param by_external query bool false "Искать по внешнему ID" default(false)
 // @Success 200 {object} dto.UserResponse "Информация о пользователе"
-// @Failure 400 {object} map[string]string "Неверный формат ID пользователя"
-// @Failure 404 {object} map[string]string "Пользователь не найден"
+// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID пользователя"
+// @Failure 404 {object} errors.ErrorResponse "Пользователь не найден"
 // @Router /api/v1/user/{id_user} [get]
 func (h *UserHandler) GetUserByID(c *gin.Context) {
 	idStr := c.Param("id_user")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID пользователя"})
+		errors.HTTPErrorHandler(c, fmt.Errorf("неверный формат ID пользователя: %w", err))
 		return
 	}
 
@@ -48,7 +50,7 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 		user, err = h.service.GetUserByInternalUserID(c.Request.Context(), id)
 	}
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("пользователь не найден: %w", err))
 		return
 	}
 
@@ -64,8 +66,8 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 // @Param by_external query bool false "Искать по внешним ID" default(false)
 // @Param request body object true "Список ID пользователей"
 // @Success 200 {array} dto.UserResponse "Список пользователей"
-// @Failure 400 {object} map[string]string "Неверный формат запроса"
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Неверный формат запроса"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/user/list [post]
 func (h *UserHandler) GetUsersByIDs(c *gin.Context) {
 	var request struct {
@@ -73,7 +75,7 @@ func (h *UserHandler) GetUsersByIDs(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("неверный формат запроса: %w", err))
 		return
 	}
 
@@ -87,7 +89,7 @@ func (h *UserHandler) GetUsersByIDs(c *gin.Context) {
 	}
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении пользователей: %w", err))
 		return
 	}
 
@@ -107,19 +109,19 @@ func (h *UserHandler) GetUsersByIDs(c *gin.Context) {
 // @Produce json
 // @Param id_event path int true "ID мероприятия"
 // @Success 200 {array} dto.UserResponse "Список пользователей"
-// @Failure 400 {object} map[string]string "Неверный формат ID мероприятия"
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID мероприятия"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/event/{id_event}/user [get]
 func (h *UserHandler) GetUsersByEventID(c *gin.Context) {
 	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID мероприятия"})
+		errors.HTTPErrorHandler(c, fmt.Errorf("неверный формат ID мероприятия: %w", err))
 		return
 	}
 
 	users, err := h.service.GetUsersByEventID(c.Request.Context(), eventID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении пользователей: %w", err))
 		return
 	}
 
@@ -139,19 +141,19 @@ func (h *UserHandler) GetUsersByEventID(c *gin.Context) {
 // @Produce json
 // @Param id_event path int true "ID мероприятия"
 // @Success 200 {array} dto.UserResponse "Список фиктивных пользователей"
-// @Failure 400 {object} map[string]string "Неверный формат ID мероприятия"
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID мероприятия"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/event/{id_event}/user/dummies [get]
 func (h *UserHandler) GetDummiesByEventID(c *gin.Context) {
 	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID мероприятия"})
+		errors.HTTPErrorHandler(c, fmt.Errorf("неверный формат ID мероприятия: %w", err))
 		return
 	}
 
 	users, err := h.service.GetDummiesByEventID(c.Request.Context(), eventID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении фиктивных пользователей: %w", err))
 		return
 	}
 
@@ -171,8 +173,8 @@ func (h *UserHandler) GetDummiesByEventID(c *gin.Context) {
 // @Produce json
 // @Param request body object true "Список ID пользователей для синхронизации"
 // @Success 200 "Пользователи успешно синхронизированы"
-// @Failure 400 {object} map[string]string "Неверный формат запроса"
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Неверный формат запроса"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/user/sync [post]
 func (h *UserHandler) SyncUsers(c *gin.Context) {
 	var request struct {
@@ -180,12 +182,12 @@ func (h *UserHandler) SyncUsers(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("request_body", "неверный формат запроса"))
 		return
 	}
 
 	if err := h.service.BatchSyncUsersWithIDService(c.Request.Context(), request.UserIDs); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при синхронизации пользователей: %w", err))
 		return
 	}
 
@@ -201,13 +203,13 @@ func (h *UserHandler) SyncUsers(c *gin.Context) {
 // @Param id_event path int true "ID мероприятия"
 // @Param request body object true "Данные фиктивного пользователя"
 // @Success 201 {object} dto.UserResponse "Созданный фиктивный пользователь"
-// @Failure 400 {object} map[string]string "Неверный формат запроса"
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Неверный формат запроса"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/event/{id_event}/user/dummy [post]
 func (h *UserHandler) CreateDummyUser(c *gin.Context) {
 	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID мероприятия"})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "неверный формат ID мероприятия"))
 		return
 	}
 
@@ -216,13 +218,13 @@ func (h *UserHandler) CreateDummyUser(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("request_body", "неверный формат запроса"))
 		return
 	}
 
 	user, err := h.service.CreateDummyUser(c.Request.Context(), request.Name, eventID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при создании фиктивного пользователя: %w", err))
 		return
 	}
 
@@ -238,13 +240,13 @@ func (h *UserHandler) CreateDummyUser(c *gin.Context) {
 // @Param id_event path int true "ID мероприятия"
 // @Param request body object true "Список имен фиктивных пользователей"
 // @Success 201 {array} dto.UserResponse "Список созданных фиктивных пользователей"
-// @Failure 400 {object} map[string]string "Неверный формат запроса"
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Неверный формат запроса"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/event/{id_event}/user/dummies [post]
 func (h *UserHandler) BatchCreateDummyUsers(c *gin.Context) {
 	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID мероприятия"})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "неверный формат ID мероприятия"))
 		return
 	}
 
@@ -253,13 +255,13 @@ func (h *UserHandler) BatchCreateDummyUsers(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("request_body", "неверный формат запроса"))
 		return
 	}
 
 	users, err := h.service.BatchCreateDummyUsers(c.Request.Context(), request.Names, eventID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при создании фиктивных пользователей: %w", err))
 		return
 	}
 
@@ -280,15 +282,15 @@ func (h *UserHandler) BatchCreateDummyUsers(c *gin.Context) {
 // @Param id_user path int true "ID пользователя"
 // @Param request body object true "Данные для обновления"
 // @Success 200 {object} dto.UserResponse "Обновленный пользователь"
-// @Failure 400 {object} map[string]string "Неверный формат запроса"
-// @Failure 404 {object} map[string]string "Пользователь не найден"
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Неверный формат запроса"
+// @Failure 404 {object} errors.ErrorResponse "Пользователь не найден"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/user/{id_user} [put]
 func (h *UserHandler) UpdateUser(c *gin.Context) {
 	idStr := c.Param("id_user")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID пользователя"})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_user", "неверный формат ID пользователя"))
 		return
 	}
 
@@ -297,14 +299,14 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("request_body", "неверный формат запроса"))
 		return
 	}
 
 	// Сначала получаем пользователя
 	user, err := h.service.GetUserByInternalUserID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("пользователь не найден: %w", err))
 		return
 	}
 
@@ -314,7 +316,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	// Сохраняем изменения
 	updatedUser, err := h.service.UpdateUser(c.Request.Context(), user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при обновлении пользователя: %w", err))
 		return
 	}
 
@@ -329,19 +331,19 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 // @Produce json
 // @Param id_user path int true "ID пользователя"
 // @Success 204 "Пользователь успешно удален"
-// @Failure 400 {object} map[string]string "Неверный формат ID пользователя"
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID пользователя"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/user/{id_user} [delete]
 func (h *UserHandler) DeleteUser(c *gin.Context) {
 	idStr := c.Param("id_user")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID пользователя"})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_user", "неверный формат ID пользователя"))
 		return
 	}
 
 	if err := h.service.DeleteUser(c.Request.Context(), id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при удалении пользователя: %w", err))
 		return
 	}
 
@@ -357,13 +359,13 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 // @Param id_event path int true "ID мероприятия"
 // @Param request body object true "Список ID пользователей"
 // @Success 200 "Пользователи успешно добавлены"
-// @Failure 400 {object} map[string]string "Неверный формат запроса"
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Неверный формат запроса"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/event/{id_event}/user [post]
 func (h *UserHandler) AddUsersToEvent(c *gin.Context) {
 	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID мероприятия"})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "неверный формат ID мероприятия"))
 		return
 	}
 
@@ -372,12 +374,12 @@ func (h *UserHandler) AddUsersToEvent(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("request_body", "неверный формат запроса"))
 		return
 	}
 
 	if err := h.service.AddUsersToEvent(c.Request.Context(), request.UserIDs, eventID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при добавлении пользователей в мероприятие: %w", err))
 		return
 	}
 
@@ -393,25 +395,25 @@ func (h *UserHandler) AddUsersToEvent(c *gin.Context) {
 // @Param id_event path int true "ID мероприятия"
 // @Param id_user path int true "ID пользователя"
 // @Success 204 "Пользователь успешно удален из мероприятия"
-// @Failure 400 {object} map[string]string "Неверный формат ID"
-// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID"
+// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /api/v1/event/{id_event}/user/{id_user} [delete]
 func (h *UserHandler) RemoveUserFromEvent(c *gin.Context) {
 	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID мероприятия"})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "неверный формат ID мероприятия"))
 		return
 	}
 
 	idStr := c.Param("id_user")
 	userID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат ID пользователя"})
+		errors.HTTPErrorHandler(c, errors.NewValidationError("id_user", "неверный формат ID пользователя"))
 		return
 	}
 
 	if err := h.service.RemoveUserFromEvent(c.Request.Context(), userID, eventID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при удалении пользователя из мероприятия: %w", err))
 		return
 	}
 

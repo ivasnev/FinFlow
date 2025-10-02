@@ -83,9 +83,11 @@ type Activity struct {
 	EventID     *int64    `gorm:"column:event_id"`
 	UserID      *int64    `gorm:"column:user_id"`
 	Description string    `gorm:"column:description"`
+	IconID      int       `gorm:"column:icon_id"`
 	CreatedAt   time.Time `gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
 
 	// Отношения
+	Icon  *Icon  `gorm:"foreignKey:IconID;references:ID"`
 	Event *Event `gorm:"foreignKey:EventID"`
 	User  *User  `gorm:"foreignKey:UserID;references:ID"`
 }
