@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"strconv"
 	"time"
@@ -296,31 +297,113 @@ func (s *TransactionService) DeleteTransaction(ctx context.Context, id int) erro
 }
 
 // GetDebtsByEventID возвращает долги в рамках мероприятия
-func (s *TransactionService) GetDebtsByEventID(ctx context.Context, eventID int64) ([]dto.DebtDTO, error) {
+func (s *TransactionService) GetDebtsByEventID(ctx context.Context, eventID int64, userID *int64) ([]dto.DebtDTO, error) {
 	// Проверяем существование мероприятия
 	_, err := s.eventService.GetEventByID(ctx, eventID)
 	if err != nil {
 		return nil, err
 	}
-
-	// Получаем долги
-	debts, err := s.repo.GetDebtsByEventID(eventID)
-	if err != nil {
-		return nil, err
+	var debts []dto.DebtDTO
+	if userID == nil {
+		// Получаем долги
+		eventDebts, err := s.repo.GetDebtsByEventID(eventID)
+		if err != nil {
+			return nil, err
+		}
+		// Преобразуем в DTO
+		for _, debt := range eventDebts {
+			debtDTO := dto.DebtDTO{
+				ID:            debt.ID,
+				FromUserID:    debt.FromUserID,
+				ToUserID:      debt.ToUserID,
+				Amount:        debt.Amount,
+				TransactionID: debt.TransactionID,
+			}
+			if debt.FromUser != nil {
+				debtDTO.FromUser = &dto.DebtsUserResponse{
+					ID:         debt.FromUser.ID,
+					ExternalID: debt.FromUser.UserID,
+					Name:       debt.FromUser.NameCashed,
+					Photo:      debt.FromUser.PhotoUUIDCashed,
+				}
+			}
+			if debt.ToUser != nil {
+				debtDTO.ToUser = &dto.DebtsUserResponse{
+					ID:         debt.ToUser.ID,
+					ExternalID: debt.ToUser.UserID,
+					Name:       debt.ToUser.NameCashed,
+					Photo:      debt.ToUser.PhotoUUIDCashed,
+				}
+			}
+			debts = append(debts, debtDTO)
+		}
+	} else {
+		user, err := s.userService.GetUserByExternalUserID(ctx, *userID)
+		if err != nil {
+			return nil, fmt.Errorf("ошибка при получении пользователя: %w", err)
+		}
+		debtsToUser, err := s.GetDebtsByEventIDToUser(eventID, user.ID)
+		if err != nil {
+			return nil, fmt.Errorf("ошибка при получении долгов пользователю: %w", err)
+		}
+		debts = append(debts, debtsToUser...)
+		debtsFromUser, err := s.GetDebtsByEventIDFromUser(eventID, user.ID)
+		if err != nil {
+			return nil, fmt.Errorf("ошибка при получении долгов пользователю: %w", err)
+		}
+		debts = append(debts, debtsFromUser...)
 	}
 
-	// Преобразуем в DTO
-	result := make([]dto.DebtDTO, len(debts))
-	for i, debt := range debts {
-		result[i] = dto.DebtDTO{
+	return debts, nil
+}
+
+func (s *TransactionService) GetDebtsByEventIDFromUser(eventID int64, userID int64) ([]dto.DebtDTO, error) {
+	debtsFromUser, err := s.repo.GetDebtsByEventIDFromUser(eventID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка при получении долгов пользователю: %w", err)
+	}
+	var result []dto.DebtDTO
+	for _, debt := range debtsFromUser {
+		result = append(result, dto.DebtDTO{
+			ID:            debt.ID,
+			FromUserID:    debt.FromUserID,
+			ToUserID:      debt.ToUserID,
+			Amount:        -debt.Amount,
+			TransactionID: debt.TransactionID,
+
+			Requestor: &dto.DebtsUserResponse{
+				ID:         debt.ToUser.ID,
+				ExternalID: debt.ToUser.UserID,
+				Name:       debt.ToUser.NameCashed,
+				Photo:      debt.ToUser.PhotoUUIDCashed,
+			},
+		})
+	}
+	return result, nil
+}
+
+func (s *TransactionService) GetDebtsByEventIDToUser(eventID int64, userID int64) ([]dto.DebtDTO, error) {
+	debtsToUser, err := s.repo.GetDebtsByEventIDToUser(eventID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка при получении долгов пользователю: %w", err)
+	}
+	var result []dto.DebtDTO
+	for _, debt := range debtsToUser {
+		result = append(result, dto.DebtDTO{
 			ID:            debt.ID,
 			FromUserID:    debt.FromUserID,
 			ToUserID:      debt.ToUserID,
 			Amount:        debt.Amount,
 			TransactionID: debt.TransactionID,
-		}
-	}
 
+			Requestor: &dto.DebtsUserResponse{
+				ID:         debt.ToUser.ID,
+				ExternalID: debt.ToUser.UserID,
+				Name:       debt.ToUser.NameCashed,
+				Photo:      debt.ToUser.PhotoUUIDCashed,
+			},
+		})
+	}
 	return result, nil
 }
 

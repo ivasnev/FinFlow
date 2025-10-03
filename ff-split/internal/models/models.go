@@ -179,8 +179,8 @@ type Debt struct {
 
 	// Отношения
 	Transaction *Transaction `gorm:"foreignKey:TransactionID"`
-	FromUser    *User        `gorm:"foreignKey:FromUserID;references:UserID"`
-	ToUser      *User        `gorm:"foreignKey:ToUserID;references:UserID"`
+	FromUser    *User        `gorm:"foreignKey:FromUserID;references:ID"`
+	ToUser      *User        `gorm:"foreignKey:ToUserID;references:ID"`
 }
 
 // TableName задает имя таблицы для модели Debt

@@ -194,8 +194,15 @@ func (h *TransactionHandler) GetDebtsByEventID(c *gin.Context) {
 		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "неверный формат ID мероприятия"))
 		return
 	}
+	var userID *int64
 
-	debts, err := h.service.GetDebtsByEventID(c.Request.Context(), eventID)
+	if id, exist := c.Get("user_id"); exist {
+		if idInt, parsed := id.(int64); parsed {
+			userID = &idInt
+		}
+	}
+
+	debts, err := h.service.GetDebtsByEventID(c.Request.Context(), eventID, userID)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении долгов: %w", err))
 		return

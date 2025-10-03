@@ -104,9 +104,31 @@ func (r *TransactionRepository) GetDebtsByTransactionID(transactionID int) ([]mo
 // GetDebtsByEventID возвращает долги в рамках мероприятия
 func (r *TransactionRepository) GetDebtsByEventID(eventID int64) ([]models.Debt, error) {
 	var debts []models.Debt
-	if err := r.db.Joins("JOIN transactions ON transactions.id = debts.transaction_id").
+	if err := r.db.Preload("FromUser").Preload("ToUser").Joins("JOIN transactions ON transactions.id = debts.transaction_id").
 		Where("transactions.event_id = ?", eventID).
 		Find(&debts).Error; err != nil {
+		return nil, err
+	}
+	return debts, nil
+}
+
+// GetDebtsByEventIDToUser возвращает долги в рамках мероприятия для конкретного пользователя
+func (r *TransactionRepository) GetDebtsByEventIDToUser(eventID int64, userID int64) ([]models.Debt, error) {
+	var debts []models.Debt
+	if err := r.db.Joins("JOIN transactions ON transactions.id = debts.transaction_id").
+		Where("transactions.event_id = ? AND debts.to_user_id = ?", eventID, userID).
+		Preload("FromUser").Find(&debts).Error; err != nil {
+		return nil, err
+	}
+	return debts, nil
+}
+
+// GetDebtsByEventIDFromUser возвращает долги в рамках мероприятия для конкретного пользователя
+func (r *TransactionRepository) GetDebtsByEventIDFromUser(eventID int64, userID int64) ([]models.Debt, error) {
+	var debts []models.Debt
+	if err := r.db.Joins("JOIN transactions ON transactions.id = debts.transaction_id").
+		Where("transactions.event_id = ? AND debts.from_user_id = ?", eventID, userID).
+		Preload("ToUser").Find(&debts).Error; err != nil {
 		return nil, err
 	}
 	return debts, nil

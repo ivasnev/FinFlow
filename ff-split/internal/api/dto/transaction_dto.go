@@ -34,6 +34,13 @@ type TransactionListResponse struct {
 	Transactions []TransactionResponse `json:"transactions"`
 }
 
+type DebtsUserResponse struct {
+	ID         int64  `json:"id"`
+	ExternalID *int64 `json:"external_id"`
+	Name       string `json:"name"`
+	Photo      string `json:"photo"`
+}
+
 // DebtDTO представляет информацию о долге
 type DebtDTO struct {
 	ID            int     `json:"id,omitempty"`
@@ -41,6 +48,10 @@ type DebtDTO struct {
 	ToUserID      int64   `json:"to_user_id"`
 	Amount        float64 `json:"amount"`
 	TransactionID int     `json:"transaction_id,omitempty"`
+
+	FromUser  *DebtsUserResponse `json:"from_user,omitempty"`
+	ToUser    *DebtsUserResponse `json:"to_user,omitempty"`
+	Requestor *DebtsUserResponse `json:"requestor,omitempty"`
 }
 
 // DebtListResponse представляет ответ со списком долгов
