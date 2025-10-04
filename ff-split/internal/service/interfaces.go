@@ -118,6 +118,8 @@ type TransactionServiceInterface interface {
 
 	// Методы для работы с оптимизированными долгами
 	OptimizeDebts(ctx context.Context, eventID int64) ([]dto.OptimizedDebtDTO, error)
-	GetOptimizedDebtsByEventID(ctx context.Context, eventID int64) ([]dto.OptimizedDebtDTO, error)
+	GetOptimizedDebtsByEventID(ctx context.Context, eventID int64, userID *int64) ([]dto.OptimizedDebtDTO, error)
 	GetOptimizedDebtsByUserID(ctx context.Context, eventID, userID int64) ([]dto.OptimizedDebtDTO, error)
+	GetOptimizedDebtsByEventIDFromUser(eventID int64, userID int64) ([]dto.OptimizedDebtDTO, error)
+	GetOptimizedDebtsByEventIDToUser(eventID int64, userID int64) ([]dto.OptimizedDebtDTO, error)
 }

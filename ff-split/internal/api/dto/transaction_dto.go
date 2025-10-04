@@ -72,6 +72,10 @@ type OptimizedDebtDTO struct {
 	ToUserID   int64   `json:"to_user_id"`
 	Amount     float64 `json:"amount"`
 	EventID    int64   `json:"event_id"`
+
+	FromUser  *DebtsUserResponse `json:"from_user,omitempty"`
+	ToUser    *DebtsUserResponse `json:"to_user,omitempty"`
+	Requestor *DebtsUserResponse `json:"requestor,omitempty"`
 }
 
 // OptimizedDebtListResponse представляет ответ со списком оптимизированных долгов

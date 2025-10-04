@@ -323,7 +323,7 @@ func (s *TransactionService) GetDebtsByEventID(ctx context.Context, eventID int6
 				debtDTO.FromUser = &dto.DebtsUserResponse{
 					ID:         debt.FromUser.ID,
 					ExternalID: debt.FromUser.UserID,
-					Name:       debt.FromUser.NameCashed,
+					Name:       getUserName(debt.FromUser),
 					Photo:      debt.FromUser.PhotoUUIDCashed,
 				}
 			}
@@ -331,7 +331,7 @@ func (s *TransactionService) GetDebtsByEventID(ctx context.Context, eventID int6
 				debtDTO.ToUser = &dto.DebtsUserResponse{
 					ID:         debt.ToUser.ID,
 					ExternalID: debt.ToUser.UserID,
-					Name:       debt.ToUser.NameCashed,
+					Name:       getUserName(debt.ToUser),
 					Photo:      debt.ToUser.PhotoUUIDCashed,
 				}
 			}
@@ -374,7 +374,7 @@ func (s *TransactionService) GetDebtsByEventIDFromUser(eventID int64, userID int
 			Requestor: &dto.DebtsUserResponse{
 				ID:         debt.ToUser.ID,
 				ExternalID: debt.ToUser.UserID,
-				Name:       debt.ToUser.NameCashed,
+				Name:       getUserName(debt.ToUser),
 				Photo:      debt.ToUser.PhotoUUIDCashed,
 			},
 		})
@@ -397,14 +397,24 @@ func (s *TransactionService) GetDebtsByEventIDToUser(eventID int64, userID int64
 			TransactionID: debt.TransactionID,
 
 			Requestor: &dto.DebtsUserResponse{
-				ID:         debt.ToUser.ID,
-				ExternalID: debt.ToUser.UserID,
-				Name:       debt.ToUser.NameCashed,
-				Photo:      debt.ToUser.PhotoUUIDCashed,
+				ID:         debt.FromUser.ID,
+				ExternalID: debt.FromUser.UserID,
+				Name:       getUserName(debt.FromUser),
+				Photo:      debt.FromUser.PhotoUUIDCashed,
 			},
 		})
 	}
 	return result, nil
+}
+
+func getUserName(user *models.User) string {
+	if user.NameCashed != "" {
+		return user.NameCashed
+	} else if user.NicknameCashed != "" {
+		return user.NicknameCashed
+	} else {
+		return "Incognito"
+	}
 }
 
 // OptimizeDebts оптимизирует долги для мероприятия и сохраняет результат
@@ -482,36 +492,128 @@ func (s *TransactionService) OptimizeDebts(ctx context.Context, eventID int64) (
 }
 
 // GetOptimizedDebtsByEventID возвращает оптимизированные долги по ID мероприятия
-func (s *TransactionService) GetOptimizedDebtsByEventID(ctx context.Context, eventID int64) ([]dto.OptimizedDebtDTO, error) {
+func (s *TransactionService) GetOptimizedDebtsByEventID(ctx context.Context, eventID int64, userID *int64) ([]dto.OptimizedDebtDTO, error) {
 	// Проверяем существование мероприятия
 	_, err := s.eventService.GetEventByID(ctx, eventID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Получаем оптимизированные долги
-	optimizedDebts, err := s.repo.GetOptimizedDebtsByEventID(eventID)
+	var debts []dto.OptimizedDebtDTO
+	if userID == nil {
+		// Получаем все оптимизированные долги мероприятия
+		optimizedDebts, err := s.repo.GetOptimizedDebtsByEventIDWithUsers(eventID)
+		if err != nil {
+			return nil, err
+		}
+
+		// Если оптимизированных долгов нет, вызываем оптимизацию
+		if len(optimizedDebts) == 0 {
+			return s.OptimizeDebts(ctx, eventID)
+		}
+
+		// Преобразуем в DTO
+		for _, debt := range optimizedDebts {
+			debtDTO := dto.OptimizedDebtDTO{
+				ID:         debt.ID,
+				FromUserID: debt.FromUserID,
+				ToUserID:   debt.ToUserID,
+				Amount:     debt.Amount,
+				EventID:    debt.EventID,
+			}
+			if debt.FromUser != nil {
+				debtDTO.FromUser = &dto.DebtsUserResponse{
+					ID:         debt.FromUser.ID,
+					ExternalID: debt.FromUser.UserID,
+					Name:       getUserName(debt.FromUser),
+					Photo:      debt.FromUser.PhotoUUIDCashed,
+				}
+			}
+			if debt.ToUser != nil {
+				debtDTO.ToUser = &dto.DebtsUserResponse{
+					ID:         debt.ToUser.ID,
+					ExternalID: debt.ToUser.UserID,
+					Name:       getUserName(debt.ToUser),
+					Photo:      debt.ToUser.PhotoUUIDCashed,
+				}
+			}
+			debts = append(debts, debtDTO)
+		}
+	} else {
+		user, err := s.userService.GetUserByExternalUserID(ctx, *userID)
+		if err != nil {
+			return nil, fmt.Errorf("ошибка при получении пользователя: %w", err)
+		}
+		debtsToUser, err := s.GetOptimizedDebtsByEventIDToUser(eventID, user.ID)
+		if err != nil {
+			return nil, fmt.Errorf("ошибка при получении оптимизированных долгов пользователю: %w", err)
+		}
+		debts = append(debts, debtsToUser...)
+		debtsFromUser, err := s.GetOptimizedDebtsByEventIDFromUser(eventID, user.ID)
+		if err != nil {
+			return nil, fmt.Errorf("ошибка при получении оптимизированных долгов от пользователя: %w", err)
+		}
+		debts = append(debts, debtsFromUser...)
+	}
+
+	return debts, nil
+}
+
+// GetOptimizedDebtsByEventIDFromUser возвращает оптимизированные долги от пользователя в мероприятии
+func (s *TransactionService) GetOptimizedDebtsByEventIDFromUser(eventID int64, userID int64) ([]dto.OptimizedDebtDTO, error) {
+	optimizedDebts, err := s.repo.GetOptimizedDebtsByUserIDWithUsers(eventID, userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ошибка при получении оптимизированных долгов от пользователя: %w", err)
 	}
 
-	// Если оптимизированных долгов нет, вызываем оптимизацию
-	if len(optimizedDebts) == 0 {
-		return s.OptimizeDebts(ctx, eventID)
-	}
+	var result []dto.OptimizedDebtDTO
+	for _, debt := range optimizedDebts {
+		if debt.FromUserID == userID {
+			result = append(result, dto.OptimizedDebtDTO{
+				ID:         debt.ID,
+				FromUserID: debt.FromUserID,
+				ToUserID:   debt.ToUserID,
+				Amount:     -debt.Amount,
+				EventID:    debt.EventID,
 
-	// Формируем ответ
-	result := make([]dto.OptimizedDebtDTO, len(optimizedDebts))
-	for i, debt := range optimizedDebts {
-		result[i] = dto.OptimizedDebtDTO{
-			ID:         debt.ID,
-			FromUserID: debt.FromUserID,
-			ToUserID:   debt.ToUserID,
-			Amount:     debt.Amount,
-			EventID:    debt.EventID,
+				Requestor: &dto.DebtsUserResponse{
+					ID:         debt.ToUser.ID,
+					ExternalID: debt.ToUser.UserID,
+					Name:       getUserName(debt.ToUser),
+					Photo:      debt.ToUser.PhotoUUIDCashed,
+				},
+			})
 		}
 	}
+	return result, nil
+}
 
+// GetOptimizedDebtsByEventIDToUser возвращает оптимизированные долги к пользователю в мероприятии
+func (s *TransactionService) GetOptimizedDebtsByEventIDToUser(eventID int64, userID int64) ([]dto.OptimizedDebtDTO, error) {
+	optimizedDebts, err := s.repo.GetOptimizedDebtsByUserIDWithUsers(eventID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка при получении оптимизированных долгов к пользователю: %w", err)
+	}
+
+	var result []dto.OptimizedDebtDTO
+	for _, debt := range optimizedDebts {
+		if debt.ToUserID == userID {
+			result = append(result, dto.OptimizedDebtDTO{
+				ID:         debt.ID,
+				FromUserID: debt.FromUserID,
+				ToUserID:   debt.ToUserID,
+				Amount:     debt.Amount,
+				EventID:    debt.EventID,
+
+				Requestor: &dto.DebtsUserResponse{
+					ID:         debt.FromUser.ID,
+					ExternalID: debt.FromUser.UserID,
+					Name:       getUserName(debt.FromUser),
+					Photo:      debt.FromUser.PhotoUUIDCashed,
+				},
+			})
+		}
+	}
 	return result, nil
 }
 
@@ -530,7 +632,7 @@ func (s *TransactionService) GetOptimizedDebtsByUserID(ctx context.Context, even
 	}
 
 	// Получаем оптимизированные долги
-	optimizedDebts, err := s.repo.GetOptimizedDebtsByUserID(eventID, userID)
+	optimizedDebts, err := s.repo.GetOptimizedDebtsByUserIDWithUsers(eventID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -555,13 +657,30 @@ func (s *TransactionService) GetOptimizedDebtsByUserID(ctx context.Context, even
 	// Формируем ответ
 	result := make([]dto.OptimizedDebtDTO, len(optimizedDebts))
 	for i, debt := range optimizedDebts {
-		result[i] = dto.OptimizedDebtDTO{
+		debtDTO := dto.OptimizedDebtDTO{
 			ID:         debt.ID,
 			FromUserID: debt.FromUserID,
 			ToUserID:   debt.ToUserID,
 			Amount:     debt.Amount,
 			EventID:    debt.EventID,
 		}
+		if debt.FromUser != nil {
+			debtDTO.FromUser = &dto.DebtsUserResponse{
+				ID:         debt.FromUser.ID,
+				ExternalID: debt.FromUser.UserID,
+				Name:       getUserName(debt.FromUser),
+				Photo:      debt.FromUser.PhotoUUIDCashed,
+			}
+		}
+		if debt.ToUser != nil {
+			debtDTO.ToUser = &dto.DebtsUserResponse{
+				ID:         debt.ToUser.ID,
+				ExternalID: debt.ToUser.UserID,
+				Name:       getUserName(debt.ToUser),
+				Photo:      debt.ToUser.PhotoUUIDCashed,
+			}
+		}
+		result[i] = debtDTO
 	}
 
 	return result, nil

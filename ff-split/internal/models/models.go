@@ -197,6 +197,10 @@ type OptimizedDebt struct {
 	Amount     float64   `gorm:"column:amount;type:numeric(10,2);not null"`
 	CreatedAt  time.Time `gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
 	UpdatedAt  time.Time `gorm:"column:updated_at;default:CURRENT_TIMESTAMP"`
+
+	// Отношения
+	FromUser *User `gorm:"foreignKey:FromUserID;references:ID"`
+	ToUser   *User `gorm:"foreignKey:ToUserID;references:ID"`
 }
 
 // TableName задает имя таблицы для модели OptimizedDebt
