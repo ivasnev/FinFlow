@@ -102,7 +102,7 @@ func (r *UserRepository) GetByExternalUserID(ctx context.Context, userID int64) 
 func (r *UserRepository) GetByEventID(ctx context.Context, eventID int64) ([]models.User, error) {
 	var users []models.User
 	err := r.db.WithContext(ctx).
-		Joins("JOIN user_event ON users.user_id = user_event.user_id").
+		Joins("JOIN user_event ON users.id = user_event.user_id").
 		Where("user_event.event_id = ?", eventID).
 		Find(&users).Error
 	if err != nil {
