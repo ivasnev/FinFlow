@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"net/http"
 	"strings"
+
+	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 
 	idclient "github.com/ivasnev/FinFlow/ff-id/pkg/client"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/slices"
@@ -179,22 +180,27 @@ func (s *UserService) DeleteUser(ctx context.Context, id int64) error {
 	return nil
 }
 
-// AddUsersToEvent добавляет пользователей в мероприятие
-func (s *UserService) AddUsersToEvent(ctx context.Context, ids []int64, eventID int64) error {
-	internalUser, err := s.userRepository.GetByInternalUserIDs(ctx, ids)
+func (s *UserService) GetInternalUserIdsByExternalUserIds(ctx context.Context, externalUserIds []int64) ([]int64, error) {
+	internalUser, err := s.userRepository.GetByExternalUserIDs(ctx, externalUserIds)
 	if err != nil {
-		return fmt.Errorf("ошибка при получении пользователей: %w", err)
+		return nil, fmt.Errorf("ошибка при получении пользователей: %w", err)
+	}
+	if len(internalUser) != len(externalUserIds) {
+		return nil, errors.New("некоторые пользователи не найдены")
 	}
 
 	internalUserIds := make([]int64, len(internalUser))
 	for i, user := range internalUser {
 		internalUserIds[i] = user.ID
 	}
+	return internalUserIds, nil
+}
 
+// AddUsersToEvent добавляет пользователей в мероприятие
+func (s *UserService) AddUsersToEvent(ctx context.Context, internalUserIds []int64, eventID int64) error {
 	if err := s.userRepository.AddUsersToEvent(ctx, internalUserIds, eventID); err != nil {
 		return fmt.Errorf("ошибка при добавлении пользователей в мероприятие: %w", err)
 	}
-
 	return nil
 }
 
