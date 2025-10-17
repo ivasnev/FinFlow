@@ -1,6 +1,9 @@
 # Этап сборки
 FROM golang:1.23-alpine AS builder
 
+# Устанавливаем git для скачивания Go модулей
+RUN apk add --no-cache git
+
 WORKDIR /app
 
 # Копируем файлы с зависимостями

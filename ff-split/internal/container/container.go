@@ -13,6 +13,7 @@ import (
 	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
 	"github.com/ivasnev/FinFlow/ff-id/pkg/client"
 	handler "github.com/ivasnev/FinFlow/ff-split/internal/api/handler"
+	"github.com/ivasnev/FinFlow/ff-split/internal/api/middleware"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/config"
 	pg_repos "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres"
 	category_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/category"
@@ -193,6 +194,9 @@ func (c *Container) initDB() error {
 
 // RegisterRoutes - регистрирует все маршруты API
 func (c *Container) RegisterRoutes() {
+	// Добавляем CORS middleware глобально для всех маршрутов
+	c.Router.Use(middleware.CORSMiddleware())
+
 	// Swagger
 	c.Router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 

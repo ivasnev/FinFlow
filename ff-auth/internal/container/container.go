@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/api/handler"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/api/middleware"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/common/config"
 	pg_repos "github.com/ivasnev/FinFlow/ff-auth/internal/repository/postgres"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
@@ -141,6 +142,9 @@ func (c *Container) initHandlers() {
 
 // RegisterRoutes - регистрирует все маршруты API
 func (c *Container) RegisterRoutes() {
+	// Добавляем CORS middleware глобально для всех маршрутов
+	c.Router.Use(middleware.CORSMiddleware())
+
 	// API версии v1
 	v1 := c.Router.Group("/api/v1")
 
