@@ -1,0 +1,823 @@
+openapi: 3.0.3
+info:
+  title: FinFlow ID Service API
+  description: |
+    API для сервиса управления пользователями и их профилями в FinFlow.
+    
+    Сервис предоставляет функциональность для:
+    - Управления профилями пользователей
+    - Системы друзей и заявок в друзья
+    - Межсервисного взаимодействия для регистрации пользователей
+    
+    ## Аутентификация
+    
+    Защищенные endpoints требуют аутентификации через Bearer токен:
+    ```
+    Authorization: Bearer <access_token>
+    ```
+    
+    Внутренние endpoints требуют TVM аутентификации:
+    ```
+    X-TVM-Ticket: <tvm_ticket>
+    ```
+    
+    ## Система друзей
+    
+    Поддерживаются следующие статусы дружбы:
+    - `pending` - ожидает подтверждения
+    - `accepted` - дружба подтверждена
+    - `rejected` - заявка отклонена
+    - `blocked` - пользователь заблокирован
+  version: 1.0.0
+  contact:
+    name: FinFlow Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Development server
+
+tags:
+  - name: users
+    description: Управление пользователями
+  - name: friends
+    description: Система друзей
+  - name: internal
+    description: Внутренние API для межсервисного взаимодействия
+
+paths:
+  /users/{nickname}:
+    get:
+      tags:
+        - users
+      summary: Получение информации о пользователе
+      description: Возвращает информацию о пользователе по его никнейму (публичный endpoint)
+      operationId: getUserByNickname
+      parameters:
+        - name: nickname
+          in: path
+          required: true
+          description: Никнейм пользователя
+          schema:
+            type: string
+            example: "johndoe"
+      responses:
+        '200':
+          description: Информация о пользователе
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/me:
+    patch:
+      tags:
+        - users
+      summary: Обновление профиля текущего пользователя
+      description: Обновляет информацию о текущем пользователе. Все поля являются опциональными
+      operationId: updateUser
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+            example:
+              email: "updated@example.com"
+              phone: "+79876543210"
+              name: "Updated Name"
+              birthdate: 631152000
+              nickname: "new_nickname"
+      responses:
+        '200':
+          description: Профиль успешно обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/register:
+    post:
+      tags:
+        - users
+      summary: Регистрация нового пользователя
+      description: Регистрирует нового пользователя с использованием токена авторизации
+      operationId: registerUser
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterUserRequest'
+            example:
+              email: "user@example.com"
+              nickname: "johndoe"
+              name: "John Doe"
+              phone: "+79123456789"
+              birthdate: 631152000
+      responses:
+        '201':
+          description: Пользователь успешно зарегистрирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{nickname}/friends:
+    get:
+      tags:
+        - friends
+      summary: Получение списка друзей
+      description: Возвращает список друзей пользователя с поддержкой пагинации и фильтрации по имени (публичный endpoint)
+      operationId: getFriends
+      parameters:
+        - name: nickname
+          in: path
+          required: true
+          description: Никнейм пользователя
+          schema:
+            type: string
+            example: "johndoe"
+        - name: page
+          in: query
+          required: false
+          description: Номер страницы (по умолчанию 1)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        - name: page_size
+          in: query
+          required: false
+          description: Количество записей на странице (по умолчанию 20, максимум 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
+        - name: friend_name
+          in: query
+          required: false
+          description: Фильтр по имени друга (ILIKE поиск)
+          schema:
+            type: string
+            example: "John"
+        - name: status
+          in: query
+          required: false
+          description: Фильтр по статусу дружбы
+          schema:
+            type: string
+            enum: [accepted, pending, rejected, blocked]
+            default: accepted
+            example: "accepted"
+      responses:
+        '200':
+          description: Список друзей получен успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendsListResponse'
+        '400':
+          description: Некорректные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/me/friends:
+    post:
+      tags:
+        - friends
+      summary: Отправка заявки в друзья
+      description: Отправляет заявку в друзья указанному пользователю
+      operationId: addFriend
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddFriendRequest'
+            example:
+              friend_nickname: "name123"
+      responses:
+        '201':
+          description: Заявка в друзья успешно отправлена
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "заявка в друзья успешно отправлена"
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/me/friends/action:
+    post:
+      tags:
+        - friends
+      summary: Действие с заявкой в друзья
+      description: Выполняет действие над заявкой в друзья. Доступные действия - accept (принять), reject (отклонить), block (заблокировать)
+      operationId: friendAction
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FriendActionRequest'
+            example:
+              user_id: 3
+              action: "accept"
+      responses:
+        '200':
+          description: Действие выполнено успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "заявка в друзья принята"
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Заявка не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/me/friends/{friend_id}:
+    delete:
+      tags:
+        - friends
+      summary: Удаление из друзей
+      description: Удаляет пользователя из списка друзей
+      operationId: removeFriend
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: friend_id
+          in: path
+          required: true
+          description: ID друга для удаления
+          schema:
+            type: integer
+            format: int64
+            example: 2
+      responses:
+        '200':
+          description: Друг успешно удален
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "друг успешно удален"
+        '400':
+          description: Некорректный ID друга
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Друг не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/me/friend-requests:
+    get:
+      tags:
+        - friends
+      summary: Получение заявок в друзья
+      description: Возвращает список входящих или исходящих заявок в друзья с поддержкой пагинации
+      operationId: getFriendRequests
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: incoming
+          in: query
+          required: false
+          description: Тип заявок (true - входящие, false - исходящие)
+          schema:
+            type: boolean
+            default: true
+            example: true
+        - name: page
+          in: query
+          required: false
+          description: Номер страницы (по умолчанию 1)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        - name: page_size
+          in: query
+          required: false
+          description: Количество записей на странице (по умолчанию 20, максимум 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
+      responses:
+        '200':
+          description: Список заявок получен успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendsListResponse'
+        '400':
+          description: Некорректные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Внутренние API endpoints
+  /internal/users:
+    get:
+      tags:
+        - internal
+      summary: Получение пользователей по ID
+      description: Возвращает информацию о пользователях по их ID (для межсервисного взаимодействия)
+      operationId: getUsersByIds
+      security:
+        - TVMAuth: []
+      parameters:
+        - name: user_id
+          in: query
+          required: true
+          description: ID пользователей (можно передать несколько)
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+          style: form
+          explode: true
+          example: [1, 2, 3]
+      responses:
+        '200':
+          description: Информация о пользователях
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserDTO'
+        '400':
+          description: Некорректные ID пользователей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /internal/users/register:
+    post:
+      tags:
+        - internal
+      summary: Регистрация пользователя от сервиса
+      description: Регистрирует нового пользователя от имени другого сервиса (backend-to-backend)
+      operationId: registerUserFromService
+      security:
+        - TVMAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRegisterUserRequest'
+            example:
+              user_id: 123
+              email: "user@example.com"
+              nickname: "johndoe"
+      responses:
+        '201':
+          description: Пользователь успешно зарегистрирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT токен для аутентификации пользователей
+
+    TVMAuth:
+      type: apiKey
+      in: header
+      name: X-TVM-Ticket
+      description: TVM тикет для межсервисного взаимодействия
+
+  schemas:
+    UserDTO:
+      type: object
+      required:
+        - id
+        - email
+        - nickname
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Уникальный идентификатор пользователя
+          example: 12345
+        email:
+          type: string
+          format: email
+          description: Email пользователя
+          example: "user@example.com"
+        phone:
+          type: string
+          format: phone
+          description: Номер телефона пользователя
+          example: "+79123456789"
+        nickname:
+          type: string
+          description: Никнейм пользователя
+          example: "johndoe"
+        name:
+          type: string
+          description: Полное имя пользователя
+          example: "John Doe"
+        birthdate:
+          type: integer
+          format: int64
+          description: Дата рождения в формате Unix timestamp
+          example: 631152000
+        avatar_id:
+          type: string
+          format: uuid
+          description: ID аватара пользователя
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        created_at:
+          type: integer
+          format: int64
+          description: Дата создания аккаунта (Unix timestamp)
+          example: 1640995200
+        updated_at:
+          type: integer
+          format: int64
+          description: Дата последнего обновления (Unix timestamp)
+          example: 1640995200
+
+    ShortUserDTO:
+      type: object
+      required:
+        - id
+        - email
+        - nickname
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Уникальный идентификатор пользователя
+          example: 12345
+        email:
+          type: string
+          format: email
+          description: Email пользователя
+          example: "user@example.com"
+        nickname:
+          type: string
+          description: Никнейм пользователя
+          example: "johndoe"
+        name:
+          type: string
+          description: Полное имя пользователя
+          example: "John Doe"
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Новый email пользователя
+          example: "newemail@example.com"
+        phone:
+          type: string
+          format: phone
+          description: Новый номер телефона
+          example: "+79876543210"
+        name:
+          type: string
+          description: Новое имя пользователя
+          example: "Updated Name"
+        birthdate:
+          type: integer
+          format: int64
+          description: Новая дата рождения (Unix timestamp)
+          example: 631152000
+        nickname:
+          type: string
+          description: Новый никнейм пользователя
+          example: "new_nickname"
+
+    RegisterUserRequest:
+      type: object
+      required:
+        - email
+        - nickname
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email пользователя
+          example: "user@example.com"
+        nickname:
+          type: string
+          description: Никнейм пользователя
+          example: "johndoe"
+        name:
+          type: string
+          description: Полное имя пользователя
+          example: "John Doe"
+        phone:
+          type: string
+          format: phone
+          description: Номер телефона
+          example: "+79123456789"
+        birthdate:
+          type: integer
+          format: int64
+          description: Дата рождения (Unix timestamp)
+          example: 631152000
+        avatar_id:
+          type: string
+          format: uuid
+          description: ID аватара пользователя
+          example: "550e8400-e29b-41d4-a716-446655440000"
+
+    ServiceRegisterUserRequest:
+      type: object
+      required:
+        - user_id
+        - email
+        - nickname
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          description: ID пользователя из другого сервиса
+          example: 123
+        email:
+          type: string
+          format: email
+          description: Email пользователя
+          example: "user@example.com"
+        nickname:
+          type: string
+          description: Никнейм пользователя
+          example: "johndoe"
+
+    AddFriendRequest:
+      type: object
+      required:
+        - friend_nickname
+      properties:
+        friend_nickname:
+          type: string
+          description: Никнейм пользователя для добавления в друзья
+          example: "name123"
+
+    FriendActionRequest:
+      type: object
+      required:
+        - user_id
+        - action
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          description: ID пользователя для действия
+          example: 3
+        action:
+          type: string
+          enum: [accept, reject, block]
+          description: Действие с заявкой в друзья
+          example: "accept"
+
+    FriendDTO:
+      type: object
+      required:
+        - user_id
+        - name
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          description: ID пользователя
+          example: 123
+        photo_id:
+          type: string
+          format: uuid
+          description: ID фотографии пользователя
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          description: Имя пользователя
+          example: "John Doe"
+        status:
+          type: string
+          enum: [pending, accepted, rejected, blocked]
+          description: Статус дружбы
+          example: "accepted"
+
+    FriendsListResponse:
+      type: object
+      required:
+        - page
+        - page_size
+        - total
+        - objects
+      properties:
+        page:
+          type: integer
+          description: Текущая страница
+          example: 1
+        page_size:
+          type: integer
+          description: Размер страницы
+          example: 20
+        total:
+          type: integer
+          format: int64
+          description: Общее количество записей
+          example: 150
+        objects:
+          type: array
+          items:
+            $ref: '#/components/schemas/FriendDTO'
+          description: Список друзей
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Описание ошибки
+          example: "Invalid request"

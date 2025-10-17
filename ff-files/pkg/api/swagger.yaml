@@ -1,0 +1,619 @@
+openapi: 3.0.3
+info:
+  title: FinFlow Files API
+  description: |
+    API для работы с файлами в FinFlow.
+    
+    Сервис предоставляет функциональность для:
+    - Загрузки файлов в MinIO хранилище
+    - Получения файлов и их метаданных
+    - Удаления файлов
+    - Генерации временных ссылок для доступа к файлам
+    
+    ## Аутентификация
+    
+    Все endpoints требуют аутентификации через TVM (Ticket-based Verification Module).
+    Необходимо передавать TVM тикет в заголовке:
+    ```
+    X-TVM-Ticket: <tvm_ticket>
+    ```
+    
+    ## Поддерживаемые форматы файлов
+    
+    - Изображения: JPG, PNG, GIF, BMP, WEBP
+    - Документы: PDF, DOC, DOCX, XLS, XLSX, TXT
+    - Максимальный размер файла: 100MB
+  version: 1.0.0
+  contact:
+    name: FinFlow Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+tags:
+  - name: files
+    description: Операции с файлами
+
+paths:
+  /upload:
+    post:
+      tags:
+        - files
+      summary: Загрузка одного файла
+      description: Загружает один файл в MinIO хранилище с возможностью добавления метаданных
+      operationId: uploadFile
+      security:
+        - TVMAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Файл для загрузки
+                metadata:
+                  type: string
+                  description: Метаданные файла в формате JSON (опционально)
+                  example: '{"description": "Описание файла", "tags": ["важный", "документ"], "category": "финансы"}'
+            encoding:
+              file:
+                contentType: application/octet-stream
+      responses:
+        '200':
+          description: Файл успешно загружен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileUploadResponse'
+              example:
+                status: 200
+                message: "File uploaded successfully"
+                data:
+                  object_id: "26296f14-3f08-4f79-b453-09ebc4eac98d"
+                  link: "http://localhost:9000/ff-files/26296f14-3f08-4f79-b453-09ebc4eac98d"
+        '400':
+          description: Некорректный запрос (файл не передан)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "No file is received"
+                code: 400
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /files/many:
+    post:
+      tags:
+        - files
+      summary: Загрузка нескольких файлов
+      description: Загружает несколько файлов одновременно в MinIO хранилище
+      operationId: uploadFiles
+      security:
+        - TVMAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - files
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Массив файлов для загрузки
+            encoding:
+              files:
+                contentType: application/octet-stream
+      responses:
+        '200':
+          description: Файлы успешно загружены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MultipleFilesUploadResponse'
+              example:
+                status: 200
+                message: "Files uploaded successfully"
+                data:
+                  - object_id: "26296f14-3f08-4f79-b453-09ebc4eac98d"
+                    link: "http://localhost:9000/ff-files/26296f14-3f08-4f79-b453-09ebc4eac98d"
+                  - object_id: "37397e25-4g19-5g8a-c564-10fcd5fbd09e"
+                    link: "http://localhost:9000/ff-files/37397e25-4g19-5g8a-c564-10fcd5fbd09e"
+        '400':
+          description: Некорректный запрос (файлы не переданы или неверная форма)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags:
+        - files
+      summary: Получение нескольких файлов
+      description: Получает ссылки на несколько файлов по их идентификаторам
+      operationId: getFiles
+      security:
+        - TVMAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObjectIdsRequest'
+            example:
+              objectIDs:
+                - "26296f14-3f08-4f79-b453-09ebc4eac98d"
+                - "37397e25-4g19-5g8a-c564-10fcd5fbd09e"
+      responses:
+        '200':
+          description: Ссылки на файлы получены успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Files received successfully"
+                  data:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - "http://localhost:9000/ff-files/26296f14-3f08-4f79-b453-09ebc4eac98d"
+                      - "http://localhost:9000/ff-files/37397e25-4g19-5g8a-c564-10fcd5fbd09e"
+        '400':
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - files
+      summary: Удаление нескольких файлов
+      description: Удаляет несколько файлов по их идентификаторам
+      operationId: deleteFiles
+      security:
+        - TVMAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObjectIdsRequest'
+            example:
+              objectIDs:
+                - "26296f14-3f08-4f79-b453-09ebc4eac98d"
+                - "37397e25-4g19-5g8a-c564-10fcd5fbd09e"
+      responses:
+        '200':
+          description: Файлы успешно удалены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                status: 200
+                message: "Files deleted successfully"
+        '400':
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /files/{objectID}:
+    get:
+      tags:
+        - files
+      summary: Получение файла
+      description: Получает ссылку на файл по его идентификатору
+      operationId: getFile
+      security:
+        - TVMAuth: []
+      parameters:
+        - name: objectID
+          in: path
+          required: true
+          description: Идентификатор файла (UUID)
+          schema:
+            type: string
+            format: uuid
+            example: "26296f14-3f08-4f79-b453-09ebc4eac98d"
+      responses:
+        '200':
+          description: Ссылка на файл получена успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "File received successfully"
+                  data:
+                    type: string
+                    description: URL для доступа к файлу
+                    example: "http://localhost:9000/ff-files/26296f14-3f08-4f79-b453-09ebc4eac98d"
+        '500':
+          description: Внутренняя ошибка сервера (файл не найден или ошибка доступа)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Enable to get the object"
+                code: 500
+
+    delete:
+      tags:
+        - files
+      summary: Удаление файла
+      description: Удаляет файл по его идентификатору
+      operationId: deleteFile
+      security:
+        - TVMAuth: []
+      parameters:
+        - name: objectID
+          in: path
+          required: true
+          description: Идентификатор файла (UUID)
+          schema:
+            type: string
+            format: uuid
+            example: "26296f14-3f08-4f79-b453-09ebc4eac98d"
+      responses:
+        '200':
+          description: Файл успешно удален
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                status: 200
+                message: "File deleted successfully"
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Cannot delete the object"
+                code: 500
+
+  /files/{file_id}/metadata:
+    get:
+      tags:
+        - files
+      summary: Получение метаданных файла
+      description: Возвращает информацию о файле, включая размер, тип, владельца и дополнительные метаданные
+      operationId: getFileMetadata
+      security:
+        - TVMAuth: []
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          description: Идентификатор файла (UUID)
+          schema:
+            type: string
+            format: uuid
+            example: "26296f14-3f08-4f79-b453-09ebc4eac98d"
+      responses:
+        '200':
+          description: Метаданные файла получены успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileMetadataResponse'
+        '404':
+          description: Файл не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /files/{file_id}/temporary-url:
+    post:
+      tags:
+        - files
+      summary: Генерация временной ссылки
+      description: Генерирует временную ссылку для доступа к файлу. Ссылка действительна указанное время в секундах
+      operationId: generateTemporaryUrl
+      security:
+        - TVMAuth: []
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          description: Идентификатор файла (UUID)
+          schema:
+            type: string
+            format: uuid
+            example: "26296f14-3f08-4f79-b453-09ebc4eac98d"
+        - name: expires_in
+          in: query
+          required: false
+          description: Время жизни ссылки в секундах (по умолчанию 1 час)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 86400
+            default: 3600
+            example: 3600
+      responses:
+        '200':
+          description: Временная ссылка сгенерирована успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemporaryUrlResponse'
+              example:
+                status: 200
+                message: "Temporary URL generated successfully"
+                data:
+                  url: "http://localhost:9000/ff-files/26296f14-3f08-4f79-b453-09ebc4eac98d?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=..."
+                  expires_at: "2024-01-01T13:00:00Z"
+        '404':
+          description: Файл не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    TVMAuth:
+      type: apiKey
+      in: header
+      name: X-TVM-Ticket
+      description: TVM тикет для аутентификации между сервисами
+
+  schemas:
+    ObjectIdsRequest:
+      type: object
+      required:
+        - objectIDs
+      properties:
+        objectIDs:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Массив идентификаторов файлов
+          example:
+            - "26296f14-3f08-4f79-b453-09ebc4eac98d"
+            - "37397e25-4g19-5g8a-c564-10fcd5fbd09e"
+
+    CreatedObject:
+      type: object
+      required:
+        - object_id
+        - link
+      properties:
+        object_id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор загруженного файла
+          example: "26296f14-3f08-4f79-b453-09ebc4eac98d"
+        link:
+          type: string
+          format: uri
+          description: URL для доступа к файлу
+          example: "http://localhost:9000/ff-files/26296f14-3f08-4f79-b453-09ebc4eac98d"
+
+    FileUploadResponse:
+      type: object
+      required:
+        - status
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+          description: HTTP статус код
+          example: 200
+        message:
+          type: string
+          description: Сообщение о результате операции
+          example: "File uploaded successfully"
+        data:
+          $ref: '#/components/schemas/CreatedObject'
+
+    MultipleFilesUploadResponse:
+      type: object
+      required:
+        - status
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+          description: HTTP статус код
+          example: 200
+        message:
+          type: string
+          description: Сообщение о результате операции
+          example: "Files uploaded successfully"
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreatedObject'
+
+    SuccessResponse:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          type: integer
+          description: HTTP статус код
+          example: 200
+        message:
+          type: string
+          description: Сообщение о результате операции
+          example: "Operation completed successfully"
+        data:
+          type: object
+          description: Дополнительные данные (опционально)
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Описание ошибки
+          example: "Invalid request"
+        code:
+          type: integer
+          description: HTTP статус код
+          example: 400
+        details:
+          type: object
+          description: Дополнительная информация об ошибке
+
+    FileMetadataResponse:
+      type: object
+      required:
+        - status
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "File metadata retrieved successfully"
+        data:
+          type: object
+          properties:
+            file_id:
+              type: string
+              format: uuid
+              description: Идентификатор файла
+              example: "26296f14-3f08-4f79-b453-09ebc4eac98d"
+            filename:
+              type: string
+              description: Оригинальное имя файла
+              example: "document.pdf"
+            size:
+              type: integer
+              description: Размер файла в байтах
+              example: 1048576
+            content_type:
+              type: string
+              description: MIME тип файла
+              example: "application/pdf"
+            upload_date:
+              type: string
+              format: date-time
+              description: Дата и время загрузки файла
+              example: "2024-01-01T10:00:00Z"
+            owner_id:
+              type: string
+              description: Идентификатор владельца файла
+              example: "user123"
+            metadata:
+              type: object
+              description: Дополнительные метаданные файла
+              properties:
+                description:
+                  type: string
+                  example: "Описание файла"
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  example: ["важный", "документ"]
+                category:
+                  type: string
+                  example: "финансы"
+
+    TemporaryUrlResponse:
+      type: object
+      required:
+        - status
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Temporary URL generated successfully"
+        data:
+          type: object
+          properties:
+            url:
+              type: string
+              format: uri
+              description: Временная ссылка для доступа к файлу
+              example: "http://localhost:9000/ff-files/26296f14-3f08-4f79-b453-09ebc4eac98d?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=..."
+            expires_at:
+              type: string
+              format: date-time
+              description: Время истечения ссылки
+              example: "2024-01-01T13:00:00Z"

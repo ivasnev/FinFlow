@@ -1,0 +1,1871 @@
+basePath: /
+definitions:
+  dto.ActivityListResponse:
+    properties:
+      activities:
+        items:
+          $ref: '#/definitions/dto.ActivityResponse'
+        type: array
+    type: object
+  dto.ActivityRequest:
+    properties:
+      description:
+        type: string
+      icon_id:
+        type: integer
+      user_id:
+        type: integer
+    required:
+    - description
+    type: object
+  dto.ActivityResponse:
+    properties:
+      activity_id:
+        type: integer
+      datetime:
+        type: string
+      description:
+        type: string
+      icon_id:
+        type: integer
+    type: object
+  dto.CategoryListResponse:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/dto.CategoryResponse'
+        type: array
+    type: object
+  dto.CategoryRequest:
+    properties:
+      icon_id:
+        type: integer
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  dto.CategoryResponse:
+    properties:
+      icon:
+        $ref: '#/definitions/dto.IconDTO'
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  dto.DebtDTO:
+    properties:
+      amount:
+        type: number
+      from_user_id:
+        type: integer
+      id:
+        type: integer
+      to_user_id:
+        type: integer
+      transaction_id:
+        type: integer
+    type: object
+  dto.EventListResponse:
+    properties:
+      events:
+        items:
+          $ref: '#/definitions/dto.EventResponse'
+        type: array
+    type: object
+  dto.EventMembersDTO:
+    properties:
+      dummies_names:
+        items:
+          type: string
+        type: array
+      user_ids:
+        items:
+          type: integer
+        type: array
+    type: object
+  dto.EventRequest:
+    properties:
+      category_id:
+        type: integer
+      description:
+        type: string
+      members:
+        $ref: '#/definitions/dto.EventMembersDTO'
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  dto.EventResponse:
+    properties:
+      balance:
+        type: integer
+      category_id:
+        type: integer
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      photo_id:
+        type: string
+    type: object
+  dto.IconDTO:
+    properties:
+      external_uuid:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  dto.IconFullDTO:
+    properties:
+      file_uuid:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    required:
+    - file_uuid
+    - name
+    type: object
+  dto.IconResponse:
+    properties:
+      file_uuid:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    required:
+    - file_uuid
+    - name
+    type: object
+  dto.OptimizedDebtDTO:
+    properties:
+      amount:
+        type: number
+      event_id:
+        type: integer
+      from_user_id:
+        type: integer
+      id:
+        type: integer
+      to_user_id:
+        type: integer
+    type: object
+  dto.ShareDTO:
+    properties:
+      id:
+        type: integer
+      transaction_id:
+        type: integer
+      user_id:
+        type: integer
+      value:
+        type: number
+    type: object
+  dto.SuccessResponse:
+    properties:
+      success:
+        type: boolean
+    type: object
+  dto.TaskDTO:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      event_id:
+        type: integer
+      id:
+        type: integer
+      priority:
+        type: integer
+      title:
+        type: string
+      user_id:
+        type: integer
+    required:
+    - title
+    type: object
+  dto.TaskListResponse:
+    properties:
+      tasks:
+        items:
+          $ref: '#/definitions/dto.TaskDTO'
+        type: array
+    type: object
+  dto.TaskRequest:
+    properties:
+      description:
+        type: string
+      priority:
+        type: integer
+      title:
+        type: string
+      user_id:
+        type: integer
+    required:
+    - title
+    - user_id
+    type: object
+  dto.TaskResponse:
+    properties:
+      task:
+        $ref: '#/definitions/dto.TaskDTO'
+    type: object
+  dto.TransactionListResponse:
+    properties:
+      transactions:
+        items:
+          $ref: '#/definitions/dto.TransactionResponse'
+        type: array
+    type: object
+  dto.TransactionRequest:
+    properties:
+      amount:
+        description: Общая сумма
+        type: number
+      from_user:
+        description: ID пользователя, который заплатил
+        type: integer
+      name:
+        description: Дополнительные поля для связи с сущностями
+        type: string
+      portion:
+        additionalProperties:
+          type: number
+        description: Распределение (зависит от типа)
+        type: object
+      transaction_category_id:
+        description: ID категории транзакции
+        type: integer
+      type:
+        description: '"percent" | "amount" | "units"'
+        type: string
+      users:
+        description: Список пользователей-участников
+        items:
+          type: integer
+        type: array
+    required:
+    - amount
+    - from_user
+    - name
+    - type
+    - users
+    type: object
+  dto.TransactionResponse:
+    properties:
+      amount:
+        type: number
+      datetime:
+        type: string
+      debts:
+        items:
+          $ref: '#/definitions/dto.DebtDTO'
+        type: array
+      event_id:
+        type: integer
+      from_user:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      shares:
+        items:
+          $ref: '#/definitions/dto.ShareDTO'
+        type: array
+      transaction_category_id:
+        type: integer
+      type:
+        type: string
+    type: object
+  dto.UserProfileDTO:
+    properties:
+      name:
+        type: string
+      nickname:
+        type: string
+      photo:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  dto.UserResponse:
+    properties:
+      id:
+        type: integer
+      is_dummy:
+        type: boolean
+      name:
+        type: string
+      profile:
+        $ref: '#/definitions/dto.UserProfileDTO'
+    type: object
+  errors.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/errors.ErrorResponseDetail'
+      id:
+        type: string
+    type: object
+  errors.ErrorResponseAdditionalData:
+    properties:
+      slug:
+        example: slug
+        type: string
+    type: object
+  errors.ErrorResponseDetail:
+    properties:
+      code:
+        example: validation
+        type: string
+      data:
+        $ref: '#/definitions/errors.ErrorResponseAdditionalData'
+      message:
+        example: invalid input
+        type: string
+    type: object
+host: localhost:8085
+info:
+  contact:
+    email: support@finflow.io
+    name: API Support
+    url: http://finflow.io/support
+  description: API сервиса для деления расходов FinFlow Split
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://finflow.io/terms/
+  title: FinFlow Split API
+  version: "1.0"
+paths:
+  /api/v1/category:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список категорий указанного типа
+      parameters:
+      - description: Тип категории
+        in: query
+        name: category_type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список категорий
+          schema:
+            $ref: '#/definitions/dto.CategoryListResponse'
+        "400":
+          description: Не указан тип категорий
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить категории
+      tags:
+      - категории
+    options:
+      consumes:
+      - application/json
+      description: Возвращает список всех доступных типов категорий
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список типов категорий
+          schema:
+            items:
+              type: string
+            type: array
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить типы категорий
+      tags:
+      - категории
+  /api/v1/category/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает информацию о конкретной категории по её ID
+      parameters:
+      - description: ID категории
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Тип категории
+        in: query
+        name: category_type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о категории
+          schema:
+            $ref: '#/definitions/dto.CategoryResponse'
+        "400":
+          description: Некорректный ID категории или не указан тип
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Категория не найдена
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить категорию по ID
+      tags:
+      - категории
+  /api/v1/event:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список всех мероприятий
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список мероприятий
+          schema:
+            $ref: '#/definitions/dto.EventListResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить список мероприятий
+      tags:
+      - мероприятия
+  /api/v1/event/{id_event}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет мероприятие по ID
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Мероприятие успешно удалено
+        "400":
+          description: Неверный формат ID мероприятия
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Удалить мероприятие
+      tags:
+      - мероприятия
+    get:
+      consumes:
+      - application/json
+      description: Возвращает информацию о конкретном мероприятии по его ID
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о мероприятии
+          schema:
+            $ref: '#/definitions/dto.EventResponse'
+        "400":
+          description: Неверный формат ID мероприятия
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Мероприятие не найдено
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить мероприятие по ID
+      tags:
+      - мероприятия
+    put:
+      consumes:
+      - application/json
+      description: Обновляет существующее мероприятие по ID
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: Данные мероприятия
+        in: body
+        name: event
+        required: true
+        schema:
+          $ref: '#/definitions/dto.EventRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленное мероприятие
+          schema:
+            $ref: '#/definitions/dto.EventResponse'
+        "400":
+          description: Неверный формат данных запроса
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Мероприятие не найдено
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Обновить мероприятие
+      tags:
+      - мероприятия
+  /api/v1/event/{id_event}/activity:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список активностей для указанного события
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список активностей
+          schema:
+            $ref: '#/definitions/dto.ActivityListResponse'
+        "400":
+          description: Некорректный ID события
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Событие не найдено
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить активности события
+      tags:
+      - активности
+    post:
+      consumes:
+      - application/json
+      description: Создает новую запись об активности в событии
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: Данные активности
+        in: body
+        name: activity
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ActivityRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Созданная активность
+          schema:
+            $ref: '#/definitions/dto.ActivityResponse'
+        "400":
+          description: Некорректные данные запроса
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Событие не найдено
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Создать активность
+      tags:
+      - активности
+  /api/v1/event/{id_event}/activity/{id_activity}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет активность по ID
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: ID активности
+        in: path
+        name: id_activity
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Активность успешно удалена
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Некорректный ID активности
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Удалить активность
+      tags:
+      - активности
+    get:
+      consumes:
+      - application/json
+      description: Возвращает информацию о конкретной активности по её ID
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: ID активности
+        in: path
+        name: id_activity
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация об активности
+          schema:
+            $ref: '#/definitions/dto.ActivityResponse'
+        "400":
+          description: Некорректный ID активности
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Активность не найдена
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить активность по ID
+      tags:
+      - активности
+    put:
+      consumes:
+      - application/json
+      description: Обновляет существующую активность по ID
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: ID активности
+        in: path
+        name: id_activity
+        required: true
+        type: integer
+      - description: Данные активности
+        in: body
+        name: activity
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ActivityRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленная активность
+          schema:
+            $ref: '#/definitions/dto.ActivityResponse'
+        "400":
+          description: Некорректные данные запроса
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Активность не найдена
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Обновить активность
+      tags:
+      - активности
+  /api/v1/event/{id_event}/debts:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает все долги, связанные с мероприятием
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список долгов
+          schema:
+            items:
+              $ref: '#/definitions/dto.DebtDTO'
+            type: array
+        "400":
+          description: Неверный формат ID мероприятия
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить долги мероприятия
+      tags:
+      - долги
+  /api/v1/event/{id_event}/optimized-debts:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список оптимизированных долгов мероприятия
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список оптимизированных долгов
+          schema:
+            items:
+              $ref: '#/definitions/dto.OptimizedDebtDTO'
+            type: array
+        "400":
+          description: Неверный формат ID мероприятия
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить оптимизированные долги мероприятия
+      tags:
+      - долги
+      - оптимизация
+    post:
+      consumes:
+      - application/json
+      description: Запускает алгоритм оптимизации долгов и возвращает оптимизированный
+        список долгов
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список оптимизированных долгов
+          schema:
+            items:
+              $ref: '#/definitions/dto.OptimizedDebtDTO'
+            type: array
+        "400":
+          description: Неверный формат ID мероприятия
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Оптимизировать долги мероприятия
+      tags:
+      - долги
+      - оптимизация
+  /api/v1/event/{id_event}/task:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список всех задач, связанных с указанным мероприятием
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список задач
+          schema:
+            $ref: '#/definitions/dto.TaskListResponse'
+        "400":
+          description: Неверный формат ID мероприятия
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить все задачи мероприятия
+      tags:
+      - задачи
+    post:
+      consumes:
+      - application/json
+      description: Создает новую задачу в рамках указанного мероприятия
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: Данные задачи
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Созданная задача
+          schema:
+            $ref: '#/definitions/dto.TaskResponse'
+        "400":
+          description: Неверный формат данных запроса
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Создать новую задачу
+      tags:
+      - задачи
+  /api/v1/event/{id_event}/task/{id_task}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет задачу по ID
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: ID задачи
+        in: path
+        name: id_task
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Задача успешно удалена
+        "400":
+          description: Неверный формат ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Удалить задачу
+      tags:
+      - задачи
+    get:
+      consumes:
+      - application/json
+      description: Возвращает информацию о конкретной задаче по её ID
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: ID задачи
+        in: path
+        name: id_task
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о задаче
+          schema:
+            $ref: '#/definitions/dto.TaskResponse'
+        "400":
+          description: Неверный формат ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Задача не найдена
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить задачу по ID
+      tags:
+      - задачи
+    put:
+      consumes:
+      - application/json
+      description: Обновляет существующую задачу по ID
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: ID задачи
+        in: path
+        name: id_task
+        required: true
+        type: integer
+      - description: Данные задачи
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленная задача
+          schema:
+            $ref: '#/definitions/dto.TaskResponse'
+        "400":
+          description: Неверный формат данных запроса
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Обновить задачу
+      tags:
+      - задачи
+  /api/v1/event/{id_event}/transaction:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список всех транзакций, связанных с указанным мероприятием
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список транзакций
+          schema:
+            $ref: '#/definitions/dto.TransactionListResponse'
+        "400":
+          description: Неверный формат ID мероприятия
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить все транзакции мероприятия
+      tags:
+      - транзакции
+    post:
+      consumes:
+      - application/json
+      description: Создает новую транзакцию в рамках указанного мероприятия
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: Данные транзакции
+        in: body
+        name: transaction
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Созданная транзакция
+          schema:
+            $ref: '#/definitions/dto.TransactionResponse'
+        "400":
+          description: Неверный формат данных запроса
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Создать новую транзакцию
+      tags:
+      - транзакции
+  /api/v1/event/{id_event}/transaction/{id_transaction}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет транзакцию по ID
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: ID транзакции
+        in: path
+        name: id_transaction
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Транзакция успешно удалена
+        "400":
+          description: Неверный формат ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Удалить транзакцию
+      tags:
+      - транзакции
+    get:
+      consumes:
+      - application/json
+      description: Возвращает информацию о конкретной транзакции по её ID
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: ID транзакции
+        in: path
+        name: id_transaction
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о транзакции
+          schema:
+            $ref: '#/definitions/dto.TransactionResponse'
+        "400":
+          description: Неверный формат ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Транзакция не найдена
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить транзакцию по ID
+      tags:
+      - транзакции
+    put:
+      consumes:
+      - application/json
+      description: Обновляет существующую транзакцию по ID
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: ID транзакции
+        in: path
+        name: id_transaction
+        required: true
+        type: integer
+      - description: Данные транзакции
+        in: body
+        name: transaction
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TransactionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленная транзакция
+          schema:
+            $ref: '#/definitions/dto.TransactionResponse'
+        "400":
+          description: Неверный формат данных запроса
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Обновить транзакцию
+      tags:
+      - транзакции
+  /api/v1/event/{id_event}/user:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список всех пользователей, связанных с мероприятием
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список пользователей
+          schema:
+            items:
+              $ref: '#/definitions/dto.UserResponse'
+            type: array
+        "400":
+          description: Неверный формат ID мероприятия
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить пользователей мероприятия
+      tags:
+      - пользователи
+    post:
+      consumes:
+      - application/json
+      description: Добавляет список пользователей в мероприятие
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: Список ID пользователей
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пользователи успешно добавлены
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Добавить пользователей в мероприятие
+      tags:
+      - пользователи
+  /api/v1/event/{id_event}/user/{id_user}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет пользователя из мероприятия
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: ID пользователя
+        in: path
+        name: id_user
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Пользователь успешно удален из мероприятия
+        "400":
+          description: Неверный формат ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Удалить пользователя из мероприятия
+      tags:
+      - пользователи
+  /api/v1/event/{id_event}/user/{id_user}/optimized-debts:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список оптимизированных долгов для конкретного пользователя
+        в мероприятии
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: ID пользователя
+        in: path
+        name: id_user
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список оптимизированных долгов пользователя
+          schema:
+            items:
+              $ref: '#/definitions/dto.OptimizedDebtDTO'
+            type: array
+        "400":
+          description: Неверный формат ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить оптимизированные долги пользователя
+      tags:
+      - долги
+      - оптимизация
+  /api/v1/event/{id_event}/user/dummies:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список всех фиктивных (dummy) пользователей, связанных
+        с мероприятием
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список фиктивных пользователей
+          schema:
+            items:
+              $ref: '#/definitions/dto.UserResponse'
+            type: array
+        "400":
+          description: Неверный формат ID мероприятия
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить фиктивных пользователей мероприятия
+      tags:
+      - пользователи
+    post:
+      consumes:
+      - application/json
+      description: Создает несколько фиктивных (dummy) пользователей в рамках мероприятия
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: Список имен фиктивных пользователей
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Список созданных фиктивных пользователей
+          schema:
+            items:
+              $ref: '#/definitions/dto.UserResponse'
+            type: array
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Создать несколько фиктивных пользователей
+      tags:
+      - пользователи
+  /api/v1/event/{id_event}/user/dummy:
+    post:
+      consumes:
+      - application/json
+      description: Создает нового фиктивного (dummy) пользователя в рамках мероприятия
+      parameters:
+      - description: ID мероприятия
+        in: path
+        name: id_event
+        required: true
+        type: integer
+      - description: Данные фиктивного пользователя
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Созданный фиктивный пользователь
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Создать фиктивного пользователя
+      tags:
+      - пользователи
+  /api/v1/manage/category:
+    post:
+      consumes:
+      - application/json
+      description: Создает новую категорию указанного типа
+      parameters:
+      - description: Тип категории
+        in: query
+        name: category_type
+        required: true
+        type: string
+      - description: Данные категории
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Созданная категория
+          schema:
+            $ref: '#/definitions/dto.CategoryResponse'
+        "400":
+          description: Некорректные данные запроса или не указан тип
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Создать новую категорию
+      tags:
+      - категории
+  /api/v1/manage/category/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет категорию по ID
+      parameters:
+      - description: ID категории
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Тип категории
+        in: query
+        name: category_type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Категория успешно удалена
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Некорректный ID категории или не указан тип
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Удалить категорию
+      tags:
+      - категории
+    put:
+      consumes:
+      - application/json
+      description: Обновляет существующую категорию по ID
+      parameters:
+      - description: ID категории
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Тип категории
+        in: query
+        name: category_type
+        required: true
+        type: string
+      - description: Данные категории
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленная категория
+          schema:
+            $ref: '#/definitions/dto.CategoryResponse'
+        "400":
+          description: Некорректные данные запроса или не указан тип
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Категория не найдена
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Обновить категорию
+      tags:
+      - категории
+  /api/v1/manage/icons:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список всех доступных иконок в системе
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список иконок
+          schema:
+            items:
+              $ref: '#/definitions/dto.IconResponse'
+            type: array
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить все иконки
+      tags:
+      - иконки
+    post:
+      consumes:
+      - application/json
+      description: Создает новую иконку в системе
+      parameters:
+      - description: Данные иконки
+        in: body
+        name: icon
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IconFullDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Созданная иконка
+          schema:
+            $ref: '#/definitions/dto.IconResponse'
+        "400":
+          description: Неверный формат данных запроса
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Создать новую иконку
+      tags:
+      - иконки
+  /api/v1/manage/icons/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет иконку по ID
+      parameters:
+      - description: ID иконки
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Иконка успешно удалена
+        "400":
+          description: Неверный формат ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Удалить иконку
+      tags:
+      - иконки
+    get:
+      consumes:
+      - application/json
+      description: Возвращает информацию о конкретной иконке по её ID
+      parameters:
+      - description: ID иконки
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация об иконке
+          schema:
+            $ref: '#/definitions/dto.IconResponse'
+        "400":
+          description: Неверный формат ID
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Иконка не найдена
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить иконку по ID
+      tags:
+      - иконки
+    put:
+      consumes:
+      - application/json
+      description: Обновляет существующую иконку по ID
+      parameters:
+      - description: ID иконки
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Данные иконки
+        in: body
+        name: icon
+        required: true
+        schema:
+          $ref: '#/definitions/dto.IconFullDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленная иконка
+          schema:
+            $ref: '#/definitions/dto.IconResponse'
+        "400":
+          description: Неверный формат данных запроса
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Обновить иконку
+      tags:
+      - иконки
+  /api/v1/user/{id_user}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет пользователя по ID
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id_user
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Пользователь успешно удален
+        "400":
+          description: Неверный формат ID пользователя
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Удалить пользователя
+      tags:
+      - пользователи
+    get:
+      consumes:
+      - application/json
+      description: Возвращает информацию о пользователе по его ID
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id_user
+        required: true
+        type: integer
+      - default: false
+        description: Искать по внешнему ID
+        in: query
+        name: by_external
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о пользователе
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "400":
+          description: Неверный формат ID пользователя
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить пользователя по ID
+      tags:
+      - пользователи
+    put:
+      consumes:
+      - application/json
+      description: Обновляет информацию о пользователе
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id_user
+        required: true
+        type: integer
+      - description: Данные для обновления
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Обновленный пользователь
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "404":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Обновить пользователя
+      tags:
+      - пользователи
+  /api/v1/user/{id_user}/event:
+    post:
+      consumes:
+      - application/json
+      description: Создает новое мероприятие с указанным пользователем в качестве
+        создателя
+      parameters:
+      - description: ID пользователя (создателя)
+        in: path
+        name: id_user
+        required: true
+        type: integer
+      - description: Данные мероприятия
+        in: body
+        name: event
+        required: true
+        schema:
+          $ref: '#/definitions/dto.EventRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Созданное мероприятие
+          schema:
+            $ref: '#/definitions/dto.EventResponse'
+        "400":
+          description: Неверный формат данных запроса
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Создать новое мероприятие
+      tags:
+      - мероприятия
+  /api/v1/user/list:
+    post:
+      consumes:
+      - application/json
+      description: Возвращает информацию о пользователях по списку ID
+      parameters:
+      - default: false
+        description: Искать по внешним ID
+        in: query
+        name: by_external
+        type: boolean
+      - description: Список ID пользователей
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список пользователей
+          schema:
+            items:
+              $ref: '#/definitions/dto.UserResponse'
+            type: array
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Получить пользователей по списку ID
+      tags:
+      - пользователи
+  /api/v1/user/sync:
+    post:
+      consumes:
+      - application/json
+      description: Обновляет локальные данные пользователей из ID-сервиса
+      parameters:
+      - description: Список ID пользователей для синхронизации
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пользователи успешно синхронизированы
+        "400":
+          description: Неверный формат запроса
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/errors.ErrorResponse'
+      summary: Синхронизировать пользователей с ID-сервисом
+      tags:
+      - пользователи
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

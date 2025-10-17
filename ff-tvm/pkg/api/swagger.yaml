@@ -1,0 +1,474 @@
+openapi: 3.0.3
+info:
+  title: FinFlow TVM (Ticket-based Verification Module) API
+  description: |
+    API для сервиса TVM - системы межсервисной аутентификации FinFlow.
+    
+    TVM обеспечивает безопасное взаимодействие между микросервисами через:
+    - Управление сервисами и их ключами
+    - Генерацию и валидацию тикетов доступа
+    - Контроль прав доступа между сервисами
+    
+    ## Принцип работы
+    
+    1. **Регистрация сервиса**: Создается новый сервис с парой ключей ED25519
+    2. **Настройка доступа**: Администратор предоставляет права доступа между сервисами
+    3. **Генерация тикета**: Сервис-источник генерирует подписанный тикет для доступа к целевому сервису
+    4. **Валидация**: Целевой сервис проверяет тикет используя публичный ключ источника
+    
+    ## Формат тикета
+    
+    Тикет имеет формат: `serv:base64(serviceID):base64(ticketJSON)`
+    
+    где ticketJSON содержит:
+    - payload: информация о сервисах и TTL
+    - signature: ED25519 подпись payload
+    
+    ## Режим разработки
+    
+    В режиме разработки доступны упрощенные endpoints для тестирования.
+  version: 1.0.0
+  contact:
+    name: FinFlow Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8081
+    description: Development server
+
+tags:
+  - name: services
+    description: Управление сервисами
+  - name: tickets
+    description: Генерация тикетов доступа
+  - name: access
+    description: Управление правами доступа
+  - name: dev
+    description: Endpoints для разработки (только в dev режиме)
+
+paths:
+  /service:
+    post:
+      tags:
+        - services
+      summary: Создание нового сервиса
+      description: Создает новый сервис и возвращает его идентификатор и ключи ED25519
+      operationId: createService
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateServiceRequest'
+            example:
+              name: "test-service"
+      responses:
+        '201':
+          description: Сервис успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateServiceResponse'
+              example:
+                id: 1
+                name: "test-service"
+                public_key: "MCowBQYDK2VwAyEAGb9ECWmEzf6FQbrBZ9w7lshQhqowtrbLDFw4rXAxZuE="
+                private_key: "MC4CAQAwBQYDK2VwBCIEIJ+DYvh6SEqVTm50DFtMDoQikTmiCqirVv9mWG9qfSnF"
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /service/{id}/key:
+    get:
+      tags:
+        - services
+      summary: Получение публичного ключа сервиса
+      description: Возвращает публичный ключ сервиса по его ID для валидации тикетов
+      operationId: getServicePublicKey
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID сервиса
+          schema:
+            type: integer
+            format: int32
+            example: 1
+      responses:
+        '200':
+          description: Публичный ключ получен успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  public_key:
+                    type: string
+                    description: Публичный ключ в формате base64
+                    example: "MCowBQYDK2VwAyEAGb9ECWmEzf6FQbrBZ9w7lshQhqowtrbLDFw4rXAxZuE="
+        '400':
+          description: Некорректный ID сервиса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Сервис не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ticket:
+    post:
+      tags:
+        - tickets
+      summary: Генерация тикета доступа
+      description: |
+        Генерирует подписанный тикет для доступа от одного сервиса к другому.
+        
+        Тикет содержит:
+        - Информацию о сервисе-источнике и целевом сервисе
+        - TTL (время жизни)
+        - Цифровую подпись ED25519
+        
+        Возвращается в формате: `serv:base64(serviceID):base64(ticketJSON)`
+      operationId: createTicket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTicketRequest'
+            example:
+              from: 1
+              to: 2
+              secret: "MC4CAQAwBQYDK2VwBCIEIJ+DYvh6SEqVTm50DFtMDoQikTmiCqirVv9mWG9qfSnF"
+      responses:
+        '200':
+          description: Тикет успешно сгенерирован
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ticket:
+                    type: string
+                    description: Тикет в формате serv:base64(serviceID):base64(ticketJSON)
+                    example: "serv:MQ==:eyJwYXlsb2FkIjp7ImZyb20iOjEsInRvIjoyLCJ0dGwiOjE2NDA5OTUyMDAsIm1ldGFkYXRhIjoiIn0sInNpZ25hdHVyZSI6IkFCQ0QxMjM0In0="
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера (нет доступа или ошибка генерации)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /access/grant:
+    post:
+      tags:
+        - access
+      summary: Предоставление доступа
+      description: Предоставляет право доступа от одного сервиса к другому
+      operationId: grantAccess
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessRequest'
+            example:
+              from: 1
+              to: 2
+      responses:
+        '200':
+          description: Доступ успешно предоставлен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "access granted"
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /access/revoke:
+    post:
+      tags:
+        - access
+      summary: Отзыв доступа
+      description: Отзывает право доступа от одного сервиса к другому
+      operationId: revokeAccess
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessRequest'
+            example:
+              from: 1
+              to: 2
+      responses:
+        '200':
+          description: Доступ успешно отозван
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "access revoked"
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dev/ticket:
+    post:
+      tags:
+        - dev
+      summary: Генерация тикета для разработки
+      description: |
+        Упрощенная генерация тикета для режима разработки.
+        Использует предустановленный секрет из конфигурации.
+        
+        **Доступно только в режиме разработки!**
+      operationId: generateDevTicket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DevTicketRequest'
+            example:
+              from: 1
+              to: 2
+      responses:
+        '200':
+          description: Тикет для разработки сгенерирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Режим разработки отключен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    CreateServiceRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Название сервиса
+          minLength: 1
+          maxLength: 255
+          example: "test-service"
+
+    CreateServiceResponse:
+      type: object
+      required:
+        - id
+        - name
+        - public_key
+        - private_key
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Уникальный идентификатор сервиса
+          example: 1
+        name:
+          type: string
+          description: Название сервиса
+          example: "test-service"
+        public_key:
+          type: string
+          description: Публичный ключ ED25519 в формате base64
+          example: "MCowBQYDK2VwAyEAGb9ECWmEzf6FQbrBZ9w7lshQhqowtrbLDFw4rXAxZuE="
+        private_key:
+          type: string
+          description: Приватный ключ ED25519 в формате base64 (сохраните в безопасном месте!)
+          example: "MC4CAQAwBQYDK2VwBCIEIJ+DYvh6SEqVTm50DFtMDoQikTmiCqirVv9mWG9qfSnF"
+
+    CreateTicketRequest:
+      type: object
+      required:
+        - from
+        - to
+        - secret
+      properties:
+        from:
+          type: integer
+          format: int32
+          description: ID сервиса-источника
+          example: 1
+        to:
+          type: integer
+          format: int32
+          description: ID целевого сервиса
+          example: 2
+        secret:
+          type: string
+          description: Приватный ключ сервиса-источника в формате base64
+          example: "MC4CAQAwBQYDK2VwBCIEIJ+DYvh6SEqVTm50DFtMDoQikTmiCqirVv9mWG9qfSnF"
+
+    AccessRequest:
+      type: object
+      required:
+        - from
+        - to
+      properties:
+        from:
+          type: integer
+          format: int32
+          description: ID сервиса-источника
+          example: 1
+        to:
+          type: integer
+          format: int32
+          description: ID целевого сервиса
+          example: 2
+
+    DevTicketRequest:
+      type: object
+      required:
+        - from
+        - to
+      properties:
+        from:
+          type: integer
+          format: int32
+          description: ID сервиса-источника
+          example: 1
+        to:
+          type: integer
+          format: int32
+          description: ID целевого сервиса
+          example: 2
+
+    TicketPayload:
+      type: object
+      required:
+        - from
+        - to
+        - ttl
+        - metadata
+      properties:
+        from:
+          type: integer
+          format: int32
+          description: ID сервиса-источника
+          example: 1
+        to:
+          type: integer
+          format: int32
+          description: ID целевого сервиса
+          example: 2
+        ttl:
+          type: integer
+          format: int64
+          description: Время жизни тикета (Unix timestamp)
+          example: 1640995200
+        metadata:
+          type: string
+          description: Дополнительные метаданные
+          example: ""
+
+    TicketResponse:
+      type: object
+      required:
+        - payload
+        - signature
+      properties:
+        payload:
+          $ref: '#/components/schemas/TicketPayload'
+        signature:
+          type: string
+          description: ED25519 подпись payload в формате base64
+          example: "ABCD1234signature"
+
+    ServiceInfo:
+      type: object
+      required:
+        - id
+        - name
+        - public_key
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Уникальный идентификатор сервиса
+          example: 1
+        name:
+          type: string
+          description: Название сервиса
+          example: "test-service"
+        public_key:
+          type: string
+          description: Публичный ключ ED25519 в формате base64
+          example: "MCowBQYDK2VwAyEAGb9ECWmEzf6FQbrBZ9w7lshQhqowtrbLDFw4rXAxZuE="
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Описание ошибки
+          example: "Invalid request parameters"

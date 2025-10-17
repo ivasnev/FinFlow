@@ -1,0 +1,722 @@
+openapi: 3.0.3
+info:
+  title: FinFlow Auth Service API
+  description: |
+    API для сервиса аутентификации и авторизации FinFlow.
+    
+    Сервис предоставляет функциональность для:
+    - Регистрации и входа пользователей
+    - Управления сессиями и токенами
+    - Управления профилями пользователей
+    - Просмотра истории входов
+    
+    ## Аутентификация
+    
+    Большинство endpoints требуют аутентификации через Bearer токен в заголовке Authorization:
+    ```
+    Authorization: Bearer <access_token>
+    ```
+    
+    Токены можно получить через endpoints `/auth/login` или `/auth/refresh`.
+  version: 1.0.0
+  contact:
+    name: FinFlow Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8083/api/v1
+    description: Development server
+
+tags:
+  - name: auth
+    description: Операции аутентификации и авторизации
+  - name: users
+    description: Управление пользователями
+  - name: sessions
+    description: Управление сессиями пользователей
+  - name: login-history
+    description: История входов пользователей
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - auth
+      summary: Регистрация нового пользователя
+      description: Создает нового пользователя в системе
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              email: "user@example.com"
+              phone: "+71234567890"
+              password: "StrongPassword123"
+              nickname: "user123"
+              name: "John Doe"
+      responses:
+        '201':
+          description: Пользователь успешно зарегистрирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Пользователь с таким email или nickname уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Вход в систему
+      description: Аутентификация пользователя по email/nickname и паролю
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              login: "user@example.com"
+              password: "StrongPassword123"
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Неверные учетные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/refresh:
+    post:
+      tags:
+        - auth
+      summary: Обновление access токена
+      description: Получение нового access токена с помощью refresh токена
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+            example:
+              refresh_token: "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Токен успешно обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Недействительный refresh токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags:
+        - auth
+      summary: Выход из системы
+      description: Аннулирование refresh токена (завершение сессии)
+      operationId: logout
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+            example:
+              refresh_token: "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Успешный выход из системы
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "successfully logged out"
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/public-key:
+    get:
+      tags:
+        - auth
+      summary: Получение публичного ключа
+      description: Возвращает публичный ключ для верификации JWT токенов (в формате base64)
+      operationId: getPublicKey
+      responses:
+        '200':
+          description: Публичный ключ
+          content:
+            text/plain:
+              schema:
+                type: string
+                description: Публичный ключ в формате base64
+                example: "MCowBQYDK2VwAyEAGb9ECWmEzf6FQbrBZ9w7lshQhqowtrbLDFw4rXAxZuE="
+
+  /users/{nickname}:
+    get:
+      tags:
+        - users
+      summary: Получение пользователя по nickname
+      description: Возвращает информацию о пользователе по его nickname
+      operationId: getUserByNickname
+      parameters:
+        - name: nickname
+          in: path
+          required: true
+          description: Nickname пользователя
+          schema:
+            type: string
+            example: "johndoe"
+      responses:
+        '200':
+          description: Информация о пользователе
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/me:
+    patch:
+      tags:
+        - users
+      summary: Обновление профиля текущего пользователя
+      description: Обновляет профиль авторизованного пользователя
+      operationId: updateUser
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+            example:
+              email: "updated@example.com"
+              nickname: "updated_nickname"
+              password: "NewStrongPassword123"
+      responses:
+        '200':
+          description: Профиль успешно обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions:
+    get:
+      tags:
+        - sessions
+      summary: Получение активных сессий пользователя
+      description: Возвращает список всех активных сессий текущего пользователя
+      operationId: getUserSessions
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Список активных сессий
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionDTO'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /sessions/{id}:
+    delete:
+      tags:
+        - sessions
+      summary: Завершение сессии
+      description: Завершает указанную сессию пользователя
+      operationId: terminateSession
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID сессии (UUID)
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Сессия успешно завершена
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "session terminated successfully"
+        '400':
+          description: Некорректный ID сессии
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /login-history:
+    get:
+      tags:
+        - login-history
+      summary: Получение истории входов
+      description: Возвращает историю входов текущего пользователя с поддержкой пагинации
+      operationId: getLoginHistory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Количество записей на странице
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+            example: 20
+        - name: offset
+          in: query
+          required: false
+          description: Смещение для пагинации
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+            example: 0
+      responses:
+        '200':
+          description: История входов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LoginHistoryDTO'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT токен для аутентификации. Получается через /auth/login или /auth/refresh
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - nickname
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email пользователя
+          example: "user@example.com"
+        phone:
+          type: string
+          format: phone
+          description: Номер телефона в международном формате (опционально)
+          example: "+71234567890"
+        password:
+          type: string
+          minLength: 8
+          description: Пароль (минимум 8 символов)
+          example: "StrongPassword123"
+        nickname:
+          type: string
+          minLength: 3
+          maxLength: 50
+          description: Уникальный никнейм пользователя
+          example: "user123"
+        name:
+          type: string
+          description: Полное имя пользователя (опционально)
+          example: "John Doe"
+
+    LoginRequest:
+      type: object
+      required:
+        - login
+        - password
+      properties:
+        login:
+          type: string
+          description: Email или nickname пользователя
+          example: "user@example.com"
+        password:
+          type: string
+          description: Пароль пользователя
+          example: "StrongPassword123"
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+          description: Refresh токен для обновления access токена
+          example: "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9..."
+
+    LogoutRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+          description: Refresh токен для аннулирования
+          example: "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9..."
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: Новый email пользователя
+          example: "updated@example.com"
+        nickname:
+          type: string
+          description: Новый nickname пользователя
+          example: "updated_nickname"
+        password:
+          type: string
+          minLength: 8
+          description: Новый пароль (минимум 8 символов)
+          example: "NewStrongPassword123"
+
+    AuthResponse:
+      type: object
+      required:
+        - access_token
+        - refresh_token
+        - expires_at
+        - user
+      properties:
+        access_token:
+          type: string
+          description: JWT access токен
+          example: "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9..."
+        refresh_token:
+          type: string
+          description: Refresh токен для обновления access токена
+          example: "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9..."
+        expires_at:
+          type: string
+          format: date-time
+          description: Время истечения access токена
+          example: "2024-01-01T12:00:00Z"
+        user:
+          $ref: '#/components/schemas/ShortUserDTO'
+
+    UserDTO:
+      type: object
+      required:
+        - id
+        - email
+        - nickname
+        - roles
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Уникальный идентификатор пользователя
+          example: 12345
+        email:
+          type: string
+          format: email
+          description: Email пользователя
+          example: "user@example.com"
+        nickname:
+          type: string
+          description: Никнейм пользователя
+          example: "johndoe"
+        roles:
+          type: array
+          items:
+            type: string
+          description: Роли пользователя
+          example: ["user", "premium"]
+        created_at:
+          type: string
+          format: date-time
+          description: Дата создания аккаунта
+          example: "2024-01-01T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Дата последнего обновления
+          example: "2024-01-01T12:00:00Z"
+
+    ShortUserDTO:
+      type: object
+      required:
+        - id
+        - email
+        - nickname
+        - roles
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Уникальный идентификатор пользователя
+          example: 12345
+        email:
+          type: string
+          format: email
+          description: Email пользователя
+          example: "user@example.com"
+        nickname:
+          type: string
+          description: Никнейм пользователя
+          example: "johndoe"
+        roles:
+          type: array
+          items:
+            type: string
+          description: Роли пользователя
+          example: ["user", "premium"]
+
+    SessionDTO:
+      type: object
+      required:
+        - id
+        - ip_address
+        - created_at
+        - expires_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор сессии
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        ip_address:
+          type: string
+          format: ipv4
+          description: IP адрес, с которого была создана сессия
+          example: "192.168.1.1"
+        created_at:
+          type: string
+          format: date-time
+          description: Дата создания сессии
+          example: "2024-01-01T10:00:00Z"
+        expires_at:
+          type: string
+          format: date-time
+          description: Дата истечения сессии
+          example: "2024-01-08T10:00:00Z"
+
+    LoginHistoryDTO:
+      type: object
+      required:
+        - id
+        - ip_address
+        - created_at
+      properties:
+        id:
+          type: integer
+          description: Уникальный идентификатор записи
+          example: 123
+        ip_address:
+          type: string
+          format: ipv4
+          description: IP адрес, с которого был выполнен вход
+          example: "192.168.1.1"
+        user_agent:
+          type: string
+          description: User-Agent браузера/приложения
+          example: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        created_at:
+          type: string
+          format: date-time
+          description: Дата и время входа
+          example: "2024-01-01T10:00:00Z"
+
+    DeviceDTO:
+      type: object
+      required:
+        - id
+        - device_id
+        - user_agent
+        - last_login
+      properties:
+        id:
+          type: integer
+          description: Уникальный идентификатор устройства
+          example: 456
+        device_id:
+          type: string
+          description: Идентификатор устройства
+          example: "device_123456"
+        user_agent:
+          type: string
+          description: User-Agent устройства
+          example: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        last_login:
+          type: string
+          format: date-time
+          description: Дата последнего входа с этого устройства
+          example: "2024-01-01T10:00:00Z"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Описание ошибки
+          example: "Invalid credentials"
