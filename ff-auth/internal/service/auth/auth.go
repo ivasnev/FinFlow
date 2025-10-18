@@ -1,19 +1,18 @@
-package service
+package auth
 
 import (
 	"context"
 	"crypto/ed25519"
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/ivasnev/FinFlow/ff-auth/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/common/config"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/models"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/repository/postgres"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
 	idclient "github.com/ivasnev/FinFlow/ff-id/pkg/client"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -24,9 +23,9 @@ type AuthService struct {
 	userRepository         postgres.UserRepositoryInterface
 	roleRepository         postgres.RoleRepositoryInterface
 	sessionRepository      postgres.SessionRepositoryInterface
-	deviceService          DeviceServiceInterface
+	deviceService          service.Device
 	loginHistoryRepository postgres.LoginHistoryRepositoryInterface
-	tokenManager           *ED25519TokenManager
+	tokenManager           service.TokenManager
 	idClient               *idclient.Client
 }
 
@@ -36,9 +35,9 @@ func NewAuthService(
 	userRepository postgres.UserRepositoryInterface,
 	roleRepository postgres.RoleRepositoryInterface,
 	sessionRepository postgres.SessionRepositoryInterface,
-	deviceService DeviceServiceInterface,
+	deviceService service.Device,
 	loginHistoryRepository postgres.LoginHistoryRepositoryInterface,
-	tokenManager *ED25519TokenManager,
+	tokenManager service.TokenManager,
 	idClient *idclient.Client,
 ) *AuthService {
 	return &AuthService{
@@ -54,30 +53,30 @@ func NewAuthService(
 }
 
 // Register регистрирует нового пользователя
-func (s *AuthService) Register(ctx context.Context, req dto.RegisterRequest) (*dto.AuthResponse, error) {
+func (s *AuthService) Register(ctx context.Context, params service.RegisterParams) (*service.AccessDataParams, error) {
 	// Проверяем, существует ли пользователь с таким email
-	existingUser, err := s.userRepository.GetByEmail(ctx, req.Email)
+	existingUser, err := s.userRepository.GetByEmail(ctx, params.Email)
 	if err == nil && existingUser != nil {
 		return nil, errors.New("пользователь с таким email уже существует")
 	}
 
 	// Проверяем, существует ли пользователь с таким никнеймом
-	existingUser, err = s.userRepository.GetByNickname(ctx, req.Nickname)
+	existingUser, err = s.userRepository.GetByNickname(ctx, params.Nickname)
 	if err == nil && existingUser != nil {
 		return nil, errors.New("пользователь с таким никнеймом уже существует")
 	}
 
 	// Хешируем пароль
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), s.config.Auth.PasswordHashCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(params.Password), s.config.Auth.PasswordHashCost)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка хеширования пароля: %w", err)
 	}
 
 	// Создаем нового пользователя
 	user := &models.User{
-		Email:        req.Email,
+		Email:        params.Email,
 		PasswordHash: string(hashedPassword),
-		Nickname:     req.Nickname,
+		Nickname:     params.Nickname,
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
 	}
@@ -132,12 +131,12 @@ func (s *AuthService) Register(ctx context.Context, req dto.RegisterRequest) (*d
 	}
 
 	// Формируем ответ
-	return &dto.AuthResponse{
+	return &service.AccessDataParams{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresAt:    time.Unix(expiresAt, 0),
-		User: dto.ShortUserDTO{
-			ID:       user.ID,
+		User: service.ShortUserParams{
+			Id:       user.ID,
 			Email:    user.Email,
 			Nickname: user.Nickname,
 			Roles:    []string{string(models.RoleUser)},
@@ -146,15 +145,15 @@ func (s *AuthService) Register(ctx context.Context, req dto.RegisterRequest) (*d
 }
 
 // Login выполняет вход пользователя в систему
-func (s *AuthService) Login(ctx context.Context, req dto.LoginRequest, r *http.Request) (*dto.AuthResponse, error) {
+func (s *AuthService) Login(ctx context.Context, params service.LoginParams) (*service.AccessDataParams, error) {
 	var user *models.User
 	var err error
 
 	// Пытаемся найти пользователя по email или никнейму
-	if strings.Contains(req.Login, "@") {
-		user, err = s.userRepository.GetByEmail(ctx, req.Login)
+	if strings.Contains(params.Login, "@") {
+		user, err = s.userRepository.GetByEmail(ctx, params.Login)
 	} else {
-		user, err = s.userRepository.GetByNickname(ctx, req.Login)
+		user, err = s.userRepository.GetByNickname(ctx, params.Login)
 	}
 
 	if err != nil {
@@ -162,7 +161,7 @@ func (s *AuthService) Login(ctx context.Context, req dto.LoginRequest, r *http.R
 	}
 
 	// Проверяем пароль
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(params.Password)); err != nil {
 		return nil, errors.New("неверный логин или пароль")
 	}
 
@@ -185,8 +184,8 @@ func (s *AuthService) Login(ctx context.Context, req dto.LoginRequest, r *http.R
 	}
 
 	// Определяем устройство пользователя
-	userAgent := r.UserAgent()
-	deviceID := generateDeviceID(r)
+	userAgent := params.UserAgent
+	deviceID := generateDeviceID(userAgent, params.IpAddress)
 
 	// Получаем или создаем устройство
 	_, err = s.deviceService.GetOrCreateDevice(ctx, deviceID, userAgent, user.ID)
@@ -208,21 +207,21 @@ func (s *AuthService) Login(ctx context.Context, req dto.LoginRequest, r *http.R
 	}
 
 	// Записываем историю входа
-	if err := s.RecordLogin(ctx, user.ID, r); err != nil {
+	if err := s.RecordLogin(ctx, user.ID, params.IpAddress, params.UserAgent); err != nil {
 		// Не фатальная ошибка, просто логируем
 		fmt.Printf("Ошибка записи истории входа: %v\n", err)
 	}
 
 	// Формируем DTO для пользователя
-	userDTO := dto.ShortUserDTO{
-		ID:       user.ID,
+	userDTO := service.ShortUserParams{
+		Id:       user.ID,
 		Email:    user.Email,
 		Nickname: user.Nickname,
 		Roles:    roleStrings,
 	}
 
 	// Формируем ответ
-	return &dto.AuthResponse{
+	return &service.AccessDataParams{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresAt:    time.Unix(expiresAt, 0),
@@ -231,7 +230,7 @@ func (s *AuthService) Login(ctx context.Context, req dto.LoginRequest, r *http.R
 }
 
 // RefreshToken обновляет access-токен
-func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*dto.AuthResponse, error) {
+func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*service.AccessDataParams, error) {
 	// Находим сессию по refresh-токену
 	session, err := s.sessionRepository.GetByRefreshToken(ctx, refreshToken)
 	if err != nil {
@@ -291,15 +290,15 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*d
 	}
 
 	// Формируем DTO для пользователя
-	userDTO := dto.ShortUserDTO{
-		ID:       user.ID,
+	userDTO := service.ShortUserParams{
+		Id:       user.ID,
 		Email:    user.Email,
 		Nickname: user.Nickname,
 		Roles:    roleStrings,
 	}
 
 	// Формируем ответ
-	return &dto.AuthResponse{
+	return &service.AccessDataParams{
 		AccessToken:  accessToken,
 		RefreshToken: newRefreshToken,
 		ExpiresAt:    time.Unix(expiresAt, 0),
@@ -340,15 +339,14 @@ func (s *AuthService) ValidateToken(tokenString string) (int64, []string, error)
 }
 
 // RecordLogin записывает историю входа
-func (s *AuthService) RecordLogin(ctx context.Context, userID int64, r *http.Request) error {
+func (s *AuthService) RecordLogin(ctx context.Context, userID int64, ipAddress string, userAgent string) error {
 	// Получаем IP-адрес пользователя
-	ipAddress := extractIPAddress(r)
 
 	// Создаем запись в истории входов
 	loginHistory := &models.LoginHistory{
 		UserID:    userID,
 		IPAddress: ipAddress,
-		UserAgent: r.UserAgent(),
+		UserAgent: userAgent,
 		CreatedAt: time.Now(),
 	}
 
@@ -362,33 +360,8 @@ func (s *AuthService) GetPublicKey() ed25519.PublicKey {
 
 // Вспомогательные функции
 
-// extractIPAddress извлекает IP-адрес из запроса
-func extractIPAddress(r *http.Request) string {
-	// Проверяем заголовок X-Forwarded-For
-	xForwardedFor := r.Header.Get("X-Forwarded-For")
-	if xForwardedFor != "" {
-		// Берем первый IP из списка
-		ips := strings.Split(xForwardedFor, ",")
-		return strings.TrimSpace(ips[0])
-	}
-
-	// Проверяем заголовок X-Real-IP
-	xRealIP := r.Header.Get("X-Real-IP")
-	if xRealIP != "" {
-		return xRealIP
-	}
-
-	// Получаем IP из RemoteAddr
-	ip := r.RemoteAddr
-	// Удаляем порт, если он есть
-	if i := strings.LastIndex(ip, ":"); i != -1 {
-		ip = ip[:i]
-	}
-	return ip
-}
-
 // generateDeviceID генерирует идентификатор устройства из запроса
-func generateDeviceID(r *http.Request) string {
+func generateDeviceID(userAgent string, ipAddress string) string {
 	// Генерируем хеш на основе User-Agent и IP-адреса
-	return fmt.Sprintf("%s_%s", r.UserAgent(), extractIPAddress(r))
+	return fmt.Sprintf("%s_%s", userAgent, ipAddress)
 }

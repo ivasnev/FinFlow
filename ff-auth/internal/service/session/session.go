@@ -1,13 +1,14 @@
-package service
+package session
 
 import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/ivasnev/FinFlow/ff-auth/internal/repository/postgres"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
 
 	"github.com/google/uuid"
-	"github.com/ivasnev/FinFlow/ff-auth/internal/api/dto"
 )
 
 // SessionService реализует интерфейс для работы с сессиями
@@ -25,22 +26,22 @@ func NewSessionService(
 }
 
 // GetUserSessions получает все сессии пользователя
-func (s *SessionService) GetUserSessions(ctx context.Context, userID int64) ([]dto.SessionDTO, error) {
+func (s *SessionService) GetUserSessions(ctx context.Context, userID int64) ([]service.SessionParams, error) {
 	sessions, err := s.sessionRepository.GetAllByUserID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка получения сессий: %w", err)
 	}
 
-	// Преобразуем в DTO
-	result := make([]dto.SessionDTO, len(sessions))
+	// Преобразуем в параметры сессии
+	result := make([]service.SessionParams, len(sessions))
 	for i, session := range sessions {
 		var ipAdress string
 		if session.IPAddress != nil {
 			ipAdress = session.IPAddress[0]
 		}
-		result[i] = dto.SessionDTO{
-			ID:        session.ID,
-			IPAddress: ipAdress, // Берем первый IP для отображения
+		result[i] = service.SessionParams{
+			Id:        session.ID,
+			IpAddress: ipAdress, // Берем первый IP для отображения
 			CreatedAt: session.CreatedAt,
 			ExpiresAt: session.ExpiresAt,
 		}

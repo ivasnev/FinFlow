@@ -1,4 +1,4 @@
-package service
+package device
 
 import (
 	"context"
@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ivasnev/FinFlow/ff-auth/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/models"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/repository/postgres"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
 )
 
 // DeviceService реализует интерфейс для работы с устройствами
@@ -26,17 +26,17 @@ func NewDeviceService(
 }
 
 // GetUserDevices получает все устройства пользователя
-func (s *DeviceService) GetUserDevices(ctx context.Context, userID int64) ([]dto.DeviceDTO, error) {
+func (s *DeviceService) GetUserDevices(ctx context.Context, userID int64) ([]service.DeviceParams, error) {
 	devices, err := s.deviceRepository.GetAllByUserID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка получения устройств: %w", err)
 	}
 
-	// Преобразуем в DTO
-	result := make([]dto.DeviceDTO, len(devices))
+	// Преобразуем в параметры устройств
+	result := make([]service.DeviceParams, len(devices))
 	for i, device := range devices {
-		result[i] = dto.DeviceDTO{
-			ID:        device.ID,
+		result[i] = service.DeviceParams{
+			Id:        device.ID,
 			DeviceID:  device.DeviceID,
 			UserAgent: device.UserAgent,
 			LastLogin: device.LastLogin,

@@ -9,7 +9,7 @@ import (
 )
 
 // AuthMiddleware создает middleware для аутентификации запросов
-func AuthMiddleware(authService service.AuthServiceInterface) gin.HandlerFunc {
+func AuthMiddleware(authService service.Auth) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Получаем токен из заголовка
 		authHeader := c.GetHeader("Authorization")
@@ -55,7 +55,7 @@ func AuthMiddleware(authService service.AuthServiceInterface) gin.HandlerFunc {
 }
 
 // RoleMiddleware создает middleware для проверки роли пользователя
-func RoleMiddleware(role string, authService service.AuthServiceInterface) gin.HandlerFunc {
+func RoleMiddleware(role string, authService service.Auth) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Получаем ID пользователя из контекста
 		_, exists := c.Get("user_id")

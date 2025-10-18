@@ -1,4 +1,4 @@
-package service
+package user
 
 import (
 	"context"
@@ -7,8 +7,7 @@ import (
 	"time"
 
 	"github.com/ivasnev/FinFlow/ff-auth/internal/repository/postgres"
-
-	"github.com/ivasnev/FinFlow/ff-auth/internal/api/dto"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -27,7 +26,7 @@ func NewUserService(
 }
 
 // GetUserByID получает пользователя по ID
-func (s *UserService) GetUserByID(ctx context.Context, id int64) (*dto.UserDTO, error) {
+func (s *UserService) GetUserByID(ctx context.Context, id int64) (*service.UserData, error) {
 	user, err := s.userRepository.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка получения пользователя: %w", err)
@@ -45,20 +44,20 @@ func (s *UserService) GetUserByID(ctx context.Context, id int64) (*dto.UserDTO, 
 		roleStrings[i] = role.Name
 	}
 
-	// Формируем DTO для пользователя
-	userDTO := &dto.UserDTO{
-		ID:        user.ID,
+	// Формируем данные для пользователя
+	userData := &service.UserData{
+		Id:        user.ID,
 		Email:     user.Email,
 		Nickname:  user.Nickname,
 		Roles:     roleStrings,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 	}
-	return userDTO, nil
+	return userData, nil
 }
 
 // GetUserByNickname получает пользователя по никнейму
-func (s *UserService) GetUserByNickname(ctx context.Context, nickname string) (*dto.UserDTO, error) {
+func (s *UserService) GetUserByNickname(ctx context.Context, nickname string) (*service.UserData, error) {
 	user, err := s.userRepository.GetByNickname(ctx, nickname)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка получения пользователя: %w", err)
@@ -76,9 +75,9 @@ func (s *UserService) GetUserByNickname(ctx context.Context, nickname string) (*
 		roleStrings[i] = role.Name
 	}
 
-	// Формируем DTO для пользователя
-	userDTO := &dto.UserDTO{
-		ID:        user.ID,
+	// Формируем данные для пользователя
+	userData := &service.UserData{
+		Id:        user.ID,
 		Email:     user.Email,
 		Nickname:  user.Nickname,
 		Roles:     roleStrings,
@@ -86,11 +85,11 @@ func (s *UserService) GetUserByNickname(ctx context.Context, nickname string) (*
 		UpdatedAt: user.UpdatedAt,
 	}
 
-	return userDTO, nil
+	return userData, nil
 }
 
 // UpdateUser обновляет данные пользователя
-func (s *UserService) UpdateUser(ctx context.Context, userID int64, req dto.UpdateUserRequest) (*dto.UserDTO, error) {
+func (s *UserService) UpdateUser(ctx context.Context, userID int64, req service.UserUpdateData) (*service.UserData, error) {
 	// Получаем пользователя по ID
 	user, err := s.userRepository.GetByID(ctx, userID)
 	if err != nil {
@@ -99,19 +98,20 @@ func (s *UserService) UpdateUser(ctx context.Context, userID int64, req dto.Upda
 
 	// Обновляем email, если указан
 	if req.Email != nil {
+		emailStr := string(*req.Email)
 		// Проверяем, не занят ли email другим пользователем
-		if *req.Email != user.Email {
-			existingUser, err := s.userRepository.GetByEmail(ctx, *req.Email)
+		if emailStr != user.Email {
+			existingUser, err := s.userRepository.GetByEmail(ctx, emailStr)
 			if err == nil && existingUser != nil && existingUser.ID != user.ID {
 				return nil, errors.New("указанный email уже используется")
 			}
-			user.Email = *req.Email
+			user.Email = emailStr
 		}
 	}
 
 	// Обновляем никнейм, если указан
-	if req.Nickname != "" {
-		user.Nickname = req.Nickname
+	if req.Nickname != nil {
+		user.Nickname = *req.Nickname
 	}
 
 	// Обновляем пароль, если указан

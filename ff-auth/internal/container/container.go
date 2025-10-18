@@ -9,6 +9,13 @@ import (
 	"github.com/ivasnev/FinFlow/ff-auth/internal/common/config"
 	pg_repos "github.com/ivasnev/FinFlow/ff-auth/internal/repository/postgres"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
+	authService "github.com/ivasnev/FinFlow/ff-auth/internal/service/auth"
+	deviceService "github.com/ivasnev/FinFlow/ff-auth/internal/service/device"
+	loginHistoryService "github.com/ivasnev/FinFlow/ff-auth/internal/service/login_history"
+	sessionService "github.com/ivasnev/FinFlow/ff-auth/internal/service/session"
+	tokenService "github.com/ivasnev/FinFlow/ff-auth/internal/service/token"
+	userService "github.com/ivasnev/FinFlow/ff-auth/internal/service/user"
+	"github.com/ivasnev/FinFlow/ff-auth/pkg/api"
 	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
 	idclient "github.com/ivasnev/FinFlow/ff-id/pkg/client"
 	tvmclient "github.com/ivasnev/FinFlow/ff-tvm/pkg/client"
@@ -31,20 +38,18 @@ type Container struct {
 	KeyPairRepository      pg_repos.KeyPairRepositoryInterface
 
 	// Токен менеджер
-	TokenManager *service.ED25519TokenManager
+	TokenManager service.TokenManager
 	IDClient     *idclient.Client
 
 	// Сервисы
-	AuthService         service.AuthServiceInterface
-	UserService         service.UserServiceInterface
-	SessionService      service.SessionServiceInterface
-	LoginHistoryService service.LoginHistoryServiceInterface
-	DeviceService       service.DeviceServiceInterface
+	AuthService         service.Auth
+	UserService         service.User
+	SessionService      service.Session
+	LoginHistoryService service.LoginHistory
+	DeviceService       service.Device
 
 	// Обработчики
-	AuthHandler    *handler.AuthHandler
-	UserHandler    *handler.UserHandler
-	SessionHandler *handler.SessionHandler
+	ServerHandler *handler.ServerHandler
 }
 
 // NewContainer - конструктор контейнера зависимостей
@@ -63,7 +68,7 @@ func NewContainer(cfg *config.Config, router *gin.Engine) (*Container, error) {
 	container.initRepositories()
 
 	// Инициализируем TokenManager
-	tokenManager, err := service.NewED25519TokenManager(container.KeyPairRepository)
+	tokenManager, err := tokenService.NewED25519TokenManager(container.KeyPairRepository)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка инициализации менеджера токенов: %w", err)
 	}
@@ -117,8 +122,8 @@ func (c *Container) initRepositories() {
 
 // initServices инициализирует сервисы
 func (c *Container) initServices() {
-	c.DeviceService = service.NewDeviceService(c.DeviceRepository)
-	c.AuthService = service.NewAuthService(
+	c.DeviceService = deviceService.NewDeviceService(c.DeviceRepository)
+	c.AuthService = authService.NewAuthService(
 		c.Config,
 		c.UserRepository,
 		c.RoleRepository,
@@ -128,16 +133,20 @@ func (c *Container) initServices() {
 		c.TokenManager,
 		c.IDClient,
 	)
-	c.UserService = service.NewUserService(c.UserRepository)
-	c.SessionService = service.NewSessionService(c.SessionRepository)
-	c.LoginHistoryService = service.NewLoginHistoryService(c.LoginHistoryRepository)
+	c.UserService = userService.NewUserService(c.UserRepository)
+	c.SessionService = sessionService.NewSessionService(c.SessionRepository)
+	c.LoginHistoryService = loginHistoryService.NewLoginHistoryService(c.LoginHistoryRepository)
 }
 
 // initHandlers инициализирует обработчики
 func (c *Container) initHandlers() {
-	c.AuthHandler = handler.NewAuthHandler(c.AuthService, c.TokenManager)
-	c.UserHandler = handler.NewUserHandler(c.UserService)
-	c.SessionHandler = handler.NewSessionHandler(c.SessionService, c.LoginHistoryService)
+	c.ServerHandler = handler.NewServerHandler(
+		c.AuthService,
+		c.UserService,
+		c.SessionService,
+		c.LoginHistoryService,
+		c.TokenManager,
+	)
 }
 
 // RegisterRoutes - регистрирует все маршруты API
@@ -148,44 +157,34 @@ func (c *Container) RegisterRoutes() {
 	// API версии v1
 	v1 := c.Router.Group("/api/v1")
 
+	// Создаем адаптер для TokenManager
+	tokenAdapter := &TokenManagerAdapter{tokenManager: c.TokenManager}
+
 	// Middleware для авторизации
-	authMiddleware := auth.AuthMiddleware(c.TokenManager)
+	authMiddleware := auth.AuthMiddleware(tokenAdapter)
 
-	// Группа маршрутов для аутентификации
-	authGroup := v1.Group("/auth")
-	{
-		// Публичные маршруты
-		authGroup.POST("/register", c.AuthHandler.Register)
-		authGroup.POST("/login", c.AuthHandler.Login)
-		authGroup.POST("/refresh", c.AuthHandler.RefreshToken)
-		authGroup.GET("/public-key", c.AuthHandler.PublicKeyHandler)
+	// Регистрируем маршруты с помощью сгенерированного сервера
+	api.RegisterHandlersWithOptions(v1, c.ServerHandler, api.GinServerOptions{
+		Middlewares: []api.MiddlewareFunc{func(c *gin.Context) { authMiddleware(c) }},
+	})
+}
 
-		// Защищенные маршруты
-		authGroup.Use(authMiddleware)
-		authGroup.POST("/logout", c.AuthHandler.Logout)
+// TokenManagerAdapter адаптирует service.TokenManager к auth.ValidateClient
+type TokenManagerAdapter struct {
+	tokenManager service.TokenManager
+}
+
+// ValidateToken реализует auth.ValidateClient
+func (a *TokenManagerAdapter) ValidateToken(tokenStr string) (*auth.TokenPayload, error) {
+	payload, err := a.tokenManager.ValidateToken(tokenStr)
+	if err != nil {
+		return nil, err
 	}
 
-	// Группа маршрутов для пользователей
-	users := v1.Group("/users")
-	{
-		// Публичные маршруты
-		users.GET("/:nickname", c.UserHandler.GetUserByNickname)
-
-		// Защищенные маршруты
-		users.Use(authMiddleware)
-		users.PATCH("/me", c.UserHandler.UpdateUser)
-	}
-
-	// Группа маршрутов для сессий (все требуют аутентификации)
-	sessions := v1.Group("/sessions", authMiddleware)
-	{
-		sessions.GET("", c.SessionHandler.GetUserSessions)
-		sessions.DELETE("/:id", c.SessionHandler.TerminateSession)
-	}
-
-	// Группа маршрутов для истории входов (все требуют аутентификации)
-	loginHistory := v1.Group("/login-history", authMiddleware)
-	{
-		loginHistory.GET("", c.SessionHandler.GetLoginHistory)
-	}
+	// Конвертируем service.TokenPayload в auth.TokenPayload
+	return &auth.TokenPayload{
+		UserID: payload.UserID,
+		Roles:  payload.Roles,
+		Exp:    payload.Exp,
+	}, nil
 }
