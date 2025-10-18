@@ -36,7 +36,7 @@ func (s *SessionService) GetUserSessions(ctx context.Context, userID int64) ([]s
 	result := make([]service.SessionParams, len(sessions))
 	for i, session := range sessions {
 		var ipAdress string
-		if session.IPAddress != nil {
+		if session.IPAddress != nil && len(session.IPAddress) > 0 {
 			ipAdress = session.IPAddress[0]
 		}
 		result[i] = service.SessionParams{
