@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/common/config"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/models"
-	"github.com/ivasnev/FinFlow/ff-auth/internal/repository/postgres"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/repository"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
 	idclient "github.com/ivasnev/FinFlow/ff-id/pkg/client"
 	"golang.org/x/crypto/bcrypt"
@@ -20,11 +20,11 @@ import (
 // AuthService реализует интерфейс для аутентификации и авторизации
 type AuthService struct {
 	config                 *config.Config
-	userRepository         postgres.UserRepositoryInterface
-	roleRepository         postgres.RoleRepositoryInterface
-	sessionRepository      postgres.SessionRepositoryInterface
+	userRepository         repository.User
+	roleRepository         repository.Role
+	sessionRepository      repository.Session
 	deviceService          service.Device
-	loginHistoryRepository postgres.LoginHistoryRepositoryInterface
+	loginHistoryRepository repository.LoginHistory
 	tokenManager           service.TokenManager
 	idClient               *idclient.Client
 }
@@ -32,11 +32,11 @@ type AuthService struct {
 // NewAuthService создает новый сервис аутентификации
 func NewAuthService(
 	config *config.Config,
-	userRepository postgres.UserRepositoryInterface,
-	roleRepository postgres.RoleRepositoryInterface,
-	sessionRepository postgres.SessionRepositoryInterface,
+	userRepository repository.User,
+	roleRepository repository.Role,
+	sessionRepository repository.Session,
 	deviceService service.Device,
-	loginHistoryRepository postgres.LoginHistoryRepositoryInterface,
+	loginHistoryRepository repository.LoginHistory,
 	tokenManager service.TokenManager,
 	idClient *idclient.Client,
 ) *AuthService {

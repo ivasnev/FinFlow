@@ -7,7 +7,13 @@ import (
 	"github.com/ivasnev/FinFlow/ff-auth/internal/api/handler"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/api/middleware"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/common/config"
-	pg_repos "github.com/ivasnev/FinFlow/ff-auth/internal/repository/postgres"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/repository"
+	deviceRepository "github.com/ivasnev/FinFlow/ff-auth/internal/repository/device"
+	keyPairRepository "github.com/ivasnev/FinFlow/ff-auth/internal/repository/key_pair"
+	loginHistoryRepository "github.com/ivasnev/FinFlow/ff-auth/internal/repository/login_history"
+	roleRepository "github.com/ivasnev/FinFlow/ff-auth/internal/repository/role"
+	sessionRepository "github.com/ivasnev/FinFlow/ff-auth/internal/repository/session"
+	userRepository "github.com/ivasnev/FinFlow/ff-auth/internal/repository/user"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
 	authService "github.com/ivasnev/FinFlow/ff-auth/internal/service/auth"
 	deviceService "github.com/ivasnev/FinFlow/ff-auth/internal/service/device"
@@ -30,12 +36,12 @@ type Container struct {
 	DB     *gorm.DB
 
 	// Репозитории
-	UserRepository         pg_repos.UserRepositoryInterface
-	RoleRepository         pg_repos.RoleRepositoryInterface
-	SessionRepository      pg_repos.SessionRepositoryInterface
-	LoginHistoryRepository pg_repos.LoginHistoryRepositoryInterface
-	DeviceRepository       pg_repos.DeviceRepositoryInterface
-	KeyPairRepository      pg_repos.KeyPairRepositoryInterface
+	UserRepository         repository.User
+	RoleRepository         repository.Role
+	SessionRepository      repository.Session
+	LoginHistoryRepository repository.LoginHistory
+	DeviceRepository       repository.Device
+	KeyPairRepository      repository.KeyPair
 
 	// Токен менеджер
 	TokenManager service.TokenManager
@@ -112,12 +118,12 @@ func (c *Container) initDB() error {
 
 // initRepositories инициализирует репозитории
 func (c *Container) initRepositories() {
-	c.UserRepository = pg_repos.NewUserRepository(c.DB)
-	c.RoleRepository = pg_repos.NewRoleRepository(c.DB)
-	c.SessionRepository = pg_repos.NewSessionRepository(c.DB)
-	c.LoginHistoryRepository = pg_repos.NewLoginHistoryRepository(c.DB)
-	c.DeviceRepository = pg_repos.NewDeviceRepository(c.DB)
-	c.KeyPairRepository = pg_repos.NewKeyPairRepository(c.DB)
+	c.UserRepository = userRepository.NewUserRepository(c.DB)
+	c.RoleRepository = roleRepository.NewRoleRepository(c.DB)
+	c.SessionRepository = sessionRepository.NewSessionRepository(c.DB)
+	c.LoginHistoryRepository = loginHistoryRepository.NewLoginHistoryRepository(c.DB)
+	c.DeviceRepository = deviceRepository.NewDeviceRepository(c.DB)
+	c.KeyPairRepository = keyPairRepository.NewKeyPairRepository(c.DB)
 }
 
 // initServices инициализирует сервисы

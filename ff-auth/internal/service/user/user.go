@@ -6,19 +6,19 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ivasnev/FinFlow/ff-auth/internal/repository/postgres"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/repository"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // UserService реализует интерфейс для работы с пользователями
 type UserService struct {
-	userRepository postgres.UserRepositoryInterface
+	userRepository repository.User
 }
 
 // NewUserService создает новый сервис пользователей
 func NewUserService(
-	userRepository postgres.UserRepositoryInterface,
+	userRepository repository.User,
 ) *UserService {
 	return &UserService{
 		userRepository: userRepository,

@@ -7,18 +7,18 @@ import (
 	"time"
 
 	"github.com/ivasnev/FinFlow/ff-auth/internal/models"
-	"github.com/ivasnev/FinFlow/ff-auth/internal/repository/postgres"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/repository"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
 )
 
 // DeviceService реализует интерфейс для работы с устройствами
 type DeviceService struct {
-	deviceRepository postgres.DeviceRepositoryInterface
+	deviceRepository repository.Device
 }
 
 // NewDeviceService создает новый сервис устройств
 func NewDeviceService(
-	deviceRepository postgres.DeviceRepositoryInterface,
+	deviceRepository repository.Device,
 ) *DeviceService {
 	return &DeviceService{
 		deviceRepository: deviceRepository,

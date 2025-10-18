@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/ivasnev/FinFlow/ff-auth/internal/models"
-	pg_repos "github.com/ivasnev/FinFlow/ff-auth/internal/repository/postgres"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/repository"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
 )
 
@@ -22,12 +22,12 @@ type ED25519TokenManager struct {
 	publicKey    ed25519.PublicKey
 	privateKey   ed25519.PrivateKey
 	mutex        sync.RWMutex
-	keyPairRepo  pg_repos.KeyPairRepositoryInterface
+	keyPairRepo  repository.KeyPair
 	loadedFromDB bool
 }
 
 // NewED25519TokenManager создает новый менеджер токенов с использованием Ed25519
-func NewED25519TokenManager(keyPairRepo pg_repos.KeyPairRepositoryInterface) (*ED25519TokenManager, error) {
+func NewED25519TokenManager(keyPairRepo repository.KeyPair) (*ED25519TokenManager, error) {
 	manager := &ED25519TokenManager{
 		keyPairRepo:  keyPairRepo,
 		loadedFromDB: false,

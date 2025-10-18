@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ivasnev/FinFlow/ff-auth/internal/repository/postgres"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/repository"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
 
 	"github.com/google/uuid"
@@ -13,12 +13,12 @@ import (
 
 // SessionService реализует интерфейс для работы с сессиями
 type SessionService struct {
-	sessionRepository postgres.SessionRepositoryInterface
+	sessionRepository repository.Session
 }
 
 // NewSessionService создает новый сервис сессий
 func NewSessionService(
-	sessionRepository postgres.SessionRepositoryInterface,
+	sessionRepository repository.Session,
 ) *SessionService {
 	return &SessionService{
 		sessionRepository: sessionRepository,

@@ -4,18 +4,18 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ivasnev/FinFlow/ff-auth/internal/repository/postgres"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/repository"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
 )
 
 // LoginHistoryService реализует интерфейс для работы с историей входов
 type LoginHistoryService struct {
-	loginHistoryRepository postgres.LoginHistoryRepositoryInterface
+	loginHistoryRepository repository.LoginHistory
 }
 
 // NewLoginHistoryService создает новый сервис истории входов
 func NewLoginHistoryService(
-	loginHistoryRepository postgres.LoginHistoryRepositoryInterface,
+	loginHistoryRepository repository.LoginHistory,
 ) *LoginHistoryService {
 	return &LoginHistoryService{
 		loginHistoryRepository: loginHistoryRepository,
