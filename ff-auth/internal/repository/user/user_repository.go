@@ -24,7 +24,12 @@ func NewUserRepository(db *gorm.DB) repository.User {
 // Create создает нового пользователя
 func (r *UserRepository) Create(ctx context.Context, user *models.User) error {
 	dbUser := loadUser(user)
-	return r.db.WithContext(ctx).Create(dbUser).Error
+	if err := r.db.WithContext(ctx).Create(dbUser).Error; err != nil {
+		return err
+	}
+	// Обновляем ID пользователя после создания
+	user.ID = dbUser.ID
+	return nil
 }
 
 // GetByID находит пользователя по ID

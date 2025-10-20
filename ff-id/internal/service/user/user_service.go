@@ -1,0 +1,304 @@
+package user
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/ivasnev/FinFlow/ff-id/internal/models"
+	"github.com/ivasnev/FinFlow/ff-id/internal/repository"
+	"github.com/ivasnev/FinFlow/ff-id/internal/service"
+)
+
+// UserService реализует интерфейс для работы с пользователями
+type UserService struct {
+	userRepository   repository.User
+	avatarRepository repository.Avatar
+}
+
+// NewUserService создает новый сервис пользователей
+func NewUserService(
+	userRepository repository.User,
+	avatarRepository repository.Avatar,
+) service.UserServiceInterface {
+	return &UserService{
+		userRepository:   userRepository,
+		avatarRepository: avatarRepository,
+	}
+}
+
+// GetUserByID получает пользователя по ID
+func (s *UserService) GetUserByID(ctx context.Context, id int64) (*service.UserDTO, error) {
+	user, err := s.userRepository.GetByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка получения пользователя: %w", err)
+	}
+
+	// Формируем DTO для пользователя
+	userDTO := &service.UserDTO{
+		ID:        user.ID,
+		Email:     user.Email,
+		Nickname:  user.Nickname,
+		CreatedAt: user.CreatedAt.Unix(),
+		UpdatedAt: user.UpdatedAt.Unix(),
+	}
+
+	if user.Phone.Valid {
+		phone := user.Phone.String
+		userDTO.Phone = &phone
+	}
+
+	if user.Name.Valid {
+		name := user.Name.String
+		userDTO.Name = &name
+	}
+
+	if user.Birthdate.Valid {
+		birthdate := user.Birthdate.Time.Unix()
+		userDTO.Birthdate = &birthdate
+	}
+
+	if user.AvatarID.Valid {
+		avatarID := user.AvatarID.UUID
+		userDTO.AvatarID = &avatarID
+	}
+
+	return userDTO, nil
+}
+
+// GetUsersByIds получает пользователей по их ID
+func (s *UserService) GetUsersByIds(ctx context.Context, ids []int64) ([]*service.UserDTO, error) {
+	users, err := s.userRepository.GetByIDs(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка получения пользователей: %w", err)
+	}
+
+	userDTOs := make([]*service.UserDTO, len(users))
+	for i, user := range users {
+		userDTOs[i] = &service.UserDTO{
+			ID:        user.ID,
+			Email:     user.Email,
+			Nickname:  user.Nickname,
+			CreatedAt: user.CreatedAt.Unix(),
+			UpdatedAt: user.UpdatedAt.Unix(),
+		}
+		if user.Name.Valid {
+			userDTOs[i].Name = &user.Name.String
+		}
+		if user.AvatarID.Valid {
+			userDTOs[i].AvatarID = &user.AvatarID.UUID
+		}
+	}
+
+	return userDTOs, nil
+}
+
+// GetUserByNickname получает пользователя по никнейму
+func (s *UserService) GetUserByNickname(ctx context.Context, nickname string) (*service.UserDTO, error) {
+	user, err := s.userRepository.GetByNickname(ctx, nickname)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка получения пользователя: %w", err)
+	}
+
+	// Формируем DTO для пользователя
+	userDTO := &service.UserDTO{
+		ID:        user.ID,
+		Email:     user.Email,
+		Nickname:  user.Nickname,
+		CreatedAt: user.CreatedAt.Unix(),
+		UpdatedAt: user.UpdatedAt.Unix(),
+	}
+
+	if user.Phone.Valid {
+		phone := user.Phone.String
+		userDTO.Phone = &phone
+	}
+
+	if user.Name.Valid {
+		name := user.Name.String
+		userDTO.Name = &name
+	}
+
+	if user.Birthdate.Valid {
+		birthdate := user.Birthdate.Time.Unix()
+		userDTO.Birthdate = &birthdate
+	}
+
+	if user.AvatarID.Valid {
+		avatarID := user.AvatarID.UUID
+		userDTO.AvatarID = &avatarID
+	}
+
+	return userDTO, nil
+}
+
+// UpdateUser обновляет данные пользователя
+func (s *UserService) UpdateUser(ctx context.Context, userID int64, req service.UpdateUserRequest) (*service.UserDTO, error) {
+	// Получаем пользователя по ID
+	user, err := s.userRepository.GetByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка получения пользователя: %w", err)
+	}
+
+	// Обновляем email, если указан
+	if req.Email != nil {
+		// Проверяем, не занят ли email другим пользователем
+		if *req.Email != user.Email {
+			existingUser, err := s.userRepository.GetByEmail(ctx, *req.Email)
+			if err == nil && existingUser != nil && existingUser.ID != user.ID {
+				return nil, errors.New("указанный email уже используется")
+			}
+			user.Email = *req.Email
+		}
+	}
+
+	// Обновляем никнейм, если указан
+	if req.Nickname != nil {
+		// Проверяем, не занят ли никнейм другим пользователем
+		if *req.Nickname != user.Nickname {
+			existingUser, err := s.userRepository.GetByNickname(ctx, *req.Nickname)
+			if err == nil && existingUser != nil && existingUser.ID != user.ID {
+				return nil, errors.New("указанный никнейм уже используется")
+			}
+			user.Nickname = *req.Nickname
+		}
+	}
+
+	// Обновляем телефон, если указан
+	if req.Phone != nil {
+		user.Phone.String = *req.Phone
+		user.Phone.Valid = true
+	}
+
+	// Обновляем имя, если указано
+	if req.Name != nil {
+		user.Name.String = *req.Name
+		user.Name.Valid = true
+	}
+
+	// Обновляем дату рождения, если указана
+	if req.Birthdate != nil {
+		user.Birthdate.Time = time.Unix(*req.Birthdate, 0)
+		user.Birthdate.Valid = true
+	}
+
+	// Обновляем время изменения
+	user.UpdatedAt = time.Now()
+
+	// Сохраняем изменения
+	if err := s.userRepository.Update(ctx, user); err != nil {
+		return nil, fmt.Errorf("ошибка обновления пользователя: %w", err)
+	}
+
+	// Получаем обновленного пользователя
+	return s.GetUserByID(ctx, user.ID)
+}
+
+// ChangeAvatar изменяет аватар пользователя
+func (s *UserService) ChangeAvatar(ctx context.Context, userID int64, fileID uuid.UUID) error {
+	// Получаем пользователя по ID
+	user, err := s.userRepository.GetByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("ошибка получения пользователя: %w", err)
+	}
+
+	// Создаем новую аватарку
+	avatarID := uuid.New()
+	avatar := &models.UserAvatar{
+		ID:         avatarID,
+		UserID:     user.ID,
+		FileID:     fileID,
+		UploadedAt: time.Now(),
+	}
+
+	if err := s.avatarRepository.Create(ctx, avatar); err != nil {
+		return fmt.Errorf("ошибка создания аватарки: %w", err)
+	}
+
+	// Обновляем пользователя
+	user.AvatarID.UUID = avatarID
+	user.AvatarID.Valid = true
+	user.UpdatedAt = time.Now()
+
+	if err := s.userRepository.Update(ctx, user); err != nil {
+		return fmt.Errorf("ошибка обновления пользователя: %w", err)
+	}
+
+	return nil
+}
+
+// DeleteUser удаляет пользователя
+func (s *UserService) DeleteUser(ctx context.Context, userID int64) error {
+	return s.userRepository.Delete(ctx, userID)
+}
+
+// RegisterUser регистрирует нового пользователя
+func (s *UserService) RegisterUser(ctx context.Context, userID int64, req *service.RegisterUserRequest) (*service.UserDTO, error) {
+	// Проверяем, не существует ли уже пользователь с таким ID
+	existingUser, err := s.userRepository.GetByID(ctx, userID)
+	if err == nil && existingUser != nil {
+		return nil, fmt.Errorf("пользователь с ID %d уже существует", userID)
+	}
+
+	// Проверяем, не занят ли email
+	existingUser, err = s.userRepository.GetByEmail(ctx, req.Email)
+	if err == nil && existingUser != nil {
+		return nil, errors.New("указанный email уже используется")
+	}
+
+	// Проверяем, не занят ли никнейм
+	existingUser, err = s.userRepository.GetByNickname(ctx, req.Nickname)
+	if err == nil && existingUser != nil {
+		return nil, errors.New("указанный никнейм уже используется")
+	}
+
+	// Создаем нового пользователя
+	now := time.Now()
+	user := &models.User{
+		ID:        userID,
+		Email:     req.Email,
+		Nickname:  req.Nickname,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	// Добавляем имя, если оно указано
+	if req.Name != "" {
+		user.Name.String = req.Name
+		user.Name.Valid = true
+	}
+
+	// Устанавливаем телефон, если указан
+	if req.Phone != nil {
+		user.Phone.String = *req.Phone
+		user.Phone.Valid = true
+	}
+
+	// Устанавливаем дату рождения, если указана
+	if req.Birthdate != nil {
+		user.Birthdate.Time = time.Unix(*req.Birthdate, 0)
+		user.Birthdate.Valid = true
+	}
+
+	// Устанавливаем аватар, если указан
+	if req.AvatarID != nil {
+		user.AvatarID.UUID = *req.AvatarID
+		user.AvatarID.Valid = true
+	}
+
+	// Сохраняем пользователя
+	if err := s.userRepository.Create(ctx, user); err != nil {
+		return nil, fmt.Errorf("ошибка создания пользователя: %w", err)
+	}
+
+	// Возвращаем созданного пользователя
+	return &service.UserDTO{
+		ID:        user.ID,
+		Email:     user.Email,
+		Nickname:  user.Nickname,
+		CreatedAt: user.CreatedAt.Unix(),
+		UpdatedAt: user.UpdatedAt.Unix(),
+	}, nil
+}

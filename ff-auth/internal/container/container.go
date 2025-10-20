@@ -2,8 +2,11 @@ package container
 
 import (
 	"fmt"
+	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/adapters/ffid"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/api/handler"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/api/middleware"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/common/config"
@@ -23,8 +26,8 @@ import (
 	userService "github.com/ivasnev/FinFlow/ff-auth/internal/service/user"
 	"github.com/ivasnev/FinFlow/ff-auth/pkg/api"
 	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
-	idclient "github.com/ivasnev/FinFlow/ff-id/pkg/client"
 	tvmclient "github.com/ivasnev/FinFlow/ff-tvm/pkg/client"
+	tvmtransport "github.com/ivasnev/FinFlow/ff-tvm/pkg/transport"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -45,7 +48,7 @@ type Container struct {
 
 	// Токен менеджер
 	TokenManager service.TokenManager
-	IDClient     *idclient.Client
+	IDClient     *ffid.Adapter
 
 	// Сервисы
 	AuthService         service.Auth
@@ -82,7 +85,17 @@ func NewContainer(cfg *config.Config, router *gin.Engine) (*Container, error) {
 
 	tvmClient := tvmclient.NewTVMClient(cfg.TVM.BaseURL, cfg.TVM.ServiceSecret)
 
-	idClient := idclient.NewClient(cfg.IDClient.BaseURL, cfg.TVM.ServiceID, cfg.IDClient.TVMID, tvmClient)
+	// Создаем TVM транспорт для ff-id клиента
+	tvmTransport := tvmtransport.NewTVMTransport(tvmClient, http.DefaultTransport, cfg.TVM.ServiceID, cfg.IDClient.TVMID)
+	httpClient := &http.Client{
+		Transport: tvmTransport,
+		Timeout:   10 * time.Second,
+	}
+
+	idClient, err := ffid.NewAdapter(cfg.IDClient.BaseURL, httpClient)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка инициализации ID клиента: %w", err)
+	}
 	container.IDClient = idClient
 
 	// Инициализируем сервисы
@@ -171,7 +184,14 @@ func (c *Container) RegisterRoutes() {
 
 	// Регистрируем маршруты с помощью сгенерированного сервера
 	api.RegisterHandlersWithOptions(v1, c.ServerHandler, api.GinServerOptions{
-		Middlewares: []api.MiddlewareFunc{func(c *gin.Context) { authMiddleware(c) }},
+		Middlewares: []api.MiddlewareFunc{
+			func(c *gin.Context) {
+				// Применяем middleware в зависимости от типа запроса
+				if scopes, ok := c.Get(api.BearerAuthScopes); ok && scopes != nil {
+					authMiddleware(c)
+				}
+			},
+		},
 	})
 }
 

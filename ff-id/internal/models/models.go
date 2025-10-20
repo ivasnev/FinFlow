@@ -5,93 +5,36 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
-// User представляет пользователя системы
+// User представляет пользователя системы (доменная модель)
 type User struct {
-	ID        int64          `gorm:"primaryKey;autoIncrement;column:id" json:"id"`
-	Email     string         `gorm:"type:text;unique;not null;column:email" json:"email"`
-	Phone     sql.NullString `gorm:"type:text;unique;column:phone" json:"phone,omitempty"`
-	Nickname  string         `gorm:"type:text;unique;not null;column:nickname" json:"nickname"`
-	Name      sql.NullString `gorm:"type:text;column:name" json:"name,omitempty"`
-	Birthdate sql.NullTime   `gorm:"type:date;column:birthdate" json:"birthdate,omitempty"`
-	AvatarID  uuid.NullUUID  `gorm:"type:uuid;column:avatar" json:"avatar_id,omitempty"`
-	CreatedAt time.Time      `gorm:"type:timestamp;not null;default:now();column:created_at" json:"-"`
-	UpdatedAt time.Time      `gorm:"type:timestamp;not null;default:now();column:updated_at" json:"-"`
-
-	// Добавляем поля с timestamp вместо time.Time
-	CreatedAtUnix int64 `gorm:"-" json:"created_at"`
-	UpdatedAtUnix int64 `gorm:"-" json:"updated_at"`
-
-	// Связи
-	Avatars []UserAvatar `gorm:"foreignKey:UserID" json:"avatars,omitempty"`
-	Friends []UserFriend `gorm:"foreignKey:UserID" json:"-"`
+	ID        int64
+	Email     string
+	Phone     sql.NullString
+	Nickname  string
+	Name      sql.NullString
+	Birthdate sql.NullTime
+	AvatarID  uuid.NullUUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
-// TableName устанавливает имя таблицы для модели User
-func (User) TableName() string {
-	return "users"
-}
-
-// BeforeUpdate обновляет поле updated_at перед сохранением изменений
-func (u *User) BeforeUpdate(tx *gorm.DB) error {
-	u.UpdatedAt = time.Now()
-	return nil
-}
-
-// AfterFind конвертирует time.Time в Unix timestamp после получения из БД
-func (u *User) AfterFind(tx *gorm.DB) error {
-	u.CreatedAtUnix = u.CreatedAt.Unix()
-	u.UpdatedAtUnix = u.UpdatedAt.Unix()
-	return nil
-}
-
-// UserAvatar представляет аватарку пользователя
+// UserAvatar представляет аватарку пользователя (доменная модель)
 type UserAvatar struct {
-	ID         uuid.UUID `gorm:"type:uuid;primaryKey;column:id" json:"id"`
-	UserID     int64     `gorm:"type:bigint;not null;column:user_id" json:"user_id"`
-	FileID     uuid.UUID `gorm:"type:uuid;not null;column:file_id" json:"file_id"`
-	UploadedAt time.Time `gorm:"type:timestamp;not null;default:now();column:uploaded_at" json:"-"`
-
-	// Добавляем поле с timestamp вместо time.Time
-	UploadedAtUnix int64 `gorm:"-" json:"uploaded_at"`
+	ID         uuid.UUID
+	UserID     int64
+	FileID     uuid.UUID
+	UploadedAt time.Time
 }
 
-// TableName устанавливает имя таблицы для модели UserAvatar
-func (UserAvatar) TableName() string {
-	return "user_avatars"
-}
-
-// AfterFind конвертирует time.Time в Unix timestamp после получения из БД
-func (ua *UserAvatar) AfterFind(tx *gorm.DB) error {
-	ua.UploadedAtUnix = ua.UploadedAt.Unix()
-	return nil
-}
-
-// UserFriend представляет связь дружбы между пользователями
+// UserFriend представляет связь дружбы между пользователями (доменная модель)
 type UserFriend struct {
-	ID        int64     `gorm:"primaryKey;autoIncrement;column:id" json:"id"`
-	UserID    int64     `gorm:"type:bigint;not null;column:user_id;index:idx_user_friend" json:"user_id"`
-	FriendID  int64     `gorm:"type:bigint;not null;column:friend_id;index:idx_user_friend" json:"friend_id"`
-	Status    string    `gorm:"type:varchar(20);not null;column:status;default:'pending'" json:"status"`
-	CreatedAt time.Time `gorm:"type:timestamp;not null;default:now();column:created_at" json:"-"`
-
-	// Добавляем поле с timestamp вместо time.Time
-	CreatedAtUnix int64 `gorm:"-" json:"created_at"`
-
-	// Связи
-	User   User `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	Friend User `gorm:"foreignKey:FriendID" json:"friend,omitempty"`
-}
-
-// TableName устанавливает имя таблицы для модели UserFriend
-func (UserFriend) TableName() string {
-	return "user_friends"
-}
-
-// AfterFind конвертирует time.Time в Unix timestamp после получения из БД
-func (uf *UserFriend) AfterFind(tx *gorm.DB) error {
-	uf.CreatedAtUnix = uf.CreatedAt.Unix()
-	return nil
+	ID        int64
+	UserID    int64
+	FriendID  int64
+	Status    string
+	CreatedAt time.Time
+	User      User
+	Friend    User
 }

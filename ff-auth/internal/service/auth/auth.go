@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/adapters/ffid"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/common/config"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/models"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/repository"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
-	idclient "github.com/ivasnev/FinFlow/ff-id/pkg/client"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -26,7 +26,7 @@ type AuthService struct {
 	deviceService          service.Device
 	loginHistoryRepository repository.LoginHistory
 	tokenManager           service.TokenManager
-	idClient               *idclient.Client
+	idClient               *ffid.Adapter
 }
 
 // NewAuthService создает новый сервис аутентификации
@@ -38,7 +38,7 @@ func NewAuthService(
 	deviceService service.Device,
 	loginHistoryRepository repository.LoginHistory,
 	tokenManager service.TokenManager,
-	idClient *idclient.Client,
+	idClient *ffid.Adapter,
 ) *AuthService {
 	return &AuthService{
 		config:                 config,
@@ -86,7 +86,7 @@ func (s *AuthService) Register(ctx context.Context, params service.RegisterParam
 		return nil, fmt.Errorf("ошибка создания пользователя: %w", err)
 	}
 
-	reqRegister := &idclient.RegisterUserRequest{
+	reqRegister := &ffid.RegisterUserRequest{
 		Email:    user.Email,
 		Nickname: user.Nickname,
 		UserID:   user.ID,

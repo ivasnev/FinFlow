@@ -12,10 +12,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
 	"github.com/ivasnev/FinFlow/ff-id/internal/api/handler"
-	"github.com/ivasnev/FinFlow/ff-id/internal/api/middleware"
 	"github.com/ivasnev/FinFlow/ff-id/internal/common/config"
-	pg_repos "github.com/ivasnev/FinFlow/ff-id/internal/repository/postgres"
+	"github.com/ivasnev/FinFlow/ff-id/internal/repository"
+	avatarRepo "github.com/ivasnev/FinFlow/ff-id/internal/repository/postgres/avatar"
+	friendRepo "github.com/ivasnev/FinFlow/ff-id/internal/repository/postgres/friend"
+	userRepo "github.com/ivasnev/FinFlow/ff-id/internal/repository/postgres/user"
 	"github.com/ivasnev/FinFlow/ff-id/internal/service"
+	friendService "github.com/ivasnev/FinFlow/ff-id/internal/service/friend"
+	userService "github.com/ivasnev/FinFlow/ff-id/internal/service/user"
+	"github.com/ivasnev/FinFlow/ff-id/pkg/api"
 	tvmclient "github.com/ivasnev/FinFlow/ff-tvm/pkg/client"
 	tvmmiddleware "github.com/ivasnev/FinFlow/ff-tvm/pkg/middleware"
 	"gorm.io/driver/postgres"
@@ -29,17 +34,16 @@ type Container struct {
 	DB     *gorm.DB
 
 	// Репозитории
-	UserRepository   pg_repos.UserRepositoryInterface
-	AvatarRepository pg_repos.AvatarRepositoryInterface
-	FriendRepository pg_repos.FriendRepositoryInterface
+	UserRepository   repository.User
+	AvatarRepository repository.Avatar
+	FriendRepository repository.Friend
 
 	// Сервисы
 	UserService   service.UserServiceInterface
 	FriendService service.FriendServiceInterface
 
 	// Обработчики
-	UserHandler   *handler.UserHandler
-	FriendHandler *handler.FriendHandler
+	ServerHandler *handler.ServerHandler
 
 	// Клиенты
 	AuthClient *auth.Client
@@ -134,30 +138,26 @@ func (c *Container) initDB() error {
 
 // initRepositories инициализирует репозитории
 func (c *Container) initRepositories() {
-	c.UserRepository = pg_repos.NewUserRepository(c.DB)
-	c.AvatarRepository = pg_repos.NewAvatarRepository(c.DB)
-	c.FriendRepository = pg_repos.NewFriendRepository(c.DB)
+	c.UserRepository = userRepo.NewUserRepository(c.DB)
+	c.AvatarRepository = avatarRepo.NewAvatarRepository(c.DB)
+	c.FriendRepository = friendRepo.NewFriendRepository(c.DB)
 }
 
 // initServices инициализирует сервисы
 func (c *Container) initServices() {
-	c.UserService = service.NewUserService(c.UserRepository, c.AvatarRepository)
-	c.FriendService = service.NewFriendService(c.FriendRepository, c.UserRepository)
+	c.UserService = userService.NewUserService(c.UserRepository, c.AvatarRepository)
+	c.FriendService = friendService.NewFriendService(c.FriendRepository, c.UserRepository)
 }
 
 // initHandlers инициализирует обработчики
 func (c *Container) initHandlers() {
-	c.UserHandler = handler.NewUserHandler(c.UserService)
-	c.FriendHandler = handler.NewFriendHandler(c.FriendService)
+	c.ServerHandler = handler.NewServerHandler(c.FriendService, c.UserService)
 }
 
 // RegisterRoutes - регистрирует все маршруты API
 func (c *Container) RegisterRoutes() {
-	// Добавляем CORS middleware глобально для всех маршрутов
-	c.Router.Use(middleware.CORSMiddleware())
-
 	// API версии v1
-	v1 := c.Router.Group("/api/v1")
+	v1 := c.Router.Group("")
 
 	// Middleware для авторизации
 	authMiddleware := auth.AuthMiddleware(c.AuthClient)
@@ -165,41 +165,17 @@ func (c *Container) RegisterRoutes() {
 	// Middleware для TVM
 	tvmMiddleware := tvmmiddleware.NewTVMMiddleware(c.TVMClient)
 
-	// Группа маршрутов для пользователей
-	users := v1.Group("/users")
-	{
-		// Публичные маршруты
-		users.GET("/:nickname", c.UserHandler.GetUserByNickname)
-
-		// Получение списка друзей
-		users.GET("/:nickname/friends", c.FriendHandler.GetFriends)
-
-		// Регистрация через внешний сервис
-		users.POST("/register", authMiddleware, c.UserHandler.RegisterUser)
-
-		// Защищенные маршруты
-		users.Use(authMiddleware)
-		users.PATCH("/me", c.UserHandler.UpdateUser)
-
-		// Маршруты для управления друзьями
-		users.POST("/me/friends", c.FriendHandler.AddFriend)
-		users.DELETE("/me/friends/:friend_id", c.FriendHandler.RemoveFriend)
-
-		// Маршруты для действий с заявками в друзья
-		users.POST("/me/friends/action", c.FriendHandler.FriendAction)
-		users.GET("/me/friend-requests", c.FriendHandler.GetFriendRequests)
-	}
-
-	// Внутренние маршруты для межсервисного взаимодействия
-	internal := c.Router.Group("/internal", tvmMiddleware.ValidateTicket())
-	{
-		// Защищенные TVM маршруты
-		internalUsers := internal.Group("/users")
-		{
-			// Регистрация через другой сервис (backend-to-backend)
-			internalUsers.POST("/register", c.UserHandler.RegisterUserFromService)
-			// Публичные маршруты
-			internalUsers.GET("", c.UserHandler.GetUsersByIds)
-		}
-	}
+	// Регистрируем маршруты с помощью сгенерированного сервера
+	api.RegisterHandlersWithOptions(v1, c.ServerHandler, api.GinServerOptions{
+		Middlewares: []api.MiddlewareFunc{
+			func(c *gin.Context) {
+				// Применяем middleware в зависимости от типа запроса
+				if scopes, ok := c.Get(api.BearerAuthScopes); ok && scopes != nil {
+					authMiddleware(c)
+				} else if scopes, ok := c.Get(api.TVMAuthScopes); ok && scopes != nil {
+					tvmMiddleware.ValidateTicket()(c)
+				}
+			},
+		},
+	})
 }
