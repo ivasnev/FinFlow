@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
+	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 )
 
 // Константы для типов распределения
@@ -18,7 +18,7 @@ const (
 // DebtCalculator интерфейс для стратегий расчета долгов
 type DebtCalculator interface {
 	// Calculate рассчитывает доли и долги для транзакции
-	Calculate(req *dto.TransactionRequest, eventID int64) ([]Share, []Debt, error)
+	Calculate(req *service.TransactionRequest, eventID int64) ([]Share, []Debt, error)
 }
 
 // Share представляет долю пользователя в транзакции (для внутреннего использования)
@@ -52,7 +52,7 @@ func GetCalculator(calculationType string) (DebtCalculator, error) {
 type PercentStrategy struct{}
 
 // Calculate рассчитывает доли и долги по процентам
-func (s *PercentStrategy) Calculate(req *dto.TransactionRequest, eventID int64) ([]Share, []Debt, error) {
+func (s *PercentStrategy) Calculate(req *service.TransactionRequest, eventID int64) ([]Share, []Debt, error) {
 	// Проверка суммы процентов (должно быть 100%)
 	var totalPercent float64
 	for _, p := range req.Portion {
@@ -87,7 +87,7 @@ func (s *PercentStrategy) Calculate(req *dto.TransactionRequest, eventID int64) 
 type AmountStrategy struct{}
 
 // Calculate рассчитывает доли и долги по фиксированным суммам
-func (s *AmountStrategy) Calculate(req *dto.TransactionRequest, eventID int64) ([]Share, []Debt, error) {
+func (s *AmountStrategy) Calculate(req *service.TransactionRequest, eventID int64) ([]Share, []Debt, error) {
 	// Проверка общей суммы
 	var totalAmount float64
 	for _, amount := range req.Portion {
@@ -121,7 +121,7 @@ func (s *AmountStrategy) Calculate(req *dto.TransactionRequest, eventID int64) (
 type UnitsStrategy struct{}
 
 // Calculate рассчитывает доли и долги по единицам долей
-func (s *UnitsStrategy) Calculate(req *dto.TransactionRequest, eventID int64) ([]Share, []Debt, error) {
+func (s *UnitsStrategy) Calculate(req *service.TransactionRequest, eventID int64) ([]Share, []Debt, error) {
 	// Подготовка карты долей
 	unitMap := make(map[int64]float64)
 	redistributeValue := 0.0

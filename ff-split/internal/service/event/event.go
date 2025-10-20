@@ -6,7 +6,6 @@ import (
 
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/db"
 
-	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"gorm.io/gorm"
 
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
@@ -41,7 +40,7 @@ func (s *EventService) GetEventByID(ctx context.Context, id int64) (*models.Even
 }
 
 // CreateEvent создает новое мероприятие
-func (s *EventService) CreateEvent(ctx context.Context, request *dto.EventRequest) (*dto.EventResponse, error) {
+func (s *EventService) CreateEvent(ctx context.Context, request *service.EventRequest) (*service.EventResponse, error) {
 
 	if request.Members.UserIDs != nil {
 		notExistsUsers, err := s.userService.GetNotExistsUsers(ctx, request.Members.UserIDs)
@@ -101,7 +100,7 @@ func (s *EventService) CreateEvent(ctx context.Context, request *dto.EventReques
 	var balance *int = nil
 	// Здесь будет расчет баланса в будущем
 
-	return &dto.EventResponse{
+	return &service.EventResponse{
 		ID:          event.ID,
 		Name:        event.Name,
 		Description: event.Description,
@@ -112,7 +111,7 @@ func (s *EventService) CreateEvent(ctx context.Context, request *dto.EventReques
 }
 
 // UpdateEvent обновляет мероприятие
-func (s *EventService) UpdateEvent(ctx context.Context, id int64, request *dto.EventRequest) (*dto.EventResponse, error) {
+func (s *EventService) UpdateEvent(ctx context.Context, id int64, request *service.EventRequest) (*service.EventResponse, error) {
 	// Преобразуем DTO в модель
 	event := &models.Event{
 		Name:        request.Name,
@@ -135,7 +134,7 @@ func (s *EventService) UpdateEvent(ctx context.Context, id int64, request *dto.E
 	var balance *int = nil
 	// Здесь будет расчет баланса в будущем
 
-	return &dto.EventResponse{
+	return &service.EventResponse{
 		ID:          event.ID,
 		Name:        event.Name,
 		Description: event.Description,

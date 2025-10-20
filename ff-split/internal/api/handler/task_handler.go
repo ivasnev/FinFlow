@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
+	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 	"github.com/ivasnev/FinFlow/ff-split/pkg/api"
 )
 
@@ -50,7 +50,7 @@ func (s *ServerHandler) CreateTask(c *gin.Context, idEvent int64) {
 		return
 	}
 
-	dtoRequest := dto.TaskRequest{
+	dtoRequest := service.TaskRequest{
 		UserID: apiRequest.UserId,
 		Title:  apiRequest.Title,
 	}
@@ -80,7 +80,7 @@ func (s *ServerHandler) UpdateTask(c *gin.Context, idEvent int64, idTask int) {
 		return
 	}
 
-	dtoRequest := dto.TaskRequest{
+	dtoRequest := service.TaskRequest{
 		UserID: apiRequest.UserId,
 		Title:  apiRequest.Title,
 	}
@@ -115,7 +115,7 @@ func (s *ServerHandler) DeleteTask(c *gin.Context, idEvent int64, idTask int) {
 
 // Helper functions
 
-func convertTaskToAPI(t *dto.TaskDTO) api.TaskDTO {
+func convertTaskToAPI(t *service.TaskDTO) api.TaskDTO {
 	id := int(t.ID)
 	return api.TaskDTO{
 		Id:          &id,
@@ -128,7 +128,7 @@ func convertTaskToAPI(t *dto.TaskDTO) api.TaskDTO {
 	}
 }
 
-func convertTaskToAPIPtr(t *dto.TaskDTO) *api.TaskDTO {
+func convertTaskToAPIPtr(t *service.TaskDTO) *api.TaskDTO {
 	task := convertTaskToAPI(t)
 	return &task
 }

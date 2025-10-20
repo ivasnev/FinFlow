@@ -19,33 +19,39 @@ func NewIconRepository(db *gorm.DB) *IconRepository {
 
 // GetIcons возвращает список всех иконок
 func (r *IconRepository) GetIcons() ([]models.Icon, error) {
-	var icons []models.Icon
-	if err := r.db.Find(&icons).Error; err != nil {
+	var dbIcons []Icon
+	if err := r.db.Find(&dbIcons).Error; err != nil {
 		return nil, err
 	}
-	return icons, nil
+	return extractSlice(dbIcons), nil
 }
 
 // GetIconByID возвращает иконку по идентификатору
 func (r *IconRepository) GetIconByID(id uint) (*models.Icon, error) {
-	var icon models.Icon
-	if err := r.db.First(&icon, id).Error; err != nil {
+	var dbIcon Icon
+	if err := r.db.First(&dbIcon, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("иконка не найдена")
 		}
 		return nil, err
 	}
-	return &icon, nil
+	return extract(&dbIcon), nil
 }
 
 // CreateIcon создает новую иконку
 func (r *IconRepository) CreateIcon(icon *models.Icon) error {
-	return r.db.Create(icon).Error
+	dbIcon := load(icon)
+	if err := r.db.Create(dbIcon).Error; err != nil {
+		return err
+	}
+	icon.ID = dbIcon.ID
+	return nil
 }
 
 // UpdateIcon обновляет существующую иконку
 func (r *IconRepository) UpdateIcon(icon *models.Icon) error {
-	result := r.db.Save(icon)
+	dbIcon := load(icon)
+	result := r.db.Save(dbIcon)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -57,7 +63,7 @@ func (r *IconRepository) UpdateIcon(icon *models.Icon) error {
 
 // DeleteIcon удаляет иконку по идентификатору
 func (r *IconRepository) DeleteIcon(id uint) error {
-	result := r.db.Delete(&models.Icon{}, id)
+	result := r.db.Delete(&Icon{}, id)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -66,4 +72,3 @@ func (r *IconRepository) DeleteIcon(id uint) error {
 	}
 	return nil
 }
-

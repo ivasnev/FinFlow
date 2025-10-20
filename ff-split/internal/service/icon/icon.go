@@ -3,9 +3,9 @@ package icon
 import (
 	"context"
 
-	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
+	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 )
 
 // IconService реализует сервис для работы с иконками
@@ -19,13 +19,13 @@ func NewIconService(repo repository.Icon) *IconService {
 }
 
 // GetIcons возвращает список всех иконок
-func (s *IconService) GetIcons(ctx context.Context) ([]dto.IconFullDTO, error) {
+func (s *IconService) GetIcons(ctx context.Context) ([]service.IconFullDTO, error) {
 	icons, err := s.repo.GetIcons()
 	if err != nil {
 		return nil, err
 	}
 
-	iconDTOs := make([]dto.IconFullDTO, len(icons))
+	iconDTOs := make([]service.IconFullDTO, len(icons))
 	for i, icon := range icons {
 		iconDTOs[i] = mapIconToDTO(icon)
 	}
@@ -34,7 +34,7 @@ func (s *IconService) GetIcons(ctx context.Context) ([]dto.IconFullDTO, error) {
 }
 
 // GetIconByID возвращает иконку по ID
-func (s *IconService) GetIconByID(ctx context.Context, id uint) (*dto.IconFullDTO, error) {
+func (s *IconService) GetIconByID(ctx context.Context, id uint) (*service.IconFullDTO, error) {
 	icon, err := s.repo.GetIconByID(id)
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func (s *IconService) GetIconByID(ctx context.Context, id uint) (*dto.IconFullDT
 }
 
 // CreateIcon создает новую иконку
-func (s *IconService) CreateIcon(ctx context.Context, iconDTO *dto.IconFullDTO) (*dto.IconFullDTO, error) {
+func (s *IconService) CreateIcon(ctx context.Context, iconDTO *service.IconFullDTO) (*service.IconFullDTO, error) {
 	icon := mapDTOToIcon(*iconDTO)
 
 	err := s.repo.CreateIcon(&icon)
@@ -58,7 +58,7 @@ func (s *IconService) CreateIcon(ctx context.Context, iconDTO *dto.IconFullDTO) 
 }
 
 // UpdateIcon обновляет существующую иконку
-func (s *IconService) UpdateIcon(ctx context.Context, id uint, iconDTO *dto.IconFullDTO) (*dto.IconFullDTO, error) {
+func (s *IconService) UpdateIcon(ctx context.Context, id uint, iconDTO *service.IconFullDTO) (*service.IconFullDTO, error) {
 	icon := mapDTOToIcon(*iconDTO)
 	icon.ID = int(id)
 
@@ -78,15 +78,15 @@ func (s *IconService) DeleteIcon(ctx context.Context, id uint) error {
 
 // Вспомогательные функции для маппинга между моделью и DTO
 
-func mapIconToDTO(icon models.Icon) dto.IconFullDTO {
-	return dto.IconFullDTO{
+func mapIconToDTO(icon models.Icon) service.IconFullDTO {
+	return service.IconFullDTO{
 		ID:       uint(icon.ID),
 		Name:     icon.Name,
 		FileUUID: icon.FileUUID,
 	}
 }
 
-func mapDTOToIcon(iconDTO dto.IconFullDTO) models.Icon {
+func mapDTOToIcon(iconDTO service.IconFullDTO) models.Icon {
 	return models.Icon{
 		ID:       int(iconDTO.ID),
 		Name:     iconDTO.Name,

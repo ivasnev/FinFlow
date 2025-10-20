@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
+	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 	"github.com/ivasnev/FinFlow/ff-split/pkg/api"
 )
 
@@ -163,7 +163,7 @@ func (s *ServerHandler) GetOptimizedDebtsByUserID(c *gin.Context, idEvent int64,
 
 // Helper functions для конвертации типов
 
-func convertTransactionToAPI(t *dto.TransactionResponse) api.TransactionResponse {
+func convertTransactionToAPI(t *service.TransactionResponse) api.TransactionResponse {
 	// Конвертируем shares
 	var shares *[]api.ShareDTO
 	if len(t.Shares) > 0 {
@@ -203,8 +203,8 @@ func convertTransactionToAPI(t *dto.TransactionResponse) api.TransactionResponse
 	}
 }
 
-func convertTransactionRequestToDTO(req *api.TransactionRequest) dto.TransactionRequest {
-	dtoReq := dto.TransactionRequest{
+func convertTransactionRequestToDTO(req *api.TransactionRequest) service.TransactionRequest {
+	dtoReq := service.TransactionRequest{
 		Name:     req.Name,
 		Amount:   req.Amount,
 		FromUser: req.FromUser,
@@ -226,7 +226,7 @@ func convertTransactionRequestToDTO(req *api.TransactionRequest) dto.Transaction
 	return dtoReq
 }
 
-func convertDebtToAPI(d *dto.DebtDTO) api.DebtDTO {
+func convertDebtToAPI(d *service.DebtDTO) api.DebtDTO {
 	return api.DebtDTO{
 		Id:            &d.ID,
 		TransactionId: &d.TransactionID,
@@ -236,7 +236,7 @@ func convertDebtToAPI(d *dto.DebtDTO) api.DebtDTO {
 	}
 }
 
-func convertOptimizedDebtToAPI(d *dto.OptimizedDebtDTO) api.OptimizedDebtDTO {
+func convertOptimizedDebtToAPI(d *service.OptimizedDebtDTO) api.OptimizedDebtDTO {
 	return api.OptimizedDebtDTO{
 		Id:         &d.ID,
 		EventId:    &d.EventID,

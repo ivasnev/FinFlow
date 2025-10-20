@@ -6,8 +6,8 @@ import (
 	"slices"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
+	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 	"github.com/ivasnev/FinFlow/ff-split/pkg/api"
 )
 
@@ -92,7 +92,7 @@ func (s *ServerHandler) CreateEvent(c *gin.Context) {
 	}
 
 	// Конвертируем API типы в DTO
-	dtoRequest := dto.EventRequest{
+	dtoRequest := service.EventRequest{
 		Name:       apiRequest.Name,
 		CategoryID: apiRequest.CategoryId,
 	}
@@ -150,7 +150,7 @@ func (s *ServerHandler) UpdateEvent(c *gin.Context, idEvent int64) {
 	}
 
 	// Конвертируем API типы в DTO
-	dtoRequest := dto.EventRequest{
+	dtoRequest := service.EventRequest{
 		Name:       apiRequest.Name,
 		CategoryID: apiRequest.CategoryId,
 	}

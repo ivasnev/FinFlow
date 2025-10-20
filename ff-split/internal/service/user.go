@@ -3,8 +3,76 @@ package service
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 )
+
+// UserFromId представляет данные пользователя из ID сервиса
+type UserFromId struct {
+	ID        int64      `json:"id"`
+	Email     string     `json:"email"`
+	Phone     *string    `json:"phone,omitempty"`
+	Nickname  string     `json:"nickname"`
+	Name      *string    `json:"name,omitempty"`
+	Birthdate *int64     `json:"birthdate,omitempty"`
+	AvatarID  *uuid.UUID `json:"avatar_id,omitempty"`
+	CreatedAt int64      `json:"created_at"`
+	UpdatedAt int64      `json:"updated_at"`
+}
+
+// ResponseFromIDService представляет ответ от ID сервиса
+type ResponseFromIDService []UserFromId
+
+// CreateUserRequest представляет запрос на создание пользователя
+type CreateUserRequest struct {
+	UserID   int64  `json:"user_id"`
+	Nickname string `json:"nickname"`
+	Name     string `json:"name"`
+	Photo    string `json:"photo"`
+}
+
+// UpdateUserProfileDTO представляет запрос на обновление профиля пользователя
+type UpdateUserProfileDTO struct {
+	UserID   int64   `json:"user_id"`
+	Nickname *string `json:"nickname"`
+	Name     *string `json:"name"`
+	Photo    *string `json:"photo"`
+}
+
+// UserProfileDTO представляет профиль пользователя
+type UserProfileDTO struct {
+	UserID   int64  `json:"user_id"`
+	Nickname string `json:"nickname"`
+	Name     string `json:"name"`
+	Photo    string `json:"photo"`
+}
+
+// UserResponse представляет ответ с данными пользователя
+type UserResponse struct {
+	ID      int64           `json:"id"`
+	Name    string          `json:"name"`
+	IsDummy bool            `json:"is_dummy"`
+	Profile *UserProfileDTO `json:"profile,omitempty"`
+}
+
+// CreateUserResponse представляет ответ на создание пользователя
+type CreateUserResponse struct {
+	UserID   int64  `json:"user_id"`
+	Nickname string `json:"nickname"`
+	Name     string `json:"name"`
+	Photo    string `json:"photo"`
+}
+
+// GetUserResponse представляет ответ на получение пользователя
+type GetUserResponse struct {
+	UserID   int64  `json:"user_id"`
+	Nickname string `json:"nickname"`
+	Name     string `json:"name"`
+	Photo    string `json:"photo"`
+}
+
+// GetUsersResponse представляет ответ на получение списка пользователей
+type GetUsersResponse []GetUserResponse
 
 // User определяет методы для работы с пользователями
 type User interface {
@@ -59,4 +127,3 @@ type User interface {
 	// GetNotExistsUsers получает пользователей, которые не существуют в базе данных
 	GetNotExistsUsers(ctx context.Context, ids []int64) ([]int64, error)
 }
-

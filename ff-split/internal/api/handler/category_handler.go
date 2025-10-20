@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
+	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 	"github.com/ivasnev/FinFlow/ff-split/pkg/api"
 )
 
@@ -73,7 +73,7 @@ func (s *ServerHandler) CreateCategory(c *gin.Context) {
 		iconID = *apiRequest.IconId
 	}
 
-	dtoCategory := &dto.CategoryDTO{
+	dtoCategory := &service.CategoryDTO{
 		Name:   apiRequest.Name,
 		IconID: iconID,
 	}
@@ -106,7 +106,7 @@ func (s *ServerHandler) UpdateCategory(c *gin.Context, id int) {
 		iconID = *apiRequest.IconId
 	}
 
-	dtoCategory := &dto.CategoryDTO{
+	dtoCategory := &service.CategoryDTO{
 		ID:     id,
 		Name:   apiRequest.Name,
 		IconID: iconID,
@@ -140,7 +140,7 @@ func (s *ServerHandler) DeleteCategory(c *gin.Context, id int) {
 
 // Helper functions
 
-func convertCategoryToAPI(cat *dto.CategoryDTO) api.CategoryResponse {
+func convertCategoryToAPI(cat *service.CategoryDTO) api.CategoryResponse {
 	var icon *api.IconDTO
 	apiIcon := api.IconDTO{
 		Id:           &cat.Icon.ID,

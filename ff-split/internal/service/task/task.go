@@ -3,7 +3,6 @@ package task
 import (
 	"context"
 
-	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
@@ -21,13 +20,13 @@ func NewTaskService(repo repository.Task, userService service.User) *TaskService
 }
 
 // GetTasksByEventID возвращает список задач мероприятия
-func (s *TaskService) GetTasksByEventID(ctx context.Context, eventID int64) ([]dto.TaskDTO, error) {
+func (s *TaskService) GetTasksByEventID(ctx context.Context, eventID int64) ([]service.TaskDTO, error) {
 	tasks, err := s.repo.GetTasksByEventID(eventID)
 	if err != nil {
 		return nil, err
 	}
 
-	taskDTOs := make([]dto.TaskDTO, len(tasks))
+	taskDTOs := make([]service.TaskDTO, len(tasks))
 	for i, task := range tasks {
 		taskDTOs[i] = mapTaskToDTO(task)
 	}
@@ -36,7 +35,7 @@ func (s *TaskService) GetTasksByEventID(ctx context.Context, eventID int64) ([]d
 }
 
 // GetTaskByID возвращает задачу по ID
-func (s *TaskService) GetTaskByID(ctx context.Context, id uint) (*dto.TaskDTO, error) {
+func (s *TaskService) GetTaskByID(ctx context.Context, id uint) (*service.TaskDTO, error) {
 	task, err := s.repo.GetTaskByID(id)
 	if err != nil {
 		return nil, err
@@ -47,7 +46,7 @@ func (s *TaskService) GetTaskByID(ctx context.Context, id uint) (*dto.TaskDTO, e
 }
 
 // CreateTask создает новую задачу
-func (s *TaskService) CreateTask(ctx context.Context, eventID int64, taskRequest *dto.TaskRequest) (*dto.TaskDTO, error) {
+func (s *TaskService) CreateTask(ctx context.Context, eventID int64, taskRequest *service.TaskRequest) (*service.TaskDTO, error) {
 	user, err := s.userService.GetUserByInternalUserID(ctx, taskRequest.UserID)
 	if err != nil {
 		return nil, err
@@ -71,7 +70,7 @@ func (s *TaskService) CreateTask(ctx context.Context, eventID int64, taskRequest
 }
 
 // UpdateTask обновляет существующую задачу
-func (s *TaskService) UpdateTask(ctx context.Context, id uint, taskRequest *dto.TaskRequest) (*dto.TaskDTO, error) {
+func (s *TaskService) UpdateTask(ctx context.Context, id uint, taskRequest *service.TaskRequest) (*service.TaskDTO, error) {
 	user, err := s.userService.GetUserByInternalUserID(ctx, taskRequest.UserID)
 	if err != nil {
 		return nil, err
@@ -105,7 +104,7 @@ func (s *TaskService) DeleteTask(ctx context.Context, id uint) error {
 
 // Вспомогательные функции для маппинга между моделью и DTO
 
-func mapTaskToDTO(task models.Task) dto.TaskDTO {
+func mapTaskToDTO(task models.Task) service.TaskDTO {
 	var userID, eventID int64
 	if task.UserID != nil {
 		userID = *task.UserID
@@ -113,7 +112,7 @@ func mapTaskToDTO(task models.Task) dto.TaskDTO {
 	if task.EventID != nil {
 		eventID = *task.EventID
 	}
-	return dto.TaskDTO{
+	return service.TaskDTO{
 		ID:          uint(task.ID),
 		UserID:      userID,
 		EventID:     eventID,

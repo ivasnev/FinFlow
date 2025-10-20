@@ -22,40 +22,41 @@ func NewActivityRepository(db *gorm.DB) *ActivityRepository {
 
 // GetByEventID возвращает активности по ID мероприятия
 func (r *ActivityRepository) GetByEventID(ctx context.Context, eventID int64) ([]models.Activity, error) {
-	var activities []models.Activity
-	err := r.db.WithContext(ctx).Where("event_id = ?", eventID).Find(&activities).Error
+	var dbActivities []Activity
+	err := r.db.WithContext(ctx).Where("event_id = ?", eventID).Find(&dbActivities).Error
 	if err != nil {
 		return nil, err
 	}
-	return activities, nil
+	return extractSlice(dbActivities), nil
 }
 
 // GetByID возвращает активность по ID
 func (r *ActivityRepository) GetByID(ctx context.Context, id int) (*models.Activity, error) {
-	var activity models.Activity
-	err := r.db.WithContext(ctx).First(&activity, id).Error
+	var dbActivity Activity
+	err := r.db.WithContext(ctx).First(&dbActivity, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil // возвращаем nil, nil если активность не найдена
 		}
 		return nil, err
 	}
-	return &activity, nil
+	return extract(&dbActivity), nil
 }
 
 // Create создает новую активность
 func (r *ActivityRepository) Create(ctx context.Context, activity *models.Activity) (*models.Activity, error) {
-	err := r.db.WithContext(ctx).Create(activity).Error
+	dbActivity := load(activity)
+	err := r.db.WithContext(ctx).Create(dbActivity).Error
 	if err != nil {
 		return nil, err
 	}
-	return activity, nil
+	return extract(dbActivity), nil
 }
 
 // Update обновляет активность
 func (r *ActivityRepository) Update(ctx context.Context, id int, activity *models.Activity) (*models.Activity, error) {
 	// Проверяем существование активности
-	var existingActivity models.Activity
+	var existingActivity Activity
 	err := r.db.WithContext(ctx).First(&existingActivity, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -65,25 +66,26 @@ func (r *ActivityRepository) Update(ctx context.Context, id int, activity *model
 	}
 
 	// Обновляем только указанные поля
-	activity.ID = id // Важно установить ID для правильного обновления
-	err = r.db.WithContext(ctx).Model(&models.Activity{}).Where("id = ?", id).Updates(activity).Error
+	dbActivity := load(activity)
+	dbActivity.ID = id // Важно установить ID для правильного обновления
+	err = r.db.WithContext(ctx).Model(&Activity{}).Where("id = ?", id).Updates(dbActivity).Error
 	if err != nil {
 		return nil, err
 	}
 
 	// Получаем обновленную активность
-	var updatedActivity models.Activity
+	var updatedActivity Activity
 	err = r.db.WithContext(ctx).First(&updatedActivity, id).Error
 	if err != nil {
 		return nil, err
 	}
 
-	return &updatedActivity, nil
+	return extract(&updatedActivity), nil
 }
 
 // Delete удаляет активность
 func (r *ActivityRepository) Delete(ctx context.Context, id int) error {
-	result := r.db.WithContext(ctx).Delete(&models.Activity{}, id)
+	result := r.db.WithContext(ctx).Delete(&Activity{}, id)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -94,4 +96,3 @@ func (r *ActivityRepository) Delete(ctx context.Context, id int) error {
 
 	return nil
 }
-

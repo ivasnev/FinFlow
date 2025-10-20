@@ -19,33 +19,39 @@ func NewTaskRepository(db *gorm.DB) *TaskRepository {
 
 // GetTasksByEventID возвращает список всех задач мероприятия
 func (r *TaskRepository) GetTasksByEventID(eventID int64) ([]models.Task, error) {
-	var tasks []models.Task
-	if err := r.db.Where("event_id = ?", eventID).Find(&tasks).Error; err != nil {
+	var dbTasks []Task
+	if err := r.db.Where("event_id = ?", eventID).Find(&dbTasks).Error; err != nil {
 		return nil, err
 	}
-	return tasks, nil
+	return extractSlice(dbTasks), nil
 }
 
 // GetTaskByID возвращает задачу по идентификатору
 func (r *TaskRepository) GetTaskByID(id uint) (*models.Task, error) {
-	var task models.Task
-	if err := r.db.First(&task, id).Error; err != nil {
+	var dbTask Task
+	if err := r.db.First(&dbTask, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("задача не найдена")
 		}
 		return nil, err
 	}
-	return &task, nil
+	return extract(&dbTask), nil
 }
 
 // CreateTask создает новую задачу
 func (r *TaskRepository) CreateTask(task *models.Task) error {
-	return r.db.Create(task).Error
+	dbTask := load(task)
+	if err := r.db.Create(dbTask).Error; err != nil {
+		return err
+	}
+	task.ID = dbTask.ID
+	return nil
 }
 
 // UpdateTask обновляет существующую задачу
 func (r *TaskRepository) UpdateTask(task *models.Task) error {
-	result := r.db.Save(task)
+	dbTask := load(task)
+	result := r.db.Save(dbTask)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -57,7 +63,7 @@ func (r *TaskRepository) UpdateTask(task *models.Task) error {
 
 // DeleteTask удаляет задачу по идентификатору
 func (r *TaskRepository) DeleteTask(id uint) error {
-	result := r.db.Delete(&models.Task{}, id)
+	result := r.db.Delete(&Task{}, id)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -66,4 +72,3 @@ func (r *TaskRepository) DeleteTask(id uint) error {
 	}
 	return nil
 }
-

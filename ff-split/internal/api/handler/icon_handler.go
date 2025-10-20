@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
+	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 	"github.com/ivasnev/FinFlow/ff-split/pkg/api"
 )
 
@@ -50,7 +50,7 @@ func (s *ServerHandler) CreateIcon(c *gin.Context) {
 		return
 	}
 
-	dtoRequest := dto.IconFullDTO{
+	dtoRequest := service.IconFullDTO{
 		Name:     apiRequest.Name,
 		FileUUID: apiRequest.FileUuid,
 	}
@@ -72,7 +72,7 @@ func (s *ServerHandler) UpdateIcon(c *gin.Context, id int) {
 		return
 	}
 
-	dtoRequest := dto.IconFullDTO{
+	dtoRequest := service.IconFullDTO{
 		ID:       uint(id),
 		Name:     apiRequest.Name,
 		FileUUID: apiRequest.FileUuid,
@@ -100,7 +100,7 @@ func (s *ServerHandler) DeleteIcon(c *gin.Context, id int) {
 
 // Helper functions
 
-func convertIconToAPI(icon *dto.IconFullDTO) api.IconDTO {
+func convertIconToAPI(icon *service.IconFullDTO) api.IconDTO {
 	id := int(icon.ID)
 	return api.IconDTO{
 		Id:           &id,

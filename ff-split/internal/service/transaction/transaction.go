@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
@@ -40,7 +39,7 @@ func NewTransactionService(
 }
 
 // GetTransactionsByEventID возвращает список транзакций мероприятия
-func (s *TransactionService) GetTransactionsByEventID(ctx context.Context, eventID int64) ([]dto.TransactionResponse, error) {
+func (s *TransactionService) GetTransactionsByEventID(ctx context.Context, eventID int64) ([]service.TransactionResponse, error) {
 	// Проверяем существование мероприятия
 	_, err := s.eventService.GetEventByID(ctx, eventID)
 	if err != nil {
@@ -54,7 +53,7 @@ func (s *TransactionService) GetTransactionsByEventID(ctx context.Context, event
 	}
 
 	// Преобразуем в DTO
-	result := make([]dto.TransactionResponse, len(transactions))
+	result := make([]service.TransactionResponse, len(transactions))
 	for i, tx := range transactions {
 		// Получаем доли
 		shares, err := s.repo.GetSharesByTransactionID(tx.ID)
@@ -81,7 +80,7 @@ func (s *TransactionService) GetTransactionsByEventID(ctx context.Context, event
 }
 
 // GetTransactionByID возвращает транзакцию по ID
-func (s *TransactionService) GetTransactionByID(ctx context.Context, id int) (*dto.TransactionResponse, error) {
+func (s *TransactionService) GetTransactionByID(ctx context.Context, id int) (*service.TransactionResponse, error) {
 	// Получаем транзакцию
 	tx, err := s.repo.GetTransactionByID(id)
 	if err != nil {
@@ -105,9 +104,9 @@ func (s *TransactionService) GetTransactionByID(ctx context.Context, id int) (*d
 }
 
 // CreateTransaction создает новую транзакцию
-func (s *TransactionService) CreateTransaction(ctx context.Context, eventID int64, req *dto.TransactionRequest) (*dto.TransactionResponse, error) {
+func (s *TransactionService) CreateTransaction(ctx context.Context, eventID int64, req *service.TransactionRequest) (*service.TransactionResponse, error) {
 	// Начинаем транзакцию в базе данных
-	var result *dto.TransactionResponse
+	var result *service.TransactionResponse
 	err := s.db.Transaction(func(tx *gorm.DB) error {
 		// Проверяем существование мероприятия
 		_, err := s.eventService.GetEventByID(ctx, eventID)
@@ -196,9 +195,9 @@ func (s *TransactionService) CreateTransaction(ctx context.Context, eventID int6
 }
 
 // UpdateTransaction обновляет существующую транзакцию
-func (s *TransactionService) UpdateTransaction(ctx context.Context, id int, req *dto.TransactionRequest) (*dto.TransactionResponse, error) {
+func (s *TransactionService) UpdateTransaction(ctx context.Context, id int, req *service.TransactionRequest) (*service.TransactionResponse, error) {
 	// Начинаем транзакцию в базе данных
-	var result *dto.TransactionResponse
+	var result *service.TransactionResponse
 	err := s.db.Transaction(func(tx *gorm.DB) error {
 		// Получаем транзакцию
 		transaction, err := s.repo.GetTransactionByID(id)
@@ -298,13 +297,13 @@ func (s *TransactionService) DeleteTransaction(ctx context.Context, id int) erro
 }
 
 // GetDebtsByEventID возвращает долги в рамках мероприятия
-func (s *TransactionService) GetDebtsByEventID(ctx context.Context, eventID int64, userID *int64) ([]dto.DebtDTO, error) {
+func (s *TransactionService) GetDebtsByEventID(ctx context.Context, eventID int64, userID *int64) ([]service.DebtDTO, error) {
 	// Проверяем существование мероприятия
 	_, err := s.eventService.GetEventByID(ctx, eventID)
 	if err != nil {
 		return nil, err
 	}
-	var debts []dto.DebtDTO
+	var debts []service.DebtDTO
 	if userID == nil {
 		// Получаем долги
 		eventDebts, err := s.repo.GetDebtsByEventID(eventID)
@@ -313,7 +312,7 @@ func (s *TransactionService) GetDebtsByEventID(ctx context.Context, eventID int6
 		}
 		// Преобразуем в DTO
 		for _, debt := range eventDebts {
-			debtDTO := dto.DebtDTO{
+			debtDTO := service.DebtDTO{
 				ID:            debt.ID,
 				FromUserID:    debt.FromUserID,
 				ToUserID:      debt.ToUserID,
@@ -321,7 +320,7 @@ func (s *TransactionService) GetDebtsByEventID(ctx context.Context, eventID int6
 				TransactionID: debt.TransactionID,
 			}
 			if debt.FromUser != nil {
-				debtDTO.FromUser = &dto.DebtsUserResponse{
+				debtDTO.FromUser = &service.DebtsUserResponse{
 					ID:         debt.FromUser.ID,
 					ExternalID: debt.FromUser.UserID,
 					Name:       getUserName(debt.FromUser),
@@ -329,7 +328,7 @@ func (s *TransactionService) GetDebtsByEventID(ctx context.Context, eventID int6
 				}
 			}
 			if debt.ToUser != nil {
-				debtDTO.ToUser = &dto.DebtsUserResponse{
+				debtDTO.ToUser = &service.DebtsUserResponse{
 					ID:         debt.ToUser.ID,
 					ExternalID: debt.ToUser.UserID,
 					Name:       getUserName(debt.ToUser),
@@ -358,21 +357,21 @@ func (s *TransactionService) GetDebtsByEventID(ctx context.Context, eventID int6
 	return debts, nil
 }
 
-func (s *TransactionService) GetDebtsByEventIDFromUser(eventID int64, userID int64) ([]dto.DebtDTO, error) {
+func (s *TransactionService) GetDebtsByEventIDFromUser(eventID int64, userID int64) ([]service.DebtDTO, error) {
 	debtsFromUser, err := s.repo.GetDebtsByEventIDFromUser(eventID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при получении долгов пользователю: %w", err)
 	}
-	var result []dto.DebtDTO
+	var result []service.DebtDTO
 	for _, debt := range debtsFromUser {
-		result = append(result, dto.DebtDTO{
+		result = append(result, service.DebtDTO{
 			ID:            debt.ID,
 			FromUserID:    debt.FromUserID,
 			ToUserID:      debt.ToUserID,
 			Amount:        -debt.Amount,
 			TransactionID: debt.TransactionID,
 
-			Requestor: &dto.DebtsUserResponse{
+			Requestor: &service.DebtsUserResponse{
 				ID:         debt.ToUser.ID,
 				ExternalID: debt.ToUser.UserID,
 				Name:       getUserName(debt.ToUser),
@@ -383,21 +382,21 @@ func (s *TransactionService) GetDebtsByEventIDFromUser(eventID int64, userID int
 	return result, nil
 }
 
-func (s *TransactionService) GetDebtsByEventIDToUser(eventID int64, userID int64) ([]dto.DebtDTO, error) {
+func (s *TransactionService) GetDebtsByEventIDToUser(eventID int64, userID int64) ([]service.DebtDTO, error) {
 	debtsToUser, err := s.repo.GetDebtsByEventIDToUser(eventID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при получении долгов пользователю: %w", err)
 	}
-	var result []dto.DebtDTO
+	var result []service.DebtDTO
 	for _, debt := range debtsToUser {
-		result = append(result, dto.DebtDTO{
+		result = append(result, service.DebtDTO{
 			ID:            debt.ID,
 			FromUserID:    debt.FromUserID,
 			ToUserID:      debt.ToUserID,
 			Amount:        debt.Amount,
 			TransactionID: debt.TransactionID,
 
-			Requestor: &dto.DebtsUserResponse{
+			Requestor: &service.DebtsUserResponse{
 				ID:         debt.FromUser.ID,
 				ExternalID: debt.FromUser.UserID,
 				Name:       getUserName(debt.FromUser),
@@ -419,7 +418,7 @@ func getUserName(user *models.User) string {
 }
 
 // OptimizeDebts оптимизирует долги для мероприятия и сохраняет результат
-func (s *TransactionService) OptimizeDebts(ctx context.Context, eventID int64) ([]dto.OptimizedDebtDTO, error) {
+func (s *TransactionService) OptimizeDebts(ctx context.Context, eventID int64) ([]service.OptimizedDebtDTO, error) {
 	// Проверяем существование мероприятия
 	_, err := s.eventService.GetEventByID(ctx, eventID)
 	if err != nil {
@@ -451,7 +450,7 @@ func (s *TransactionService) OptimizeDebts(ctx context.Context, eventID int64) (
 	optimizedDebts := debs_optimizer.SimplifyDebts(debtMap)
 
 	// Преобразуем результат в модель и DTO
-	result := make([]dto.OptimizedDebtDTO, 0)
+	result := make([]service.OptimizedDebtDTO, 0)
 	modelsToSave := make([]models.OptimizedDebt, 0)
 
 	for creditor, debtors := range optimizedDebts {
@@ -475,7 +474,7 @@ func (s *TransactionService) OptimizeDebts(ctx context.Context, eventID int64) (
 			modelsToSave = append(modelsToSave, optimizedDebt)
 
 			// Создаем DTO для ответа
-			result = append(result, dto.OptimizedDebtDTO{
+			result = append(result, service.OptimizedDebtDTO{
 				FromUserID: debtorID,
 				ToUserID:   creditorID,
 				Amount:     float64(amount),
@@ -493,14 +492,14 @@ func (s *TransactionService) OptimizeDebts(ctx context.Context, eventID int64) (
 }
 
 // GetOptimizedDebtsByEventID возвращает оптимизированные долги по ID мероприятия
-func (s *TransactionService) GetOptimizedDebtsByEventID(ctx context.Context, eventID int64, userID *int64) ([]dto.OptimizedDebtDTO, error) {
+func (s *TransactionService) GetOptimizedDebtsByEventID(ctx context.Context, eventID int64, userID *int64) ([]service.OptimizedDebtDTO, error) {
 	// Проверяем существование мероприятия
 	_, err := s.eventService.GetEventByID(ctx, eventID)
 	if err != nil {
 		return nil, err
 	}
 
-	var debts []dto.OptimizedDebtDTO
+	var debts []service.OptimizedDebtDTO
 	if userID == nil {
 		// Получаем все оптимизированные долги мероприятия
 		optimizedDebts, err := s.repo.GetOptimizedDebtsByEventIDWithUsers(eventID)
@@ -515,7 +514,7 @@ func (s *TransactionService) GetOptimizedDebtsByEventID(ctx context.Context, eve
 
 		// Преобразуем в DTO
 		for _, debt := range optimizedDebts {
-			debtDTO := dto.OptimizedDebtDTO{
+			debtDTO := service.OptimizedDebtDTO{
 				ID:         debt.ID,
 				FromUserID: debt.FromUserID,
 				ToUserID:   debt.ToUserID,
@@ -523,7 +522,7 @@ func (s *TransactionService) GetOptimizedDebtsByEventID(ctx context.Context, eve
 				EventID:    debt.EventID,
 			}
 			if debt.FromUser != nil {
-				debtDTO.FromUser = &dto.DebtsUserResponse{
+				debtDTO.FromUser = &service.DebtsUserResponse{
 					ID:         debt.FromUser.ID,
 					ExternalID: debt.FromUser.UserID,
 					Name:       getUserName(debt.FromUser),
@@ -531,7 +530,7 @@ func (s *TransactionService) GetOptimizedDebtsByEventID(ctx context.Context, eve
 				}
 			}
 			if debt.ToUser != nil {
-				debtDTO.ToUser = &dto.DebtsUserResponse{
+				debtDTO.ToUser = &service.DebtsUserResponse{
 					ID:         debt.ToUser.ID,
 					ExternalID: debt.ToUser.UserID,
 					Name:       getUserName(debt.ToUser),
@@ -561,23 +560,23 @@ func (s *TransactionService) GetOptimizedDebtsByEventID(ctx context.Context, eve
 }
 
 // GetOptimizedDebtsByEventIDFromUser возвращает оптимизированные долги от пользователя в мероприятии
-func (s *TransactionService) GetOptimizedDebtsByEventIDFromUser(eventID int64, userID int64) ([]dto.OptimizedDebtDTO, error) {
+func (s *TransactionService) GetOptimizedDebtsByEventIDFromUser(eventID int64, userID int64) ([]service.OptimizedDebtDTO, error) {
 	optimizedDebts, err := s.repo.GetOptimizedDebtsByUserIDWithUsers(eventID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при получении оптимизированных долгов от пользователя: %w", err)
 	}
 
-	var result []dto.OptimizedDebtDTO
+	var result []service.OptimizedDebtDTO
 	for _, debt := range optimizedDebts {
 		if debt.FromUserID == userID {
-			result = append(result, dto.OptimizedDebtDTO{
+			result = append(result, service.OptimizedDebtDTO{
 				ID:         debt.ID,
 				FromUserID: debt.FromUserID,
 				ToUserID:   debt.ToUserID,
 				Amount:     -debt.Amount,
 				EventID:    debt.EventID,
 
-				Requestor: &dto.DebtsUserResponse{
+				Requestor: &service.DebtsUserResponse{
 					ID:         debt.ToUser.ID,
 					ExternalID: debt.ToUser.UserID,
 					Name:       getUserName(debt.ToUser),
@@ -590,23 +589,23 @@ func (s *TransactionService) GetOptimizedDebtsByEventIDFromUser(eventID int64, u
 }
 
 // GetOptimizedDebtsByEventIDToUser возвращает оптимизированные долги к пользователю в мероприятии
-func (s *TransactionService) GetOptimizedDebtsByEventIDToUser(eventID int64, userID int64) ([]dto.OptimizedDebtDTO, error) {
+func (s *TransactionService) GetOptimizedDebtsByEventIDToUser(eventID int64, userID int64) ([]service.OptimizedDebtDTO, error) {
 	optimizedDebts, err := s.repo.GetOptimizedDebtsByUserIDWithUsers(eventID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при получении оптимизированных долгов к пользователю: %w", err)
 	}
 
-	var result []dto.OptimizedDebtDTO
+	var result []service.OptimizedDebtDTO
 	for _, debt := range optimizedDebts {
 		if debt.ToUserID == userID {
-			result = append(result, dto.OptimizedDebtDTO{
+			result = append(result, service.OptimizedDebtDTO{
 				ID:         debt.ID,
 				FromUserID: debt.FromUserID,
 				ToUserID:   debt.ToUserID,
 				Amount:     debt.Amount,
 				EventID:    debt.EventID,
 
-				Requestor: &dto.DebtsUserResponse{
+				Requestor: &service.DebtsUserResponse{
 					ID:         debt.FromUser.ID,
 					ExternalID: debt.FromUser.UserID,
 					Name:       getUserName(debt.FromUser),
@@ -619,7 +618,7 @@ func (s *TransactionService) GetOptimizedDebtsByEventIDToUser(eventID int64, use
 }
 
 // GetOptimizedDebtsByUserID возвращает оптимизированные долги по ID пользователя в мероприятии
-func (s *TransactionService) GetOptimizedDebtsByUserID(ctx context.Context, eventID, userID int64) ([]dto.OptimizedDebtDTO, error) {
+func (s *TransactionService) GetOptimizedDebtsByUserID(ctx context.Context, eventID, userID int64) ([]service.OptimizedDebtDTO, error) {
 	// Проверяем существование мероприятия
 	_, err := s.eventService.GetEventByID(ctx, eventID)
 	if err != nil {
@@ -646,7 +645,7 @@ func (s *TransactionService) GetOptimizedDebtsByUserID(ctx context.Context, even
 		}
 
 		// Фильтруем долги, связанные с пользователем
-		userDebts := make([]dto.OptimizedDebtDTO, 0)
+		userDebts := make([]service.OptimizedDebtDTO, 0)
 		for _, debt := range allDebts {
 			if debt.FromUserID == userID || debt.ToUserID == userID {
 				userDebts = append(userDebts, debt)
@@ -656,9 +655,9 @@ func (s *TransactionService) GetOptimizedDebtsByUserID(ctx context.Context, even
 	}
 
 	// Формируем ответ
-	result := make([]dto.OptimizedDebtDTO, len(optimizedDebts))
+	result := make([]service.OptimizedDebtDTO, len(optimizedDebts))
 	for i, debt := range optimizedDebts {
-		debtDTO := dto.OptimizedDebtDTO{
+		debtDTO := service.OptimizedDebtDTO{
 			ID:         debt.ID,
 			FromUserID: debt.FromUserID,
 			ToUserID:   debt.ToUserID,
@@ -666,7 +665,7 @@ func (s *TransactionService) GetOptimizedDebtsByUserID(ctx context.Context, even
 			EventID:    debt.EventID,
 		}
 		if debt.FromUser != nil {
-			debtDTO.FromUser = &dto.DebtsUserResponse{
+			debtDTO.FromUser = &service.DebtsUserResponse{
 				ID:         debt.FromUser.ID,
 				ExternalID: debt.FromUser.UserID,
 				Name:       getUserName(debt.FromUser),
@@ -674,7 +673,7 @@ func (s *TransactionService) GetOptimizedDebtsByUserID(ctx context.Context, even
 			}
 		}
 		if debt.ToUser != nil {
-			debtDTO.ToUser = &dto.DebtsUserResponse{
+			debtDTO.ToUser = &service.DebtsUserResponse{
 				ID:         debt.ToUser.ID,
 				ExternalID: debt.ToUser.UserID,
 				Name:       getUserName(debt.ToUser),
@@ -694,11 +693,11 @@ func (s *TransactionService) mapTransactionToDTO(
 	tx *models.Transaction,
 	shares []models.TransactionShare,
 	debts []models.Debt,
-) (*dto.TransactionResponse, error) {
+) (*service.TransactionResponse, error) {
 	// Преобразуем доли в DTO
-	shareDTOs := make([]dto.ShareDTO, len(shares))
+	shareDTOs := make([]service.ShareDTO, len(shares))
 	for i, share := range shares {
-		shareDTOs[i] = dto.ShareDTO{
+		shareDTOs[i] = service.ShareDTO{
 			ID:            share.ID,
 			UserID:        share.UserID,
 			Value:         share.Value,
@@ -707,9 +706,9 @@ func (s *TransactionService) mapTransactionToDTO(
 	}
 
 	// Преобразуем долги в DTO
-	debtDTOs := make([]dto.DebtDTO, len(debts))
+	debtDTOs := make([]service.DebtDTO, len(debts))
 	for i, debt := range debts {
-		debtDTOs[i] = dto.DebtDTO{
+		debtDTOs[i] = service.DebtDTO{
 			ID:            debt.ID,
 			FromUserID:    debt.FromUserID,
 			ToUserID:      debt.ToUserID,
@@ -735,7 +734,7 @@ func (s *TransactionService) mapTransactionToDTO(
 		}
 	}
 
-	return &dto.TransactionResponse{
+	return &service.TransactionResponse{
 		ID:                    tx.ID,
 		EventID:               eventID,
 		Name:                  tx.Name,

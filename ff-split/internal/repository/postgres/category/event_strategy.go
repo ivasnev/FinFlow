@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
-	"github.com/ivasnev/FinFlow/ff-split/internal/models"
+	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 	"gorm.io/gorm"
 )
 
@@ -22,56 +21,50 @@ func NewEventCategoryStrategy(db *gorm.DB) *EventCategoryStrategy {
 }
 
 // GetAll возвращает все категории мероприятий
-func (s *EventCategoryStrategy) GetAll(ctx context.Context) ([]dto.CategoryDTO, error) {
-	var eventCategories []models.EventCategory
-	if err := s.db.WithContext(ctx).Preload("Icon").Find(&eventCategories).Error; err != nil {
+func (s *EventCategoryStrategy) GetAll(ctx context.Context) ([]service.CategoryDTO, error) {
+	var eventCategories []EventCategory
+	if err := s.db.WithContext(ctx).Find(&eventCategories).Error; err != nil {
 		return nil, fmt.Errorf("ошибка при получении категорий мероприятий: %w", err)
 	}
 
-	result := make([]dto.CategoryDTO, len(eventCategories))
+	result := make([]service.CategoryDTO, len(eventCategories))
 	for i, category := range eventCategories {
-		categoryDto := &dto.CategoryDTO{
+		result[i] = service.CategoryDTO{
 			ID:     category.ID,
 			Name:   category.Name,
 			IconID: category.IconID,
+			Icon: service.IconDTO{
+				ID:           category.IconID,
+				Name:         "",
+				ExternalUuid: "",
+			},
 		}
-		if category.Icon != nil {
-			categoryDto.Icon = dto.IconDTO{
-				ID:           category.Icon.ID,
-				Name:         category.Icon.Name,
-				ExternalUuid: category.Icon.FileUUID,
-			}
-		}
-		result[i] = *categoryDto
 	}
 
 	return result, nil
 }
 
 // GetByID возвращает категорию мероприятия по ID
-func (s *EventCategoryStrategy) GetByID(ctx context.Context, id int) (*dto.CategoryDTO, error) {
-	var eventCategory models.EventCategory
-	if err := s.db.WithContext(ctx).Preload("Icon").First(&eventCategory, id).Error; err != nil {
+func (s *EventCategoryStrategy) GetByID(ctx context.Context, id int) (*service.CategoryDTO, error) {
+	var eventCategory EventCategory
+	if err := s.db.WithContext(ctx).First(&eventCategory, id).Error; err != nil {
 		return nil, fmt.Errorf("ошибка при получении категории мероприятия: %w", err)
 	}
-	categoryDto := &dto.CategoryDTO{
+	return &service.CategoryDTO{
 		ID:     eventCategory.ID,
 		Name:   eventCategory.Name,
 		IconID: eventCategory.IconID,
-	}
-	if eventCategory.Icon != nil {
-		categoryDto.Icon = dto.IconDTO{
-			ID:           eventCategory.Icon.ID,
-			Name:         eventCategory.Icon.Name,
-			ExternalUuid: eventCategory.Icon.FileUUID,
-		}
-	}
-	return categoryDto, nil
+		Icon: service.IconDTO{
+			ID:           eventCategory.IconID,
+			Name:         "",
+			ExternalUuid: "",
+		},
+	}, nil
 }
 
 // Create создает новую категорию мероприятия
-func (s *EventCategoryStrategy) Create(ctx context.Context, category *dto.CategoryDTO) (*dto.CategoryDTO, error) {
-	eventCategory := models.EventCategory{
+func (s *EventCategoryStrategy) Create(ctx context.Context, category *service.CategoryDTO) (*service.CategoryDTO, error) {
+	eventCategory := EventCategory{
 		Name:   category.Name,
 		IconID: category.IconID,
 	}
@@ -79,24 +72,21 @@ func (s *EventCategoryStrategy) Create(ctx context.Context, category *dto.Catego
 	if err := s.db.WithContext(ctx).Create(&eventCategory).Error; err != nil {
 		return nil, fmt.Errorf("ошибка при создании категории мероприятия: %w", err)
 	}
-	categoryDto := &dto.CategoryDTO{
+	return &service.CategoryDTO{
 		ID:     eventCategory.ID,
 		Name:   eventCategory.Name,
 		IconID: eventCategory.IconID,
-	}
-	if eventCategory.Icon != nil {
-		categoryDto.Icon = dto.IconDTO{
-			ID:           eventCategory.Icon.ID,
-			Name:         eventCategory.Icon.Name,
-			ExternalUuid: eventCategory.Icon.FileUUID,
-		}
-	}
-	return categoryDto, nil
+		Icon: service.IconDTO{
+			ID:           eventCategory.IconID,
+			Name:         "",
+			ExternalUuid: "",
+		},
+	}, nil
 }
 
 // Update обновляет существующую категорию мероприятия
-func (s *EventCategoryStrategy) Update(ctx context.Context, category *dto.CategoryDTO) (*dto.CategoryDTO, error) {
-	eventCategory := models.EventCategory{
+func (s *EventCategoryStrategy) Update(ctx context.Context, category *service.CategoryDTO) (*service.CategoryDTO, error) {
+	eventCategory := EventCategory{
 		ID:     category.ID,
 		Name:   category.Name,
 		IconID: category.IconID,
@@ -111,24 +101,21 @@ func (s *EventCategoryStrategy) Update(ctx context.Context, category *dto.Catego
 		return nil, fmt.Errorf("категория мероприятия с ID %d не найдена", category.ID)
 	}
 
-	categoryDto := &dto.CategoryDTO{
+	return &service.CategoryDTO{
 		ID:     eventCategory.ID,
 		Name:   eventCategory.Name,
 		IconID: eventCategory.IconID,
-	}
-	if eventCategory.Icon != nil {
-		categoryDto.Icon = dto.IconDTO{
-			ID:           eventCategory.Icon.ID,
-			Name:         eventCategory.Icon.Name,
-			ExternalUuid: eventCategory.Icon.FileUUID,
-		}
-	}
-	return categoryDto, nil
+		Icon: service.IconDTO{
+			ID:           eventCategory.IconID,
+			Name:         "",
+			ExternalUuid: "",
+		},
+	}, nil
 }
 
 // Delete удаляет категорию мероприятия
 func (s *EventCategoryStrategy) Delete(ctx context.Context, id int) error {
-	result := s.db.WithContext(ctx).Delete(&models.EventCategory{}, id)
+	result := s.db.WithContext(ctx).Delete(&EventCategory{}, id)
 	if result.Error != nil {
 		return fmt.Errorf("ошибка при удалении категории мероприятия: %w", result.Error)
 	}

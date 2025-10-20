@@ -3,8 +3,8 @@ package category
 import (
 	"context"
 
-	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
+	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 )
 
 // CategoryService реализует интерфейс service.Category
@@ -20,22 +20,22 @@ func NewCategoryService(repo repository.Category) *CategoryService {
 }
 
 // GetCategories получает все категории указанного типа
-func (s *CategoryService) GetCategories(ctx context.Context, categoryType string) ([]dto.CategoryDTO, error) {
+func (s *CategoryService) GetCategories(ctx context.Context, categoryType string) ([]service.CategoryDTO, error) {
 	return s.repo.GetAll(ctx, categoryType)
 }
 
 // GetCategoryByID получает категорию по ID и типу
-func (s *CategoryService) GetCategoryByID(ctx context.Context, id int, categoryType string) (*dto.CategoryDTO, error) {
+func (s *CategoryService) GetCategoryByID(ctx context.Context, id int, categoryType string) (*service.CategoryDTO, error) {
 	return s.repo.GetByID(ctx, categoryType, id)
 }
 
 // CreateCategory создает новую категорию указанного типа
-func (s *CategoryService) CreateCategory(ctx context.Context, category *dto.CategoryDTO, categoryType string) (*dto.CategoryDTO, error) {
+func (s *CategoryService) CreateCategory(ctx context.Context, category *service.CategoryDTO, categoryType string) (*service.CategoryDTO, error) {
 	return s.repo.Create(ctx, categoryType, category)
 }
 
 // UpdateCategory обновляет категорию указанного типа
-func (s *CategoryService) UpdateCategory(ctx context.Context, id int, category *dto.CategoryDTO, categoryType string) (*dto.CategoryDTO, error) {
+func (s *CategoryService) UpdateCategory(ctx context.Context, id int, category *service.CategoryDTO, categoryType string) (*service.CategoryDTO, error) {
 	return s.repo.Update(ctx, categoryType, category)
 }
 

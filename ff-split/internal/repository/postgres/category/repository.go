@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
+	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 	"gorm.io/gorm"
 )
 
 type CategoryStrategy interface {
-	GetAll(ctx context.Context) ([]dto.CategoryDTO, error)
-	GetByID(ctx context.Context, id int) (*dto.CategoryDTO, error)
-	Create(ctx context.Context, dto *dto.CategoryDTO) (*dto.CategoryDTO, error)
-	Update(ctx context.Context, dto *dto.CategoryDTO) (*dto.CategoryDTO, error)
+	GetAll(ctx context.Context) ([]service.CategoryDTO, error)
+	GetByID(ctx context.Context, id int) (*service.CategoryDTO, error)
+	Create(ctx context.Context, dto *service.CategoryDTO) (*service.CategoryDTO, error)
+	Update(ctx context.Context, dto *service.CategoryDTO) (*service.CategoryDTO, error)
 	Delete(ctx context.Context, id int) error
 }
 
@@ -45,7 +45,7 @@ func (r *Repository) GetCategoryTypes() ([]string, error) {
 }
 
 // GetAll получает все категории указанного типа
-func (r *Repository) GetAll(ctx context.Context, categoryType string) ([]dto.CategoryDTO, error) {
+func (r *Repository) GetAll(ctx context.Context, categoryType string) ([]service.CategoryDTO, error) {
 	strategy, ok := r.strategies[categoryType]
 	if !ok {
 		return nil, fmt.Errorf("неизвестный тип категории: %s", categoryType)
@@ -54,7 +54,7 @@ func (r *Repository) GetAll(ctx context.Context, categoryType string) ([]dto.Cat
 }
 
 // GetByID получает категорию по ID и типу
-func (r *Repository) GetByID(ctx context.Context, categoryType string, id int) (*dto.CategoryDTO, error) {
+func (r *Repository) GetByID(ctx context.Context, categoryType string, id int) (*service.CategoryDTO, error) {
 	strategy, ok := r.strategies[categoryType]
 	if !ok {
 		return nil, fmt.Errorf("неизвестный тип категории: %s", categoryType)
@@ -63,7 +63,7 @@ func (r *Repository) GetByID(ctx context.Context, categoryType string, id int) (
 }
 
 // Create создает новую категорию
-func (r *Repository) Create(ctx context.Context, categoryType string, dto *dto.CategoryDTO) (*dto.CategoryDTO, error) {
+func (r *Repository) Create(ctx context.Context, categoryType string, dto *service.CategoryDTO) (*service.CategoryDTO, error) {
 	strategy, ok := r.strategies[categoryType]
 	if !ok {
 		return nil, fmt.Errorf("неизвестный тип категории: %s", categoryType)
@@ -72,7 +72,7 @@ func (r *Repository) Create(ctx context.Context, categoryType string, dto *dto.C
 }
 
 // Update обновляет существующую категорию
-func (r *Repository) Update(ctx context.Context, categoryType string, dto *dto.CategoryDTO) (*dto.CategoryDTO, error) {
+func (r *Repository) Update(ctx context.Context, categoryType string, dto *service.CategoryDTO) (*service.CategoryDTO, error) {
 	strategy, ok := r.strategies[categoryType]
 	if !ok {
 		return nil, fmt.Errorf("неизвестный тип категории: %s", categoryType)

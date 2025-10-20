@@ -10,6 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
+// Используем модели БД и мапперы для преобразования
+
 // EventRepository реализует интерфейс repository.Event
 type EventRepository struct {
 	db *gorm.DB
@@ -24,30 +26,36 @@ func NewEventRepository(db *gorm.DB) *EventRepository {
 
 // GetAll возвращает все мероприятия
 func (r *EventRepository) GetAll(ctx context.Context) ([]models.Event, error) {
-	var events []models.Event
-	err := r.db.WithContext(ctx).Find(&events).Error
+	var dbEvents []Event
+	err := r.db.WithContext(ctx).Find(&dbEvents).Error
 	if err != nil {
 		return nil, err
 	}
-	return events, nil
+	return extractSlice(dbEvents), nil
 }
 
 // GetByID возвращает мероприятие по ID
 func (r *EventRepository) GetByID(ctx context.Context, id int64) (*models.Event, error) {
-	var event models.Event
-	err := r.db.WithContext(ctx).First(&event, id).Error
+	var dbEvent Event
+	err := r.db.WithContext(ctx).First(&dbEvent, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil // возвращаем nil, nil если мероприятие не найдено
 		}
 		return nil, err
 	}
-	return &event, nil
+	return extract(&dbEvent), nil
 }
 
 // Create создает новое мероприятие
 func (r *EventRepository) Create(ctx context.Context, event *models.Event) error {
-	return db.GetTx(ctx, r.db).WithContext(ctx).Create(event).Error
+	dbEvent := load(event)
+	if err := db.GetTx(ctx, r.db).WithContext(ctx).Create(dbEvent).Error; err != nil {
+		return err
+	}
+	// Обновляем ID в оригинальной модели
+	event.ID = dbEvent.ID
+	return nil
 }
 
 // Update обновляет мероприятие
@@ -56,15 +64,16 @@ func (r *EventRepository) Update(ctx context.Context, id int64, event *models.Ev
 
 	// Проверка существования записи
 	var exists bool
-	if err := conn.Model(&models.Event{}).Select("count(*) > 0").Where("id = ?", id).Find(&exists).Error; err != nil {
+	if err := conn.Model(&Event{}).Select("count(*) > 0").Where("id = ?", id).Find(&exists).Error; err != nil {
 		return fmt.Errorf("ошибка при проверке существования мероприятия: %w", err)
 	}
 	if !exists {
 		return gorm.ErrRecordNotFound
 	}
 
-	event.ID = id
-	if err := conn.Model(&models.Event{}).Where("id = ?", id).Updates(event).Error; err != nil {
+	dbEvent := load(event)
+	dbEvent.ID = id
+	if err := conn.Model(&Event{}).Where("id = ?", id).Updates(dbEvent).Error; err != nil {
 		return fmt.Errorf("ошибка при обновлении мероприятия: %w", err)
 	}
 
@@ -75,12 +84,12 @@ func (r *EventRepository) Update(ctx context.Context, id int64, event *models.Ev
 func (r *EventRepository) Delete(ctx context.Context, id int64) error {
 	err := db.WithTx(ctx, r.db, func(ctx context.Context) error {
 
-		result := db.GetTx(ctx, r.db).WithContext(ctx).Delete(&models.UserEvent{}, "event_id = ?", id)
+		result := db.GetTx(ctx, r.db).WithContext(ctx).Exec("DELETE FROM user_event WHERE event_id = ?", id)
 		if result.Error != nil {
 			return result.Error
 		}
 
-		result = db.GetTx(ctx, r.db).WithContext(ctx).Delete(&models.Event{}, id)
+		result = db.GetTx(ctx, r.db).WithContext(ctx).Delete(&Event{}, id)
 		if result.Error != nil {
 			return result.Error
 		}
@@ -93,4 +102,3 @@ func (r *EventRepository) Delete(ctx context.Context, id int64) error {
 	})
 	return err
 }
-
