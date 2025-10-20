@@ -3,282 +3,155 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
-	"github.com/ivasnev/FinFlow/ff-split/internal/service"
+	"github.com/ivasnev/FinFlow/ff-split/pkg/api"
 )
 
-// CategoryHandler реализует интерфейс handler.CategoryHandlerInterface
-type CategoryHandler struct {
-	service service.CategoryServiceInterface
-}
-
-// NewCategoryHandler создает новый экземпляр CategoryHandlerInterface
-func NewCategoryHandler(service service.CategoryServiceInterface) *CategoryHandler {
-	return &CategoryHandler{
-		service: service,
-	}
-}
-
-// Options обрабатывает запрос на получение списка доступных типов категорий
-// @Summary Получить типы категорий
-// @Description Возвращает список всех доступных типов категорий
-// @Tags категории
-// @Accept json
-// @Produce json
-// @Success 200 {array} string "Список типов категорий"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/category [options]
-func (h *CategoryHandler) Options(c *gin.Context) {
-	types, err := h.service.GetCategoryTypes()
-	if err != nil {
-		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении типов категорий: %w", err))
-		return
-	}
-
-	c.JSON(http.StatusOK, types)
-}
-
-// GetCategories обрабатывает запрос на получение списка категорий
-// @Summary Получить категории
-// @Description Возвращает список категорий указанного типа
-// @Tags категории
-// @Accept json
-// @Produce json
-// @Param category_type query string true "Тип категории"
-// @Success 200 {object} dto.CategoryListResponse "Список категорий"
-// @Failure 400 {object} errors.ErrorResponse "Не указан тип категорий"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/category [get]
-func (h *CategoryHandler) GetCategories(c *gin.Context) {
-	ctx := c.Request.Context()
-
-	// Получаем тип категории из query параметра
+// GetCategories возвращает список категорий
+func (s *ServerHandler) GetCategories(c *gin.Context) {
+	// TODO: добавить category_type как query параметр в OpenAPI
 	categoryType := c.Query("category_type")
 	if categoryType == "" {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("category_type", "не указан тип категорий"))
-		return
+		categoryType = "transaction" // default type
 	}
 
-	categories, err := h.service.GetCategories(ctx, categoryType)
+	categories, err := s.categoryService.GetCategories(c.Request.Context(), categoryType)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении категорий: %w", err))
 		return
 	}
 
-	// Преобразуем модели в DTO для ответа
-	response := dto.CategoryListResponse{
-		Categories: make([]dto.CategoryResponse, 0, len(categories)),
+	apiCategories := make([]api.CategoryResponse, 0, len(categories))
+	for _, cat := range categories {
+		apiCategories = append(apiCategories, convertCategoryToAPI(&cat))
 	}
 
-	for _, category := range categories {
-		response.Categories = append(response.Categories, dto.CategoryResponse{
-			ID:   category.ID,
-			Name: category.Name,
-			Icon: category.Icon,
-		})
-	}
-
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, api.CategoryListResponse{Categories: &apiCategories})
 }
 
-// GetCategoryByID обрабатывает запрос на получение категории по ID
-// @Summary Получить категорию по ID
-// @Description Возвращает информацию о конкретной категории по её ID
-// @Tags категории
-// @Accept json
-// @Produce json
-// @Param id path int true "ID категории"
-// @Param category_type query string true "Тип категории"
-// @Success 200 {object} dto.CategoryResponse "Информация о категории"
-// @Failure 400 {object} errors.ErrorResponse "Некорректный ID категории или не указан тип"
-// @Failure 404 {object} errors.ErrorResponse "Категория не найдена"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/category/{id} [get]
-func (h *CategoryHandler) GetCategoryByID(c *gin.Context) {
-	ctx := c.Request.Context()
-
-	// Получаем ID категории из URL
-	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id", "некорректный ID категории"))
-		return
-	}
-
-	// Получаем тип категории из query параметра
+// GetCategoryByID возвращает категорию по ID
+func (s *ServerHandler) GetCategoryByID(c *gin.Context, id int) {
+	// TODO: добавить category_type как query параметр в OpenAPI
 	categoryType := c.Query("category_type")
 	if categoryType == "" {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("category_type", "не указан тип категорий"))
-		return
+		categoryType = "transaction" // default type
 	}
 
-	category, err := h.service.GetCategoryByID(ctx, id, categoryType)
+	category, err := s.categoryService.GetCategoryByID(c.Request.Context(), id, categoryType)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении категории: %w", err))
 		return
 	}
 
 	if category == nil {
-		errors.HTTPErrorHandler(c, errors.NewEntityNotFoundError(idStr, "категория"))
+		c.JSON(http.StatusNotFound, api.ErrorResponse{Error: "категория не найдена"})
 		return
 	}
 
-	c.JSON(http.StatusOK, dto.CategoryResponse{
-		ID:   category.ID,
-		Name: category.Name,
-		Icon: category.Icon,
-	})
+	c.JSON(http.StatusOK, convertCategoryToAPI(category))
 }
 
-// CreateCategory обрабатывает запрос на создание новой категории
-// @Summary Создать новую категорию
-// @Description Создает новую категорию указанного типа
-// @Tags категории
-// @Accept json
-// @Produce json
-// @Param category_type query string true "Тип категории"
-// @Param category body dto.CategoryRequest true "Данные категории"
-// @Success 201 {object} dto.CategoryResponse "Созданная категория"
-// @Failure 400 {object} errors.ErrorResponse "Некорректные данные запроса или не указан тип"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/manage/category [post]
-func (h *CategoryHandler) CreateCategory(c *gin.Context) {
-	ctx := c.Request.Context()
-
-	// Получаем данные запроса
-	var request dto.CategoryRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("request_body", err.Error()))
+// CreateCategory создает новую категорию
+func (s *ServerHandler) CreateCategory(c *gin.Context) {
+	var apiRequest api.CategoryRequest
+	if err := c.ShouldBindJSON(&apiRequest); err != nil {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "некорректные данные запроса"})
 		return
 	}
 
-	// Получаем тип категории из query параметра
+	// TODO: добавить category_type как query параметр в OpenAPI
 	categoryType := c.Query("category_type")
 	if categoryType == "" {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("category_type", "не указан тип категорий"))
-		return
+		categoryType = "transaction" // default type
 	}
 
-	category := &dto.CategoryDTO{
-		Name:   request.Name,
-		IconID: request.IconID,
+	var iconID int
+	if apiRequest.IconId != nil {
+		iconID = *apiRequest.IconId
 	}
 
-	createdCategory, err := h.service.CreateCategory(ctx, category, categoryType)
+	dtoCategory := &dto.CategoryDTO{
+		Name:   apiRequest.Name,
+		IconID: iconID,
+	}
+
+	category, err := s.categoryService.CreateCategory(c.Request.Context(), dtoCategory, categoryType)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при создании категории: %w", err))
 		return
 	}
 
-	c.JSON(http.StatusCreated, dto.CategoryResponse{
-		ID:   createdCategory.ID,
-		Name: createdCategory.Name,
-		Icon: createdCategory.Icon,
-	})
+	c.JSON(http.StatusCreated, convertCategoryToAPI(category))
 }
 
-// UpdateCategory обрабатывает запрос на обновление категории
-// @Summary Обновить категорию
-// @Description Обновляет существующую категорию по ID
-// @Tags категории
-// @Accept json
-// @Produce json
-// @Param id path int true "ID категории"
-// @Param category_type query string true "Тип категории"
-// @Param category body dto.CategoryRequest true "Данные категории"
-// @Success 200 {object} dto.CategoryResponse "Обновленная категория"
-// @Failure 400 {object} errors.ErrorResponse "Некорректные данные запроса или не указан тип"
-// @Failure 404 {object} errors.ErrorResponse "Категория не найдена"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/manage/category/{id} [put]
-func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
-	ctx := c.Request.Context()
-
-	// Получаем ID категории из URL
-	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id", "некорректный ID категории"))
+// UpdateCategory обновляет категорию
+func (s *ServerHandler) UpdateCategory(c *gin.Context, id int) {
+	var apiRequest api.CategoryRequest
+	if err := c.ShouldBindJSON(&apiRequest); err != nil {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "некорректные данные запроса"})
 		return
 	}
 
-	// Получаем данные запроса
-	var request dto.CategoryRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("request_body", err.Error()))
-		return
-	}
-
-	// Получаем тип категории из query параметра
+	// TODO: добавить category_type как query параметр в OpenAPI
 	categoryType := c.Query("category_type")
 	if categoryType == "" {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("category_type", "не указан тип категорий"))
-		return
+		categoryType = "transaction" // default type
 	}
 
-	category := &dto.CategoryDTO{
-		Name:   request.Name,
-		IconID: request.IconID,
+	var iconID int
+	if apiRequest.IconId != nil {
+		iconID = *apiRequest.IconId
 	}
 
-	updatedCategory, err := h.service.UpdateCategory(ctx, id, category, categoryType)
+	dtoCategory := &dto.CategoryDTO{
+		ID:     id,
+		Name:   apiRequest.Name,
+		IconID: iconID,
+	}
+
+	category, err := s.categoryService.UpdateCategory(c.Request.Context(), id, dtoCategory, categoryType)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при обновлении категории: %w", err))
 		return
 	}
 
-	if updatedCategory == nil {
-		errors.HTTPErrorHandler(c, errors.NewEntityNotFoundError(idStr, "категория"))
-		return
-	}
-
-	c.JSON(http.StatusOK, dto.CategoryResponse{
-		ID:   updatedCategory.ID,
-		Name: updatedCategory.Name,
-		Icon: updatedCategory.Icon,
-	})
+	c.JSON(http.StatusOK, convertCategoryToAPI(category))
 }
 
-// DeleteCategory обрабатывает запрос на удаление категории
-// @Summary Удалить категорию
-// @Description Удаляет категорию по ID
-// @Tags категории
-// @Accept json
-// @Produce json
-// @Param id path int true "ID категории"
-// @Param category_type query string true "Тип категории"
-// @Success 200 {object} dto.SuccessResponse "Категория успешно удалена"
-// @Failure 400 {object} errors.ErrorResponse "Некорректный ID категории или не указан тип"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/manage/category/{id} [delete]
-func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
-	ctx := c.Request.Context()
-
-	// Получаем ID категории из URL
-	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id", "некорректный ID категории"))
-		return
-	}
-
-	// Получаем тип категории из query параметра
+// DeleteCategory удаляет категорию
+func (s *ServerHandler) DeleteCategory(c *gin.Context, id int) {
+	// TODO: добавить category_type как query параметр в OpenAPI
 	categoryType := c.Query("category_type")
 	if categoryType == "" {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("category_type", "не указан тип категорий"))
-		return
+		categoryType = "transaction" // default type
 	}
 
-	if err := h.service.DeleteCategory(ctx, id, categoryType); err != nil {
+	err := s.categoryService.DeleteCategory(c.Request.Context(), id, categoryType)
+	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при удалении категории: %w", err))
 		return
 	}
 
-	c.JSON(http.StatusOK, dto.SuccessResponse{
-		Success: true,
-	})
+	c.JSON(http.StatusOK, api.SuccessResponse{Success: true})
+}
+
+// Helper functions
+
+func convertCategoryToAPI(cat *dto.CategoryDTO) api.CategoryResponse {
+	var icon *api.IconDTO
+	apiIcon := api.IconDTO{
+		Id:           &cat.Icon.ID,
+		Name:         &cat.Icon.Name,
+		ExternalUuid: &cat.Icon.ExternalUuid,
+	}
+	icon = &apiIcon
+
+	return api.CategoryResponse{
+		Id:   &cat.ID,
+		Name: &cat.Name,
+		Icon: icon,
+	}
 }

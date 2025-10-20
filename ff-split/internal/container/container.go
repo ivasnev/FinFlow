@@ -3,6 +3,7 @@ package container
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -11,16 +12,30 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
-	"github.com/ivasnev/FinFlow/ff-id/pkg/client"
+	ffidadapter "github.com/ivasnev/FinFlow/ff-split/internal/adapters/ffid"
 	handler "github.com/ivasnev/FinFlow/ff-split/internal/api/handler"
 	"github.com/ivasnev/FinFlow/ff-split/internal/api/middleware"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/config"
-	pg_repos "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres"
+	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
+	activity_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/activity"
 	category_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/category"
-	service "github.com/ivasnev/FinFlow/ff-split/internal/service"
+	event_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/event"
+	icon_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/icon"
+	task_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/task"
+	transaction_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/transaction"
+	user_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/user"
+	"github.com/ivasnev/FinFlow/ff-split/internal/service"
+	activity_service "github.com/ivasnev/FinFlow/ff-split/internal/service/activity"
+	category_service "github.com/ivasnev/FinFlow/ff-split/internal/service/category"
+	event_service "github.com/ivasnev/FinFlow/ff-split/internal/service/event"
+	icon_service "github.com/ivasnev/FinFlow/ff-split/internal/service/icon"
+	task_service "github.com/ivasnev/FinFlow/ff-split/internal/service/task"
+	transaction_service "github.com/ivasnev/FinFlow/ff-split/internal/service/transaction"
+	user_service "github.com/ivasnev/FinFlow/ff-split/internal/service/user"
+	"github.com/ivasnev/FinFlow/ff-split/pkg/api"
 	tvmclient "github.com/ivasnev/FinFlow/ff-tvm/pkg/client"
+	tvmtransport "github.com/ivasnev/FinFlow/ff-tvm/pkg/transport"
 
-	//tvmmiddleware "github.com/ivasnev/FinFlow/ff-tvm/pkg/middleware"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -38,36 +53,32 @@ type Container struct {
 	DB     *gorm.DB
 
 	// Репозитории
-	CategoryRepository    *category_repository.Repository
-	EventRepository       *pg_repos.EventRepository
-	ActivityRepository    *pg_repos.ActivityRepository
-	UserRepository        *pg_repos.UserRepository
-	IconRepository        *pg_repos.IconRepository
-	TaskRepository        *pg_repos.TaskRepository
-	TransactionRepository *pg_repos.TransactionRepository
+	CategoryRepository    repository.Category
+	EventRepository       repository.Event
+	ActivityRepository    repository.Activity
+	UserRepository        repository.User
+	IconRepository        repository.Icon
+	TaskRepository        repository.Task
+	TransactionRepository repository.Transaction
 
 	// Сервисы
-	CategoryService    service.CategoryServiceInterface
-	EventService       service.EventServiceInterface
-	ActivityService    service.ActivityServiceInterface
-	UserService        service.UserServiceInterface
-	IconService        service.IconServiceInterface
-	TaskService        service.TaskServiceInterface
-	TransactionService service.TransactionServiceInterface
+	CategoryService    service.Category
+	EventService       service.Event
+	ActivityService    service.Activity
+	UserService        service.User
+	IconService        service.Icon
+	TaskService        service.Task
+	TransactionService service.Transaction
 
-	// Обработчики маршрутов
-	CategoryHandler    handler.CategoryHandlerInterface
-	EventHandler       handler.EventHandlerInterface
-	ActivityHandler    handler.ActivityHandlerInterface
-	IconHandler        handler.IconHandlerInterface
-	TaskHandler        handler.TaskHandlerInterface
-	TransactionHandler handler.TransactionHandlerInterface
-	UserHandler        handler.UserHandlerInterface
+	// Адаптеры
+	IDAdapter *ffidadapter.Adapter
+
+	// Обработчик
+	ServerHandler *handler.ServerHandler
 
 	// Клиенты внешних сервисов
 	AuthClient *auth.Client
 	TVMClient  *tvmclient.TVMClient
-	IDClient   *client.Client
 }
 
 // NewContainer - конструктор контейнера зависимостей
@@ -94,17 +105,28 @@ func NewContainer(cfg *config.Config, router *gin.Engine) (*Container, error) {
 		cfg.TVM.ServiceSecret,
 	)
 
-	// Инициализируем ID клиент
-	container.IDClient = client.NewClient(
-		cfg.IDService.BaseURL,
+	// Инициализируем TVM транспорт для ff-id
+	tvmTransport := tvmtransport.NewTVMTransport(
+		container.TVMClient,
+		http.DefaultTransport,
 		cfg.TVM.ServiceID,
 		cfg.IDService.ServiceID,
-		container.TVMClient,
 	)
+	httpClient := &http.Client{
+		Transport: tvmTransport,
+		Timeout:   10 * time.Second,
+	}
+
+	// Инициализируем адаптер ff-id
+	var err error
+	container.IDAdapter, err = ffidadapter.NewAdapter(cfg.IDService.BaseURL, httpClient)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка инициализации ff-id адаптера: %w", err)
+	}
 
 	container.initRepositories()
 	container.initServices()
-	container.initHandlers()
+	container.initHandler()
 
 	return container, nil
 }
@@ -112,34 +134,36 @@ func NewContainer(cfg *config.Config, router *gin.Engine) (*Container, error) {
 // initRepositories инициализирует репозитории
 func (c *Container) initRepositories() {
 	c.CategoryRepository = category_repository.NewRepository(c.DB)
-	c.EventRepository = pg_repos.NewEventRepository(c.DB)
-	c.ActivityRepository = pg_repos.NewActivityRepository(c.DB)
-	c.UserRepository = pg_repos.NewUserRepository(c.DB)
-	c.IconRepository = pg_repos.NewIconRepository(c.DB)
-	c.TaskRepository = pg_repos.NewTaskRepository(c.DB)
-	c.TransactionRepository = pg_repos.NewTransactionRepository(c.DB)
+	c.EventRepository = event_repository.NewEventRepository(c.DB)
+	c.ActivityRepository = activity_repository.NewActivityRepository(c.DB)
+	c.UserRepository = user_repository.NewUserRepository(c.DB)
+	c.IconRepository = icon_repository.NewIconRepository(c.DB)
+	c.TaskRepository = task_repository.NewTaskRepository(c.DB)
+	c.TransactionRepository = transaction_repository.NewTransactionRepository(c.DB)
 }
 
 // initServices инициализирует сервисы
 func (c *Container) initServices() {
-	c.UserService = service.NewUserService(c.UserRepository, c.IDClient)
-	c.CategoryService = service.NewCategoryService(c.CategoryRepository)
-	c.EventService = service.NewEventService(c.EventRepository, c.DB, c.UserService)
-	c.ActivityService = service.NewActivityService(c.ActivityRepository)
-	c.IconService = service.NewIconService(c.IconRepository)
-	c.TaskService = service.NewTaskService(c.TaskRepository, c.UserService)
-	c.TransactionService = service.NewTransactionService(c.DB, c.TransactionRepository, c.UserService, c.EventService)
+	c.UserService = user_service.NewUserService(c.UserRepository, c.IDAdapter)
+	c.CategoryService = category_service.NewCategoryService(c.CategoryRepository)
+	c.EventService = event_service.NewEventService(c.EventRepository, c.DB, c.UserService)
+	c.ActivityService = activity_service.NewActivityService(c.ActivityRepository)
+	c.IconService = icon_service.NewIconService(c.IconRepository)
+	c.TaskService = task_service.NewTaskService(c.TaskRepository, c.UserService)
+	c.TransactionService = transaction_service.NewTransactionService(c.DB, c.TransactionRepository, c.UserService, c.EventService)
 }
 
-// initHandlers инициализирует обработчики
-func (c *Container) initHandlers() {
-	c.CategoryHandler = handler.NewCategoryHandler(c.CategoryService)
-	c.EventHandler = handler.NewEventHandler(c.EventService, c.UserService)
-	c.ActivityHandler = handler.NewActivityHandler(c.ActivityService)
-	c.IconHandler = handler.NewIconHandler(c.IconService)
-	c.TaskHandler = handler.NewTaskHandler(c.TaskService)
-	c.TransactionHandler = handler.NewTransactionHandler(c.TransactionService)
-	c.UserHandler = handler.NewUserHandler(c.UserService)
+// initHandler инициализирует ServerHandler
+func (c *Container) initHandler() {
+	c.ServerHandler = handler.NewServerHandler(
+		c.EventService,
+		c.UserService,
+		c.TransactionService,
+		c.ActivityService,
+		c.TaskService,
+		c.CategoryService,
+		c.IconService,
+	)
 }
 
 // initDB инициализирует подключение к базе данных
@@ -200,126 +224,21 @@ func (c *Container) RegisterRoutes() {
 	// Swagger
 	c.Router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// API версии v1
-	v1 := c.Router.Group("/api/v1")
-
 	// Middleware для авторизации
 	authMiddleware := auth.AuthMiddleware(c.AuthClient)
 
-	// Middleware для TVM
-	//tvmMiddleware := tvmmiddleware.NewTVMMiddleware(c.TVMClient)
-
-	// Категории
-	categoryRoutes := v1.Group("/category")
-	{
-		categoryRoutes.OPTIONS("", c.CategoryHandler.Options)
-		categoryRoutes.GET("", c.CategoryHandler.GetCategories)
-		categoryRoutes.GET("/:id", c.CategoryHandler.GetCategoryByID)
-	}
-
-	// Мероприятия
-	eventRoutes := v1.Group("/event", authMiddleware)
-	{
-		// Список мероприятий
-		eventRoutes.GET("/", c.EventHandler.GetEvents)
-
-		// Маршруты для отдельного мероприятия
-		eventRoutes.GET("/:id_event", c.EventHandler.GetEventByID)
-		eventRoutes.POST("", c.EventHandler.CreateEvent)
-		eventRoutes.PUT("/:id_event", c.EventHandler.UpdateEvent)
-		eventRoutes.DELETE("/:id_event", c.EventHandler.DeleteEvent)
-
-		activityRoutes := eventRoutes.Group("/:id_event/activity")
-		{
-			// Активности мероприятия
-			activityRoutes.GET("", c.ActivityHandler.GetActivitiesByEventID)
-			activityRoutes.GET("/:id_activity", c.ActivityHandler.GetActivityByID)
-			activityRoutes.POST("", c.ActivityHandler.CreateActivity)
-			activityRoutes.PUT("/:id_activity", c.ActivityHandler.UpdateActivity)
-			activityRoutes.DELETE("/:id_activity", c.ActivityHandler.DeleteActivity)
-		}
-
-		// Задачи мероприятия
-		taskRoutes := eventRoutes.Group("/:id_event/task")
-		{
-			taskRoutes.GET("", c.TaskHandler.GetTasksByEventID)
-			taskRoutes.GET("/:id_task", c.TaskHandler.GetTaskByID)
-			taskRoutes.POST("", c.TaskHandler.CreateTask)
-			taskRoutes.PUT("/:id_task", c.TaskHandler.UpdateTask)
-			taskRoutes.DELETE("/:id_task", c.TaskHandler.DeleteTask)
-		}
-
-		// Транзакции мероприятия
-		transactionRoutes := eventRoutes.Group("/:id_event/transaction")
-		{
-			transactionRoutes.GET("", c.TransactionHandler.GetTransactionsByEventID)
-			transactionRoutes.GET("/:id_transaction", c.TransactionHandler.GetTransactionByID)
-			transactionRoutes.POST("", c.TransactionHandler.CreateTransaction)
-			transactionRoutes.PUT("/:id_transaction", c.TransactionHandler.UpdateTransaction)
-			transactionRoutes.DELETE("/:id_transaction", c.TransactionHandler.DeleteTransaction)
-		}
-
-		// Долги мероприятия
-		eventRoutes.GET("/:id_event/debts", c.TransactionHandler.GetDebtsByEventID)
-
-		// Оптимизированные долги мероприятия
-		eventRoutes.GET("/:id_event/optimized-debts", c.TransactionHandler.GetOptimizedDebtsByEventID)
-		eventRoutes.POST("/:id_event/optimized-debts", c.TransactionHandler.OptimizeDebts)
-		eventRoutes.GET("/:id_event/user/:id_user/optimized-debts", c.TransactionHandler.GetOptimizedDebtsByUserID)
-
-		// Пользователи мероприятия
-		users := eventRoutes.Group("/:id_event/user")
-		{
-			users.GET("", c.UserHandler.GetUsersByEventID)
-			users.POST("", c.UserHandler.AddUsersToEvent)
-			users.DELETE("/:id_user", c.UserHandler.RemoveUserFromEvent)
-
-			// Dummy-пользователи
-			users.GET("/dummies", c.UserHandler.GetDummiesByEventID)
-			users.POST("/dummy", c.UserHandler.CreateDummyUser)
-			users.POST("/dummies", c.UserHandler.BatchCreateDummyUsers)
-		}
-	}
-
-	// Управление (требуется роль service_admin)
-	manageRoutes := v1.Group("/manage")
-	{
-		categoryManageRoutes := manageRoutes.Group("/category")
-		{
-			categoryManageRoutes.OPTIONS("", c.CategoryHandler.Options)
-			categoryManageRoutes.POST("", c.CategoryHandler.CreateCategory)
-			categoryManageRoutes.PUT("/:id", c.CategoryHandler.UpdateCategory)
-			categoryManageRoutes.DELETE("/:id", c.CategoryHandler.DeleteCategory)
-		}
-		// Типы транзакций
-		manageRoutes.Group("/transaction_type")
-		{
-			// Здесь будут добавлены маршруты для типов транзакций
-		}
-
-		// Иконки
-		iconsRoutes := manageRoutes.Group("/icons")
-		{
-			iconsRoutes.GET("", c.IconHandler.GetIcons)
-			iconsRoutes.GET("/:id", c.IconHandler.GetIconByID)
-			iconsRoutes.POST("", c.IconHandler.CreateIcon)
-			iconsRoutes.PUT("/:id", c.IconHandler.UpdateIcon)
-			iconsRoutes.DELETE("/:id", c.IconHandler.DeleteIcon)
-		}
-	}
-
-	// Пользователи
-	users := v1.Group("/user")
-	{
-		users.GET("/:id_user", c.UserHandler.GetUserByID)
-		users.PUT("/:id_user", c.UserHandler.UpdateUser)
-		users.DELETE("/:id_user", c.UserHandler.DeleteUser)
-		users.POST("/sync", c.UserHandler.SyncUsers)
-		users.POST("/list", c.UserHandler.GetUsersByIDs)
-	}
+	// Регистрируем маршруты с помощью сгенерированного кода
+	api.RegisterHandlersWithOptions(c.Router, c.ServerHandler, api.GinServerOptions{
+		BaseURL: "",
+		Middlewares: []api.MiddlewareFunc{
+			func(c *gin.Context) {
+				authMiddleware(c)
+			},
+		},
+	})
 
 	// Базовый маршрут для проверки работоспособности сервиса
-	v1.GET("/health", func(ctx *gin.Context) {
+	c.Router.GET("/api/v1/health", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{
 			"status": "ok",
 			"name":   "FinFlow Split Service",

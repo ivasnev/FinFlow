@@ -3,176 +3,132 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
-	"github.com/ivasnev/FinFlow/ff-split/internal/service"
+	"github.com/ivasnev/FinFlow/ff-split/pkg/api"
 )
 
-// TaskHandler обработчик для работы с задачами
-type TaskHandler struct {
-	service service.TaskServiceInterface
-}
-
-// NewTaskHandler создает новый обработчик для работы с задачами
-func NewTaskHandler(service service.TaskServiceInterface) *TaskHandler {
-	return &TaskHandler{service: service}
-}
-
-// GetTasksByEventID возвращает список всех задач мероприятия
-// @Summary Получить все задачи мероприятия
-// @Description Возвращает список всех задач, связанных с указанным мероприятием
-// @Tags задачи
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Success 200 {object} dto.TaskListResponse "Список задач"
-// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID мероприятия"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/event/{id_event}/task [get]
-func (h *TaskHandler) GetTasksByEventID(c *gin.Context) {
-	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
-	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "неверный формат ID мероприятия"))
-		return
-	}
-
-	tasks, err := h.service.GetTasksByEventID(c.Request.Context(), eventID)
+// GetTasksByEventID возвращает задачи мероприятия
+func (s *ServerHandler) GetTasksByEventID(c *gin.Context, idEvent int64) {
+	tasks, err := s.taskService.GetTasksByEventID(c.Request.Context(), idEvent)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении задач: %w", err))
 		return
 	}
 
-	c.JSON(http.StatusOK, dto.TaskListResponse{Tasks: tasks})
+	apiTasks := make([]api.TaskDTO, 0, len(tasks))
+	for _, t := range tasks {
+		apiTasks = append(apiTasks, convertTaskToAPI(&t))
+	}
+
+	c.JSON(http.StatusOK, api.TaskListResponse{Tasks: &apiTasks})
 }
 
 // GetTaskByID возвращает задачу по ID
-// @Summary Получить задачу по ID
-// @Description Возвращает информацию о конкретной задаче по её ID
-// @Tags задачи
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Param id_task path int true "ID задачи"
-// @Success 200 {object} dto.TaskResponse "Информация о задаче"
-// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID"
-// @Failure 404 {object} errors.ErrorResponse "Задача не найдена"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/event/{id_event}/task/{id_task} [get]
-func (h *TaskHandler) GetTaskByID(c *gin.Context) {
-	idStr := c.Param("id_task")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id_task", "неверный формат ID задачи"))
-		return
-	}
-
-	task, err := h.service.GetTaskByID(c.Request.Context(), uint(id))
+func (s *ServerHandler) GetTaskByID(c *gin.Context, idEvent int64, idTask int) {
+	task, err := s.taskService.GetTaskByID(c.Request.Context(), uint(idTask))
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении задачи: %w", err))
 		return
 	}
 
-	c.JSON(http.StatusOK, dto.TaskResponse{Task: *task})
+	if task == nil {
+		c.JSON(http.StatusNotFound, api.ErrorResponse{Error: "задача не найдена"})
+		return
+	}
+
+	c.JSON(http.StatusOK, api.TaskResponse{Task: convertTaskToAPIPtr(task)})
 }
 
 // CreateTask создает новую задачу
-// @Summary Создать новую задачу
-// @Description Создает новую задачу в рамках указанного мероприятия
-// @Tags задачи
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Param task body dto.TaskRequest true "Данные задачи"
-// @Success 201 {object} dto.TaskResponse "Созданная задача"
-// @Failure 400 {object} errors.ErrorResponse "Неверный формат данных запроса"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/event/{id_event}/task [post]
-func (h *TaskHandler) CreateTask(c *gin.Context) {
-	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
-	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "неверный формат ID мероприятия"))
+func (s *ServerHandler) CreateTask(c *gin.Context, idEvent int64) {
+	var apiRequest api.TaskRequest
+	if err := c.ShouldBindJSON(&apiRequest); err != nil {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "некорректные данные запроса"})
 		return
 	}
 
-	var taskRequest dto.TaskRequest
-	if err := c.ShouldBindJSON(&taskRequest); err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("request_body", err.Error()))
-		return
+	dtoRequest := dto.TaskRequest{
+		UserID: apiRequest.UserId,
+		Title:  apiRequest.Title,
 	}
 
-	createdTask, err := h.service.CreateTask(c.Request.Context(), eventID, &taskRequest)
+	if apiRequest.Description != nil {
+		dtoRequest.Description = *apiRequest.Description
+	}
+
+	if apiRequest.Priority != nil {
+		dtoRequest.Priority = *apiRequest.Priority
+	}
+
+	task, err := s.taskService.CreateTask(c.Request.Context(), idEvent, &dtoRequest)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при создании задачи: %w", err))
 		return
 	}
 
-	c.JSON(http.StatusCreated, dto.TaskResponse{Task: *createdTask})
+	c.JSON(http.StatusCreated, api.TaskResponse{Task: convertTaskToAPIPtr(task)})
 }
 
-// UpdateTask обновляет существующую задачу
-// @Summary Обновить задачу
-// @Description Обновляет существующую задачу по ID
-// @Tags задачи
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Param id_task path int true "ID задачи"
-// @Param task body dto.TaskRequest true "Данные задачи"
-// @Success 200 {object} dto.TaskResponse "Обновленная задача"
-// @Failure 400 {object} errors.ErrorResponse "Неверный формат данных запроса"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/event/{id_event}/task/{id_task} [put]
-func (h *TaskHandler) UpdateTask(c *gin.Context) {
-	idStr := c.Param("id_task")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id_task", "неверный формат ID задачи"))
+// UpdateTask обновляет задачу
+func (s *ServerHandler) UpdateTask(c *gin.Context, idEvent int64, idTask int) {
+	var apiRequest api.TaskRequest
+	if err := c.ShouldBindJSON(&apiRequest); err != nil {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "некорректные данные запроса"})
 		return
 	}
 
-	var taskRequest dto.TaskRequest
-	if err := c.ShouldBindJSON(&taskRequest); err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("request_body", err.Error()))
-		return
+	dtoRequest := dto.TaskRequest{
+		UserID: apiRequest.UserId,
+		Title:  apiRequest.Title,
 	}
 
-	updatedTask, err := h.service.UpdateTask(c.Request.Context(), uint(id), &taskRequest)
+	if apiRequest.Description != nil {
+		dtoRequest.Description = *apiRequest.Description
+	}
+
+	if apiRequest.Priority != nil {
+		dtoRequest.Priority = *apiRequest.Priority
+	}
+
+	task, err := s.taskService.UpdateTask(c.Request.Context(), uint(idTask), &dtoRequest)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при обновлении задачи: %w", err))
 		return
 	}
 
-	c.JSON(http.StatusOK, dto.TaskResponse{Task: *updatedTask})
+	c.JSON(http.StatusOK, api.TaskResponse{Task: convertTaskToAPIPtr(task)})
 }
 
-// DeleteTask удаляет задачу по ID
-// @Summary Удалить задачу
-// @Description Удаляет задачу по ID
-// @Tags задачи
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Param id_task path int true "ID задачи"
-// @Success 204 "Задача успешно удалена"
-// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/event/{id_event}/task/{id_task} [delete]
-func (h *TaskHandler) DeleteTask(c *gin.Context) {
-	idStr := c.Param("id_task")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id_task", "неверный формат ID задачи"))
-		return
-	}
-
-	err = h.service.DeleteTask(c.Request.Context(), uint(id))
+// DeleteTask удаляет задачу
+func (s *ServerHandler) DeleteTask(c *gin.Context, idEvent int64, idTask int) {
+	err := s.taskService.DeleteTask(c.Request.Context(), uint(idTask))
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при удалении задачи: %w", err))
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	c.JSON(http.StatusOK, api.SuccessResponse{Success: true})
+}
+
+// Helper functions
+
+func convertTaskToAPI(t *dto.TaskDTO) api.TaskDTO {
+	id := int(t.ID)
+	return api.TaskDTO{
+		Id:          &id,
+		EventId:     &t.EventID,
+		UserId:      &t.UserID,
+		Title:       &t.Title,
+		Description: &t.Description,
+		Priority:    &t.Priority,
+		CreatedAt:   &t.CreatedAt,
+	}
+}
+
+func convertTaskToAPIPtr(t *dto.TaskDTO) *api.TaskDTO {
+	task := convertTaskToAPI(t)
+	return &task
 }

@@ -3,305 +3,245 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-split/internal/api/dto"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
-	"github.com/ivasnev/FinFlow/ff-split/internal/service"
+	"github.com/ivasnev/FinFlow/ff-split/pkg/api"
 )
 
-// TransactionHandler обработчик для работы с транзакциями
-type TransactionHandler struct {
-	service service.TransactionServiceInterface
-}
-
-// NewTransactionHandler создает новый обработчик для работы с транзакциями
-func NewTransactionHandler(service service.TransactionServiceInterface) *TransactionHandler {
-	return &TransactionHandler{service: service}
-}
-
 // GetTransactionsByEventID возвращает список транзакций мероприятия
-// @Summary Получить все транзакции мероприятия
-// @Description Возвращает список всех транзакций, связанных с указанным мероприятием
-// @Tags транзакции
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Success 200 {object} dto.TransactionListResponse "Список транзакций"
-// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID мероприятия"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/event/{id_event}/transaction [get]
-func (h *TransactionHandler) GetTransactionsByEventID(c *gin.Context) {
-	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
-	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "неверный формат ID мероприятия"))
-		return
-	}
-
-	transactions, err := h.service.GetTransactionsByEventID(c.Request.Context(), eventID)
+func (s *ServerHandler) GetTransactionsByEventID(c *gin.Context, idEvent int64) {
+	transactions, err := s.transactionService.GetTransactionsByEventID(c.Request.Context(), idEvent)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении транзакций: %w", err))
 		return
 	}
 
-	c.JSON(http.StatusOK, dto.TransactionListResponse{Transactions: transactions})
+	// Конвертируем DTO в API типы
+	apiTransactions := make([]api.TransactionResponse, 0, len(transactions))
+	for _, t := range transactions {
+		apiTransactions = append(apiTransactions, convertTransactionToAPI(&t))
+	}
+
+	c.JSON(http.StatusOK, api.TransactionListResponse{Transactions: &apiTransactions})
 }
 
 // GetTransactionByID возвращает транзакцию по ID
-// @Summary Получить транзакцию по ID
-// @Description Возвращает информацию о конкретной транзакции по её ID
-// @Tags транзакции
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Param id_transaction path int true "ID транзакции"
-// @Success 200 {object} dto.TransactionResponse "Информация о транзакции"
-// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID"
-// @Failure 404 {object} errors.ErrorResponse "Транзакция не найдена"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/event/{id_event}/transaction/{id_transaction} [get]
-func (h *TransactionHandler) GetTransactionByID(c *gin.Context) {
-	idStr := c.Param("id_transaction")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id_transaction", "неверный формат ID транзакции"))
-		return
-	}
-
-	transaction, err := h.service.GetTransactionByID(c.Request.Context(), id)
+func (s *ServerHandler) GetTransactionByID(c *gin.Context, idEvent int64, idTransaction int) {
+	transaction, err := s.transactionService.GetTransactionByID(c.Request.Context(), idTransaction)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении транзакции: %w", err))
 		return
 	}
 
-	c.JSON(http.StatusOK, transaction)
+	c.JSON(http.StatusOK, convertTransactionToAPI(transaction))
 }
 
 // CreateTransaction создает новую транзакцию
-// @Summary Создать новую транзакцию
-// @Description Создает новую транзакцию в рамках указанного мероприятия
-// @Tags транзакции
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Param transaction body dto.TransactionRequest true "Данные транзакции"
-// @Success 201 {object} dto.TransactionResponse "Созданная транзакция"
-// @Failure 400 {object} errors.ErrorResponse "Неверный формат данных запроса"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/event/{id_event}/transaction [post]
-func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
-	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
-	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "неверный формат ID мероприятия"))
+func (s *ServerHandler) CreateTransaction(c *gin.Context, idEvent int64) {
+	var apiRequest api.TransactionRequest
+	if err := c.ShouldBindJSON(&apiRequest); err != nil {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{
+			Error: "некорректные данные запроса",
+		})
 		return
 	}
 
-	var request dto.TransactionRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("request_body", err.Error()))
-		return
-	}
+	// Конвертируем API типы в DTO
+	dtoRequest := convertTransactionRequestToDTO(&apiRequest)
 
-	transaction, err := h.service.CreateTransaction(c.Request.Context(), eventID, &request)
+	transaction, err := s.transactionService.CreateTransaction(c.Request.Context(), idEvent, &dtoRequest)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при создании транзакции: %w", err))
 		return
 	}
 
-	c.JSON(http.StatusCreated, transaction)
+	c.JSON(http.StatusCreated, convertTransactionToAPI(transaction))
 }
 
 // UpdateTransaction обновляет существующую транзакцию
-// @Summary Обновить транзакцию
-// @Description Обновляет существующую транзакцию по ID
-// @Tags транзакции
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Param id_transaction path int true "ID транзакции"
-// @Param transaction body dto.TransactionRequest true "Данные транзакции"
-// @Success 200 {object} dto.TransactionResponse "Обновленная транзакция"
-// @Failure 400 {object} errors.ErrorResponse "Неверный формат данных запроса"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/event/{id_event}/transaction/{id_transaction} [put]
-func (h *TransactionHandler) UpdateTransaction(c *gin.Context) {
-	idStr := c.Param("id_transaction")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id_transaction", "неверный формат ID транзакции"))
+func (s *ServerHandler) UpdateTransaction(c *gin.Context, idEvent int64, idTransaction int) {
+	var apiRequest api.TransactionRequest
+	if err := c.ShouldBindJSON(&apiRequest); err != nil {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{
+			Error: "некорректные данные запроса",
+		})
 		return
 	}
 
-	var request dto.TransactionRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("request_body", err.Error()))
-		return
-	}
+	// Конвертируем API типы в DTO
+	dtoRequest := convertTransactionRequestToDTO(&apiRequest)
 
-	transaction, err := h.service.UpdateTransaction(c.Request.Context(), id, &request)
+	transaction, err := s.transactionService.UpdateTransaction(c.Request.Context(), idTransaction, &dtoRequest)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при обновлении транзакции: %w", err))
 		return
 	}
 
-	c.JSON(http.StatusOK, transaction)
+	c.JSON(http.StatusOK, convertTransactionToAPI(transaction))
 }
 
 // DeleteTransaction удаляет транзакцию
-// @Summary Удалить транзакцию
-// @Description Удаляет транзакцию по ID
-// @Tags транзакции
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Param id_transaction path int true "ID транзакции"
-// @Success 204 "Транзакция успешно удалена"
-// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/event/{id_event}/transaction/{id_transaction} [delete]
-func (h *TransactionHandler) DeleteTransaction(c *gin.Context) {
-	idStr := c.Param("id_transaction")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id_transaction", "неверный формат ID транзакции"))
-		return
-	}
-
-	err = h.service.DeleteTransaction(c.Request.Context(), id)
+func (s *ServerHandler) DeleteTransaction(c *gin.Context, idEvent int64, idTransaction int) {
+	err := s.transactionService.DeleteTransaction(c.Request.Context(), idTransaction)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при удалении транзакции: %w", err))
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	c.JSON(http.StatusOK, api.SuccessResponse{Success: true})
 }
 
-// GetDebtsByEventID возвращает долги мероприятия
-// @Summary Получить долги мероприятия
-// @Description Возвращает все долги, связанные с мероприятием
-// @Tags долги
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Success 200 {array} dto.DebtDTO "Список долгов"
-// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID мероприятия"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/event/{id_event}/debts [get]
-func (h *TransactionHandler) GetDebtsByEventID(c *gin.Context) {
-	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
-	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "неверный формат ID мероприятия"))
-		return
-	}
-	var userID *int64
-
-	if id, exist := c.Get("user_id"); exist {
-		if idInt, parsed := id.(int64); parsed {
-			userID = &idInt
-		}
-	}
-
-	debts, err := h.service.GetDebtsByEventID(c.Request.Context(), eventID, userID)
+// GetDebtsByEventID возвращает список долгов мероприятия
+func (s *ServerHandler) GetDebtsByEventID(c *gin.Context, idEvent int64) {
+	debts, err := s.transactionService.GetDebtsByEventID(c.Request.Context(), idEvent, nil)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении долгов: %w", err))
 		return
 	}
 
-	c.JSON(http.StatusOK, dto.DebtListResponse(debts))
+	// Конвертируем DTO в API типы
+	apiDebts := make([]api.DebtDTO, 0, len(debts))
+	for _, d := range debts {
+		apiDebts = append(apiDebts, convertDebtToAPI(&d))
+	}
+
+	c.JSON(http.StatusOK, api.DebtListResponse{Debts: &apiDebts})
 }
 
-// OptimizeDebts оптимизирует долги мероприятия
-// @Summary Оптимизировать долги мероприятия
-// @Description Запускает алгоритм оптимизации долгов и возвращает оптимизированный список долгов
-// @Tags долги, оптимизация
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Success 200 {array} dto.OptimizedDebtDTO "Список оптимизированных долгов"
-// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID мероприятия"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/event/{id_event}/optimized-debts [post]
-func (h *TransactionHandler) OptimizeDebts(c *gin.Context) {
-	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
+// GetOptimizedDebtsByEventID возвращает оптимизированные долги
+func (s *ServerHandler) GetOptimizedDebtsByEventID(c *gin.Context, idEvent int64) {
+	debts, err := s.transactionService.GetOptimizedDebtsByEventID(c.Request.Context(), idEvent, nil)
 	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "неверный формат ID мероприятия"))
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении оптимизированных долгов: %w", err))
 		return
 	}
 
-	optimizedDebts, err := h.service.OptimizeDebts(c.Request.Context(), eventID)
+	// Конвертируем DTO в API типы
+	apiDebts := make([]api.OptimizedDebtDTO, 0, len(debts))
+	for _, d := range debts {
+		apiDebts = append(apiDebts, convertOptimizedDebtToAPI(&d))
+	}
+
+	c.JSON(http.StatusOK, api.OptimizedDebtListResponse{OptimizedDebts: &apiDebts})
+}
+
+// OptimizeDebts оптимизирует долги мероприятия
+func (s *ServerHandler) OptimizeDebts(c *gin.Context, idEvent int64) {
+	debts, err := s.transactionService.OptimizeDebts(c.Request.Context(), idEvent)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при оптимизации долгов: %w", err))
 		return
 	}
 
-	c.JSON(http.StatusOK, dto.OptimizedDebtListResponse(optimizedDebts))
+	// Конвертируем DTO в API типы
+	apiDebts := make([]api.OptimizedDebtDTO, 0, len(debts))
+	for _, d := range debts {
+		apiDebts = append(apiDebts, convertOptimizedDebtToAPI(&d))
+	}
+
+	c.JSON(http.StatusOK, api.OptimizedDebtListResponse{OptimizedDebts: &apiDebts})
 }
 
-// GetOptimizedDebtsByEventID возвращает оптимизированные долги мероприятия
-// @Summary Получить оптимизированные долги мероприятия
-// @Description Возвращает список оптимизированных долгов мероприятия
-// @Tags долги, оптимизация
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Success 200 {array} dto.OptimizedDebtDTO "Список оптимизированных долгов"
-// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID мероприятия"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/event/{id_event}/optimized-debts [get]
-func (h *TransactionHandler) GetOptimizedDebtsByEventID(c *gin.Context) {
-	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
+// GetOptimizedDebtsByUserID возвращает оптимизированные долги пользователя
+func (s *ServerHandler) GetOptimizedDebtsByUserID(c *gin.Context, idEvent int64, idUser int64) {
+	debts, err := s.transactionService.GetOptimizedDebtsByUserID(c.Request.Context(), idEvent, idUser)
 	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "неверный формат ID мероприятия"))
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении оптимизированных долгов пользователя: %w", err))
 		return
 	}
-	var userID *int64
 
-	if id, exist := c.Get("user_id"); exist {
-		if idInt, parsed := id.(int64); parsed {
-			userID = &idInt
+	// Конвертируем DTO в API типы
+	apiDebts := make([]api.OptimizedDebtDTO, 0, len(debts))
+	for _, d := range debts {
+		apiDebts = append(apiDebts, convertOptimizedDebtToAPI(&d))
+	}
+
+	c.JSON(http.StatusOK, api.OptimizedDebtListResponse{OptimizedDebts: &apiDebts})
+}
+
+// Helper functions для конвертации типов
+
+func convertTransactionToAPI(t *dto.TransactionResponse) api.TransactionResponse {
+	// Конвертируем shares
+	var shares *[]api.ShareDTO
+	if len(t.Shares) > 0 {
+		apiShares := make([]api.ShareDTO, 0, len(t.Shares))
+		for _, s := range t.Shares {
+			apiShares = append(apiShares, api.ShareDTO{
+				Id:            &s.ID,
+				TransactionId: &s.TransactionID,
+				UserId:        &s.UserID,
+				Value:         &s.Value,
+			})
 		}
+		shares = &apiShares
 	}
 
-	optimizedDebts, err := h.service.GetOptimizedDebtsByEventID(c.Request.Context(), eventID, userID)
-	if err != nil {
-		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении оптимизированных долгов: %w", err))
-		return
+	// Конвертируем debts
+	var debts *[]api.DebtDTO
+	if len(t.Debts) > 0 {
+		apiDebts := make([]api.DebtDTO, 0, len(t.Debts))
+		for _, d := range t.Debts {
+			apiDebts = append(apiDebts, convertDebtToAPI(&d))
+		}
+		debts = &apiDebts
 	}
 
-	c.JSON(http.StatusOK, dto.OptimizedDebtListResponse(optimizedDebts))
+	return api.TransactionResponse{
+		Id:                    &t.ID,
+		EventId:               &t.EventID,
+		Name:                  &t.Name,
+		Amount:                &t.Amount,
+		FromUser:              &t.FromUser,
+		Type:                  &t.Type,
+		TransactionCategoryId: t.TransactionCategoryID,
+		Datetime:              &t.Datetime,
+		Shares:                shares,
+		Debts:                 debts,
+	}
 }
 
-// GetOptimizedDebtsByUserID возвращает оптимизированные долги пользователя в мероприятии
-// @Summary Получить оптимизированные долги пользователя
-// @Description Возвращает список оптимизированных долгов для конкретного пользователя в мероприятии
-// @Tags долги, оптимизация
-// @Accept json
-// @Produce json
-// @Param id_event path int true "ID мероприятия"
-// @Param id_user path int true "ID пользователя"
-// @Success 200 {array} dto.OptimizedDebtDTO "Список оптимизированных долгов пользователя"
-// @Failure 400 {object} errors.ErrorResponse "Неверный формат ID"
-// @Failure 500 {object} errors.ErrorResponse "Внутренняя ошибка сервера"
-// @Router /api/v1/event/{id_event}/user/{id_user}/optimized-debts [get]
-func (h *TransactionHandler) GetOptimizedDebtsByUserID(c *gin.Context) {
-	eventID, err := strconv.ParseInt(c.Param("id_event"), 10, 64)
-	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id_event", "неверный формат ID мероприятия"))
-		return
+func convertTransactionRequestToDTO(req *api.TransactionRequest) dto.TransactionRequest {
+	dtoReq := dto.TransactionRequest{
+		Name:     req.Name,
+		Amount:   req.Amount,
+		FromUser: req.FromUser,
+		Type:     string(req.Type),
 	}
 
-	userID, err := strconv.ParseInt(c.Param("id_user"), 10, 64)
-	if err != nil {
-		errors.HTTPErrorHandler(c, errors.NewValidationError("id_user", "неверный формат ID пользователя"))
-		return
+	if req.Users != nil {
+		dtoReq.Users = req.Users
 	}
 
-	optimizedDebts, err := h.service.GetOptimizedDebtsByUserID(c.Request.Context(), eventID, userID)
-	if err != nil {
-		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении оптимизированных долгов: %w", err))
-		return
+	if req.Portion != nil {
+		dtoReq.Portion = *req.Portion
 	}
 
-	c.JSON(http.StatusOK, dto.OptimizedDebtListResponse(optimizedDebts))
+	if req.TransactionCategoryId != nil {
+		dtoReq.TransactionCategoryID = req.TransactionCategoryId
+	}
+
+	return dtoReq
+}
+
+func convertDebtToAPI(d *dto.DebtDTO) api.DebtDTO {
+	return api.DebtDTO{
+		Id:            &d.ID,
+		TransactionId: &d.TransactionID,
+		FromUserId:    &d.FromUserID,
+		ToUserId:      &d.ToUserID,
+		Amount:        &d.Amount,
+	}
+}
+
+func convertOptimizedDebtToAPI(d *dto.OptimizedDebtDTO) api.OptimizedDebtDTO {
+	return api.OptimizedDebtDTO{
+		Id:         &d.ID,
+		EventId:    &d.EventID,
+		FromUserId: &d.FromUserID,
+		ToUserId:   &d.ToUserID,
+		Amount:     &d.Amount,
+	}
 }

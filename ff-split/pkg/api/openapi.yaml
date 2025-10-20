@@ -1,0 +1,1963 @@
+openapi: 3.0.3
+info:
+  title: FinFlow Split Service API
+  description: |
+    API для сервиса управления совместными расходами в FinFlow.
+    
+    Сервис предоставляет функциональность для:
+    - Управления мероприятиями и событиями
+    - Создания и отслеживания транзакций
+    - Разделения расходов между пользователями
+    - Управления задачами и активностями
+    - Работы с категориями и иконками
+    
+    ## Аутентификация
+    
+    Защищенные endpoints требуют аутентификации через Bearer токен:
+    ```
+    Authorization: Bearer <access_token>
+    ```
+  version: 1.0.0
+  contact:
+    name: FinFlow Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8081
+    description: Development server
+
+tags:
+  - name: events
+    description: Управление мероприятиями
+  - name: transactions
+    description: Управление транзакциями
+  - name: users
+    description: Управление пользователями мероприятий
+  - name: activities
+    description: Управление активностями
+  - name: tasks
+    description: Управление задачами
+  - name: categories
+    description: Управление категориями
+  - name: icons
+    description: Управление иконками
+
+security:
+  - BearerAuth: []
+
+paths:
+  /api/v1/event:
+    get:
+      tags:
+        - events
+      summary: Получить список мероприятий
+      description: Возвращает список всех мероприятий
+      operationId: getEvents
+      responses:
+        '200':
+          description: Список мероприятий
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventListResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    post:
+      tags:
+        - events
+      summary: Создать мероприятие
+      description: Создает новое мероприятие
+      operationId: createEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventRequest'
+      responses:
+        '201':
+          description: Мероприятие создано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/event/{id_event}:
+    get:
+      tags:
+        - events
+      summary: Получить мероприятие
+      description: Возвращает информацию о мероприятии по ID
+      operationId: getEventByID
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Информация о мероприятии
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '404':
+          description: Мероприятие не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    put:
+      tags:
+        - events
+      summary: Обновить мероприятие
+      description: Обновляет информацию о мероприятии
+      operationId: updateEvent
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventRequest'
+      responses:
+        '200':
+          description: Мероприятие обновлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventResponse'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Мероприятие не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    delete:
+      tags:
+        - events
+      summary: Удалить мероприятие
+      description: Удаляет мероприятие по ID
+      operationId: deleteEvent
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Мероприятие удалено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: Мероприятие не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/event/{id_event}/transaction:
+    get:
+      tags:
+        - transactions
+      summary: Получить транзакции мероприятия
+      description: Возвращает список транзакций мероприятия
+      operationId: getTransactionsByEventID
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Список транзакций
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionListResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    post:
+      tags:
+        - transactions
+      summary: Создать транзакцию
+      description: Создает новую транзакцию в мероприятии
+      operationId: createTransaction
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+      responses:
+        '201':
+          description: Транзакция создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/event/{id_event}/transaction/{id_transaction}:
+    get:
+      tags:
+        - transactions
+      summary: Получить транзакцию
+      description: Возвращает информацию о транзакции
+      operationId: getTransactionByID
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: id_transaction
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Информация о транзакции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '404':
+          description: Транзакция не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    put:
+      tags:
+        - transactions
+      summary: Обновить транзакцию
+      description: Обновляет информацию о транзакции
+      operationId: updateTransaction
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: id_transaction
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+      responses:
+        '200':
+          description: Транзакция обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Транзакция не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    delete:
+      tags:
+        - transactions
+      summary: Удалить транзакцию
+      description: Удаляет транзакцию
+      operationId: deleteTransaction
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: id_transaction
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Транзакция удалена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: Транзакция не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/event/{id_event}/user:
+    get:
+      tags:
+        - users
+      summary: Получить пользователей мероприятия
+      description: Возвращает список пользователей мероприятия
+      operationId: getUsersByEventID
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    post:
+      tags:
+        - users
+      summary: Добавить пользователей в мероприятие
+      description: Добавляет пользователей в мероприятие
+      operationId: addUsersToEvent
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddUsersRequest'
+      responses:
+        '200':
+          description: Пользователи добавлены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/event/{id_event}/user/{id_user}:
+    delete:
+      tags:
+        - users
+      summary: Удалить пользователя из мероприятия
+      description: Удаляет пользователя из мероприятия
+      operationId: removeUserFromEvent
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: id_user
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Пользователь удален
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/event/{id_event}/debts:
+    get:
+      tags:
+        - transactions
+      summary: Получить долги мероприятия
+      description: Возвращает список долгов мероприятия
+      operationId: getDebtsByEventID
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Список долгов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebtListResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/event/{id_event}/optimized-debts:
+    get:
+      tags:
+        - transactions
+      summary: Получить оптимизированные долги
+      description: Возвращает оптимизированные долги мероприятия
+      operationId: getOptimizedDebtsByEventID
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Список оптимизированных долгов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptimizedDebtListResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    post:
+      tags:
+        - transactions
+      summary: Оптимизировать долги
+      description: Запускает оптимизацию долгов мероприятия
+      operationId: optimizeDebts
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Долги оптимизированы
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptimizedDebtListResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/event/{id_event}/user/{id_user}/optimized-debts:
+    get:
+      tags:
+        - transactions
+      summary: Получить оптимизированные долги пользователя
+      description: Возвращает оптимизированные долги пользователя в мероприятии
+      operationId: getOptimizedDebtsByUserID
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: id_user
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Список оптимизированных долгов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptimizedDebtListResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/event/{id_event}/activity:
+    get:
+      tags:
+        - activities
+      summary: Получить активности мероприятия
+      description: Возвращает список активностей мероприятия
+      operationId: getActivitiesByEventID
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Список активностей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityListResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    post:
+      tags:
+        - activities
+      summary: Создать активность
+      description: Создает новую активность в мероприятии
+      operationId: createActivity
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityRequest'
+      responses:
+        '201':
+          description: Активность создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityResponse'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/event/{id_event}/activity/{id_activity}:
+    get:
+      tags:
+        - activities
+      summary: Получить активность
+      description: Возвращает информацию об активности
+      operationId: getActivityByID
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: id_activity
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Информация об активности
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityResponse'
+        '404':
+          description: Активность не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    put:
+      tags:
+        - activities
+      summary: Обновить активность
+      description: Обновляет информацию об активности
+      operationId: updateActivity
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: id_activity
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityRequest'
+      responses:
+        '200':
+          description: Активность обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityResponse'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Активность не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    delete:
+      tags:
+        - activities
+      summary: Удалить активность
+      description: Удаляет активность
+      operationId: deleteActivity
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: id_activity
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Активность удалена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: Активность не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/event/{id_event}/task:
+    get:
+      tags:
+        - tasks
+      summary: Получить задачи мероприятия
+      description: Возвращает список задач мероприятия
+      operationId: getTasksByEventID
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Список задач
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskListResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    post:
+      tags:
+        - tasks
+      summary: Создать задачу
+      description: Создает новую задачу в мероприятии
+      operationId: createTask
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskRequest'
+      responses:
+        '201':
+          description: Задача создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/event/{id_event}/task/{id_task}:
+    get:
+      tags:
+        - tasks
+      summary: Получить задачу
+      description: Возвращает информацию о задаче
+      operationId: getTaskByID
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: id_task
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Информация о задаче
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '404':
+          description: Задача не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    put:
+      tags:
+        - tasks
+      summary: Обновить задачу
+      description: Обновляет информацию о задаче
+      operationId: updateTask
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: id_task
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskRequest'
+      responses:
+        '200':
+          description: Задача обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Задача не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    delete:
+      tags:
+        - tasks
+      summary: Удалить задачу
+      description: Удаляет задачу
+      operationId: deleteTask
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: id_task
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Задача удалена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: Задача не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/category:
+    get:
+      tags:
+        - categories
+      summary: Получить список категорий
+      description: Возвращает список всех категорий
+      operationId: getCategories
+      responses:
+        '200':
+          description: Список категорий
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/category/{id}:
+    get:
+      tags:
+        - categories
+      summary: Получить категорию
+      description: Возвращает информацию о категории по ID
+      operationId: getCategoryByID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Информация о категории
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '404':
+          description: Категория не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/manage/category:
+    post:
+      tags:
+        - categories
+      summary: Создать категорию
+      description: Создает новую категорию
+      operationId: createCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        '201':
+          description: Категория создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/manage/category/{id}:
+    put:
+      tags:
+        - categories
+      summary: Обновить категорию
+      description: Обновляет информацию о категории
+      operationId: updateCategory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        '200':
+          description: Категория обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Категория не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    delete:
+      tags:
+        - categories
+      summary: Удалить категорию
+      description: Удаляет категорию
+      operationId: deleteCategory
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Категория удалена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: Категория не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/manage/icons:
+    get:
+      tags:
+        - icons
+      summary: Получить список иконок
+      description: Возвращает список всех иконок
+      operationId: getIcons
+      responses:
+        '200':
+          description: Список иконок
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IconDTO'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    post:
+      tags:
+        - icons
+      summary: Создать иконку
+      description: Создает новую иконку
+      operationId: createIcon
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IconRequest'
+      responses:
+        '201':
+          description: Иконка создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IconDTO'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/manage/icons/{id}:
+    get:
+      tags:
+        - icons
+      summary: Получить иконку
+      description: Возвращает информацию об иконке по ID
+      operationId: getIconByID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Информация об иконке
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IconDTO'
+        '404':
+          description: Иконка не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    put:
+      tags:
+        - icons
+      summary: Обновить иконку
+      description: Обновляет информацию об иконке
+      operationId: updateIcon
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IconRequest'
+      responses:
+        '200':
+          description: Иконка обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IconDTO'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Иконка не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    delete:
+      tags:
+        - icons
+      summary: Удалить иконку
+      description: Удаляет иконку
+      operationId: deleteIcon
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Иконка удалена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: Иконка не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/user/{id_user}:
+    get:
+      tags:
+        - users
+      summary: Получить профиль пользователя
+      description: Возвращает информацию о профиле пользователя
+      operationId: getUserByID
+      parameters:
+        - name: id_user
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Информация о пользователе
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileDTO'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/user/sync:
+    post:
+      tags:
+        - users
+      summary: Синхронизировать пользователей
+      description: Синхронизирует информацию о пользователях с ff-id сервисом
+      operationId: syncUsers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncUsersRequest'
+      responses:
+        '200':
+          description: Пользователи синхронизированы
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/event/{id_event}/user/dummy:
+    post:
+      tags:
+        - users
+      summary: Создать dummy-пользователя
+      description: Создает dummy-пользователя в мероприятии
+      operationId: createDummyUser
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DummyUserRequest'
+      responses:
+        '201':
+          description: Dummy-пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileDTO'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/event/{id_event}/user/dummies:
+    get:
+      tags:
+        - users
+      summary: Получить dummy-пользователей
+      description: Возвращает список dummy-пользователей мероприятия
+      operationId: getDummiesByEventID
+      parameters:
+        - name: id_event
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Список dummy-пользователей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Авторизация через Bearer токен
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Описание ошибки
+
+    SuccessResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          description: Статус успеха операции
+
+    EventRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Название мероприятия
+        description:
+          type: string
+          description: Описание мероприятия
+        category_id:
+          type: integer
+          description: ID категории
+        members:
+          $ref: '#/components/schemas/EventMembersDTO'
+
+    EventResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ID мероприятия
+        name:
+          type: string
+          description: Название мероприятия
+        description:
+          type: string
+          description: Описание мероприятия
+        category_id:
+          type: integer
+          description: ID категории
+        photo_id:
+          type: string
+          description: UUID фото
+        balance:
+          type: integer
+          description: Баланс мероприятия
+
+    EventListResponse:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventResponse'
+
+    EventMembersDTO:
+      type: object
+      properties:
+        user_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: Список ID пользователей
+        dummies_names:
+          type: array
+          items:
+            type: string
+          description: Список имен dummy-пользователей
+
+    TransactionRequest:
+      type: object
+      required:
+        - name
+        - amount
+        - from_user
+        - type
+        - users
+      properties:
+        name:
+          type: string
+          description: Название транзакции
+        amount:
+          type: number
+          format: double
+          description: Общая сумма транзакции
+        from_user:
+          type: integer
+          format: int64
+          description: ID пользователя, который заплатил
+        type:
+          type: string
+          enum: [percent, amount, units]
+          description: Тип распределения
+        users:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: Список ID пользователей-участников
+        portion:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+          description: Распределение долей
+        transaction_category_id:
+          type: integer
+          description: ID категории транзакции
+
+    TransactionResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID транзакции
+        event_id:
+          type: integer
+          format: int64
+          description: ID мероприятия
+        name:
+          type: string
+          description: Название транзакции
+        amount:
+          type: number
+          format: double
+          description: Сумма транзакции
+        from_user:
+          type: integer
+          format: int64
+          description: ID плательщика
+        type:
+          type: string
+          description: Тип распределения
+        transaction_category_id:
+          type: integer
+          description: ID категории транзакции
+        datetime:
+          type: string
+          format: date-time
+          description: Дата и время транзакции
+        shares:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShareDTO'
+          description: Доли пользователей
+        debts:
+          type: array
+          items:
+            $ref: '#/components/schemas/DebtDTO'
+          description: Долги
+
+    TransactionListResponse:
+      type: object
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionResponse'
+
+    ShareDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID доли
+        transaction_id:
+          type: integer
+          description: ID транзакции
+        user_id:
+          type: integer
+          format: int64
+          description: ID пользователя
+        value:
+          type: number
+          format: double
+          description: Размер доли
+
+    DebtDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID долга
+        transaction_id:
+          type: integer
+          description: ID транзакции
+        from_user_id:
+          type: integer
+          format: int64
+          description: ID должника
+        to_user_id:
+          type: integer
+          format: int64
+          description: ID кредитора
+        amount:
+          type: number
+          format: double
+          description: Размер долга
+
+    DebtListResponse:
+      type: object
+      properties:
+        debts:
+          type: array
+          items:
+            $ref: '#/components/schemas/DebtDTO'
+
+    OptimizedDebtDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID оптимизированного долга
+        event_id:
+          type: integer
+          format: int64
+          description: ID мероприятия
+        from_user_id:
+          type: integer
+          format: int64
+          description: ID должника
+        to_user_id:
+          type: integer
+          format: int64
+          description: ID кредитора
+        amount:
+          type: number
+          format: double
+          description: Размер долга
+
+    OptimizedDebtListResponse:
+      type: object
+      properties:
+        optimized_debts:
+          type: array
+          items:
+            $ref: '#/components/schemas/OptimizedDebtDTO'
+
+    UserProfileDTO:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          description: ID пользователя
+        nickname:
+          type: string
+          description: Никнейм пользователя
+        name:
+          type: string
+          description: Имя пользователя
+        photo:
+          type: string
+          description: UUID фото пользователя
+
+    UserListResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserProfileDTO'
+
+    AddUsersRequest:
+      type: object
+      required:
+        - user_ids
+      properties:
+        user_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: Список ID пользователей для добавления
+
+    SyncUsersRequest:
+      type: object
+      required:
+        - user_ids
+      properties:
+        user_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: Список ID пользователей для синхронизации
+
+    DummyUserRequest:
+      type: object
+      required:
+        - nickname
+      properties:
+        nickname:
+          type: string
+          description: Никнейм dummy-пользователя
+
+    ActivityRequest:
+      type: object
+      required:
+        - description
+      properties:
+        description:
+          type: string
+          description: Описание активности
+        icon_id:
+          type: integer
+          description: ID иконки
+        user_id:
+          type: integer
+          format: int64
+          description: ID пользователя
+
+    ActivityResponse:
+      type: object
+      properties:
+        activity_id:
+          type: integer
+          description: ID активности
+        description:
+          type: string
+          description: Описание активности
+        icon_id:
+          type: integer
+          description: ID иконки
+        datetime:
+          type: string
+          format: date-time
+          description: Дата и время активности
+
+    ActivityListResponse:
+      type: object
+      properties:
+        activities:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityResponse'
+
+    TaskRequest:
+      type: object
+      required:
+        - title
+        - user_id
+      properties:
+        title:
+          type: string
+          description: Заголовок задачи
+        description:
+          type: string
+          description: Описание задачи
+        user_id:
+          type: integer
+          format: int64
+          description: ID пользователя
+        priority:
+          type: integer
+          description: Приоритет задачи
+
+    TaskDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID задачи
+        event_id:
+          type: integer
+          format: int64
+          description: ID мероприятия
+        user_id:
+          type: integer
+          format: int64
+          description: ID пользователя
+        title:
+          type: string
+          description: Заголовок задачи
+        description:
+          type: string
+          description: Описание задачи
+        priority:
+          type: integer
+          description: Приоритет задачи
+        created_at:
+          type: string
+          format: date-time
+          description: Дата создания
+
+    TaskResponse:
+      type: object
+      properties:
+        task:
+          $ref: '#/components/schemas/TaskDTO'
+
+    TaskListResponse:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskDTO'
+
+    CategoryRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Название категории
+        icon_id:
+          type: integer
+          description: ID иконки
+
+    CategoryResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID категории
+        name:
+          type: string
+          description: Название категории
+        icon:
+          $ref: '#/components/schemas/IconDTO'
+
+    CategoryListResponse:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryResponse'
+
+    IconRequest:
+      type: object
+      required:
+        - name
+        - file_uuid
+      properties:
+        name:
+          type: string
+          description: Название иконки
+        file_uuid:
+          type: string
+          description: UUID файла иконки
+
+    IconDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID иконки
+        name:
+          type: string
+          description: Название иконки
+        file_uuid:
+          type: string
+          description: UUID файла иконки
+        external_uuid:
+          type: string
+          description: Внешний UUID
