@@ -1,23 +1,37 @@
 package main
 
 import (
-	"github.com/ivasnev/FinFlow/ff-files/internal/application"
-	"go.uber.org/zap"
+	"fmt"
+	"log"
+
+	"github.com/gin-gonic/gin"
+	"github.com/ivasnev/FinFlow/ff-files/internal/app"
+	"github.com/ivasnev/FinFlow/ff-files/internal/common/config"
+	"github.com/ivasnev/FinFlow/ff-files/internal/container"
 )
 
 func main() {
-	// Создаем экземпляр приложения
-	app, err := application.NewApp()
+	// Загрузка конфигурации
+	cfg := config.Load()
+	fmt.Println("Starting application...")
+
+	// Инициализация роутера Gin
+	router := gin.Default()
+
+	// Инициализация контейнера зависимостей
+	c, err := container.NewContainer(cfg, router)
 	if err != nil {
-		panic(err)
-		return
+		log.Fatalf("Failed to initialize container: %v", err)
 	}
 
-	// Используем логгер с полями
-	app.Log.With(zap.String("service", "ff-files")).Info("Старт работы сервиса")
+	// Регистрация маршрутов
+	c.RegisterRoutes()
 
-	// Запуск приложения
-	if err := app.Run(); err != nil {
-		app.Log.Fatal("Ошибка запуска сервера Gin: " + err.Error())
+	// Создание и запуск приложения
+	application := app.New(router, cfg)
+
+	addr := fmt.Sprintf(":%d", cfg.Server.Port)
+	if err := application.Run(addr); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
 	}
 }

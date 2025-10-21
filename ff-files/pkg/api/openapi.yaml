@@ -38,7 +38,7 @@ tags:
     description: Операции с файлами
 
 paths:
-  /upload:
+  /files:
     post:
       tags:
         - files
@@ -129,7 +129,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MultipleFilesUploadResponse'
+                $ref: '#/components/schemas/FilesUploadResponse'
               example:
                 status: 200
                 message: "Files uploaded successfully"
@@ -164,9 +164,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ObjectIdsRequest'
+              $ref: '#/components/schemas/FileIDsRequest'
             example:
-              objectIDs:
+              fileIDs:
                 - "26296f14-3f08-4f79-b453-09ebc4eac98d"
                 - "37397e25-4g19-5g8a-c564-10fcd5fbd09e"
       responses:
@@ -175,21 +175,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: integer
-                    example: 200
-                  message:
-                    type: string
-                    example: "Files received successfully"
-                  data:
-                    type: array
-                    items:
-                      type: string
-                    example:
-                      - "http://localhost:9000/ff-files/26296f14-3f08-4f79-b453-09ebc4eac98d"
-                      - "http://localhost:9000/ff-files/37397e25-4g19-5g8a-c564-10fcd5fbd09e"
+                $ref: '#/components/schemas/FilesGetResponse'
+              example:
+                status: 200
+                message: "Files received successfully"
+                data:
+                  - "http://localhost:9000/ff-files/26296f14-3f08-4f79-b453-09ebc4eac98d"
+                  - "http://localhost:9000/ff-files/37397e25-4g19-5g8a-c564-10fcd5fbd09e"
         '400':
           description: Некорректный запрос
           content:
@@ -216,9 +208,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ObjectIdsRequest'
+              $ref: '#/components/schemas/FileIDsRequest'
             example:
-              objectIDs:
+              fileIDs:
                 - "26296f14-3f08-4f79-b453-09ebc4eac98d"
                 - "37397e25-4g19-5g8a-c564-10fcd5fbd09e"
       responses:
@@ -227,7 +219,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/FilesDeleteResponse'
               example:
                 status: 200
                 message: "Files deleted successfully"
@@ -244,7 +236,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /files/{objectID}:
+  /files/{file_id}:
     get:
       tags:
         - files
@@ -254,7 +246,7 @@ paths:
       security:
         - TVMAuth: []
       parameters:
-        - name: objectID
+        - name: file_id
           in: path
           required: true
           description: Идентификатор файла (UUID)
@@ -268,18 +260,11 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: integer
-                    example: 200
-                  message:
-                    type: string
-                    example: "File received successfully"
-                  data:
-                    type: string
-                    description: URL для доступа к файлу
-                    example: "http://localhost:9000/ff-files/26296f14-3f08-4f79-b453-09ebc4eac98d"
+                $ref: '#/components/schemas/FileGetResponse'
+              example:
+                status: 200
+                message: "File received successfully"
+                data: "http://localhost:9000/ff-files/26296f14-3f08-4f79-b453-09ebc4eac98d"
         '500':
           description: Внутренняя ошибка сервера (файл не найден или ошибка доступа)
           content:
@@ -299,7 +284,7 @@ paths:
       security:
         - TVMAuth: []
       parameters:
-        - name: objectID
+        - name: file_id
           in: path
           required: true
           description: Идентификатор файла (UUID)
@@ -313,7 +298,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/FileDeleteResponse'
               example:
                 status: 200
                 message: "File deleted successfully"
@@ -428,12 +413,12 @@ components:
       description: TVM тикет для аутентификации между сервисами
 
   schemas:
-    ObjectIdsRequest:
+    FileIDsRequest:
       type: object
       required:
-        - objectIDs
+        - fileIDs
       properties:
-        objectIDs:
+        fileIDs:
           type: array
           items:
             type: string
@@ -478,7 +463,7 @@ components:
         data:
           $ref: '#/components/schemas/CreatedObject'
 
-    MultipleFilesUploadResponse:
+    FilesUploadResponse:
       type: object
       required:
         - status
@@ -497,8 +482,55 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CreatedObject'
+          description: Массив созданных объектов
 
-    SuccessResponse:
+    FileGetResponse:
+      type: object
+      required:
+        - status
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+          description: HTTP статус код
+          example: 200
+        message:
+          type: string
+          description: Сообщение о результате операции
+          example: "File received successfully"
+        data:
+          type: string
+          format: uri
+          description: URL для доступа к файлу
+          example: "http://localhost:9000/ff-files/26296f14-3f08-4f79-b453-09ebc4eac98d"
+
+    FilesGetResponse:
+      type: object
+      required:
+        - status
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+          description: HTTP статус код
+          example: 200
+        message:
+          type: string
+          description: Сообщение о результате операции
+          example: "Files received successfully"
+        data:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Массив URL для доступа к файлам
+          example:
+            - "http://localhost:9000/ff-files/26296f14-3f08-4f79-b453-09ebc4eac98d"
+            - "http://localhost:9000/ff-files/37397e25-4g19-5g8a-c564-10fcd5fbd09e"
+
+    FileDeleteResponse:
       type: object
       required:
         - status
@@ -511,10 +543,58 @@ components:
         message:
           type: string
           description: Сообщение о результате операции
-          example: "Operation completed successfully"
+          example: "File deleted successfully"
+
+    FilesDeleteResponse:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          type: integer
+          description: HTTP статус код
+          example: 200
+        message:
+          type: string
+          description: Сообщение о результате операции
+          example: "Files deleted successfully"
+
+    FileMetadataResponse:
+      type: object
+      required:
+        - status
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+          description: HTTP статус код
+          example: 200
+        message:
+          type: string
+          description: Сообщение о результате операции
+          example: "File metadata retrieved successfully"
         data:
-          type: object
-          description: Дополнительные данные (опционально)
+          $ref: '#/components/schemas/FileMetadata'
+
+    TemporaryUrlResponse:
+      type: object
+      required:
+        - status
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+          description: HTTP статус код
+          example: 200
+        message:
+          type: string
+          description: Сообщение о результате операции
+          example: "Temporary URL generated successfully"
+        data:
+          $ref: '#/components/schemas/TemporaryUrlResponseData'
 
     ErrorResponse:
       type: object
@@ -533,87 +613,62 @@ components:
           type: object
           description: Дополнительная информация об ошибке
 
-    FileMetadataResponse:
-      type: object
-      required:
-        - status
-        - message
-        - data
-      properties:
-        status:
-          type: integer
-          example: 200
-        message:
-          type: string
-          example: "File metadata retrieved successfully"
-        data:
-          type: object
-          properties:
-            file_id:
-              type: string
-              format: uuid
-              description: Идентификатор файла
-              example: "26296f14-3f08-4f79-b453-09ebc4eac98d"
-            filename:
-              type: string
-              description: Оригинальное имя файла
-              example: "document.pdf"
-            size:
-              type: integer
-              description: Размер файла в байтах
-              example: 1048576
-            content_type:
-              type: string
-              description: MIME тип файла
-              example: "application/pdf"
-            upload_date:
-              type: string
-              format: date-time
-              description: Дата и время загрузки файла
-              example: "2024-01-01T10:00:00Z"
-            owner_id:
-              type: string
-              description: Идентификатор владельца файла
-              example: "user123"
-            metadata:
-              type: object
-              description: Дополнительные метаданные файла
-              properties:
-                description:
-                  type: string
-                  example: "Описание файла"
-                tags:
-                  type: array
-                  items:
-                    type: string
-                  example: ["важный", "документ"]
-                category:
-                  type: string
-                  example: "финансы"
 
-    TemporaryUrlResponse:
+    FileMetadata:
       type: object
       required:
-        - status
-        - message
-        - data
+        - file_id
+        - filename
+        - size
+        - content_type
+        - upload_date
+        - owner_id
       properties:
-        status:
-          type: integer
-          example: 200
-        message:
+        file_id:
           type: string
-          example: "Temporary URL generated successfully"
-        data:
+          format: uuid
+          description: Идентификатор файла
+          example: "26296f14-3f08-4f79-b453-09ebc4eac98d"
+        filename:
+          type: string
+          description: Оригинальное имя файла
+          example: "document.pdf"
+        size:
+          type: integer
+          format: int64
+          description: Размер файла в байтах
+          example: 1048576
+        content_type:
+          type: string
+          description: MIME тип файла
+          example: "application/pdf"
+        upload_date:
+          type: string
+          format: date-time
+          description: Дата и время загрузки файла
+          example: "2024-01-01T10:00:00Z"
+        owner_id:
+          type: string
+          description: Идентификатор владельца файла
+          example: "user123"
+        metadata:
           type: object
-          properties:
-            url:
-              type: string
-              format: uri
-              description: Временная ссылка для доступа к файлу
-              example: "http://localhost:9000/ff-files/26296f14-3f08-4f79-b453-09ebc4eac98d?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=..."
-            expires_at:
-              type: string
-              format: date-time
-              description: Время истечения ссылки
-              example: "2024-01-01T13:00:00Z"
+          description: Дополнительные метаданные файла
+          additionalProperties: true
+
+    TemporaryUrlResponseData:
+      type: object
+      required:
+        - url
+        - expires_at
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Временная ссылка для доступа к файлу
+          example: "http://localhost:9000/ff-files/26296f14-3f08-4f79-b453-09ebc4eac98d?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=..."
+        expires_at:
+          type: string
+          format: date-time
+          description: Время истечения ссылки
+          example: "2024-01-01T13:00:00Z"
