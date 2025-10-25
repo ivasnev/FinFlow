@@ -7,6 +7,13 @@ import (
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 )
 
+// ExternalToInternalMapping представляет соответствие внешнего и внутреннего ID пользователя
+type ExternalToInternalMapping struct {
+	ExternalID  int64
+	InternalID  int64
+	UserProfile *models.User
+}
+
 // UserFromId представляет данные пользователя из ID сервиса
 type UserFromId struct {
 	ID        int64      `json:"id"`
@@ -84,6 +91,9 @@ type User interface {
 
 	// BatchCreateDummyUsers создает dummy-пользователей для мероприятия
 	BatchCreateDummyUsers(ctx context.Context, names []string, eventID int64) ([]*models.User, error)
+
+	// GetUsersByExternalIDs возвращает внутренние ID пользователей по внешним ID
+	GetUsersByExternalIDs(ctx context.Context, externalIDs []int64) ([]ExternalToInternalMapping, error)
 
 	// GetUserByInternalUserID получает пользователя по внутреннему ID
 	GetUserByInternalUserID(ctx context.Context, id int64) (*models.User, error)

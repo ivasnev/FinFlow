@@ -10,9 +10,32 @@ import (
 	"github.com/ivasnev/FinFlow/ff-split/pkg/api"
 )
 
-// GetUserByID возвращает пользователя по ID
+// GetUsersByExternalIDs возвращает пользователей по внешним ID
+func (s *ServerHandler) GetUsersByExternalIDs(c *gin.Context, params api.GetUsersByExternalIDsParams) {
+	if len(params.Uids) == 0 {
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{
+			Error: "список внешних ID не может быть пустым",
+		})
+		return
+	}
+
+	mappings, err := s.userService.GetUsersByExternalIDs(c.Request.Context(), params.Uids)
+	if err != nil {
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении пользователей: %w", err))
+		return
+	}
+
+	apiUsers := make([]api.UserProfileDTO, 0, len(mappings))
+	for _, mapping := range mappings {
+		apiUsers = append(apiUsers, convertUserToProfileAPI(mapping.UserProfile))
+	}
+
+	c.JSON(http.StatusOK, api.UserListResponse{Users: &apiUsers})
+}
+
+// GetUserByID возвращает пользователя по внутреннему ID
 func (s *ServerHandler) GetUserByID(c *gin.Context, idUser int64) {
-	user, err := s.userService.GetUserByExternalUserID(c.Request.Context(), idUser)
+	user, err := s.userService.GetUserByInternalUserID(c.Request.Context(), idUser)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("пользователь не найден: %w", err))
 		return

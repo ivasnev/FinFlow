@@ -9,6 +9,7 @@ import (
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/slices"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
+	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 	"gorm.io/gorm"
 )
 
@@ -84,6 +85,40 @@ func (s *UserService) BatchCreateDummyUsers(ctx context.Context, names []string,
 	}
 
 	return users, nil
+}
+
+// GetUsersByExternalIDs возвращает внутренние ID пользователей по внешним ID
+// Если пользователь не найден в системе, синхронизирует его с ff-id сервисом
+func (s *UserService) GetUsersByExternalIDs(ctx context.Context, externalIDs []int64) ([]service.ExternalToInternalMapping, error) {
+	mappings := make([]service.ExternalToInternalMapping, 0, len(externalIDs))
+
+	for _, externalID := range externalIDs {
+		// Сначала пытаемся найти пользователя в локальной базе
+		user, err := s.userRepository.GetByExternalUserID(ctx, externalID)
+		if err == nil && user != nil {
+			// Пользователь найден в локальной базе
+			mappings = append(mappings, service.ExternalToInternalMapping{
+				ExternalID:  externalID,
+				InternalID:  user.ID,
+				UserProfile: user,
+			})
+			continue
+		}
+
+		// Пользователь не найден, синхронизируем с ff-id сервисом
+		syncedUser, err := s.SyncUserWithIDService(ctx, externalID)
+		if err != nil {
+			return nil, fmt.Errorf("ошибка при синхронизации пользователя %d: %w", externalID, err)
+		}
+
+		mappings = append(mappings, service.ExternalToInternalMapping{
+			ExternalID:  externalID,
+			InternalID:  syncedUser.ID,
+			UserProfile: syncedUser,
+		})
+	}
+
+	return mappings, nil
 }
 
 // GetUserByInternalUserID получает пользователя по внутреннему ID

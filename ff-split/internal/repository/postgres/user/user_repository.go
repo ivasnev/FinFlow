@@ -37,10 +37,15 @@ func (r *UserRepository) Create(ctx context.Context, user *models.User) (*models
 // CreateOrUpdate создает или обновляет пользователя
 func (r *UserRepository) CreateOrUpdate(ctx context.Context, user *models.User) error {
 	dbUser := load(user)
-	return db.GetTx(ctx, r.db).WithContext(ctx).Clauses(clause.OnConflict{
+	err := db.GetTx(ctx, r.db).WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "user_id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"nickname_cashed", "name_cashed", "photo_uuid_cashed"}),
 	}).Create(dbUser).Error
+	if err != nil {
+		return fmt.Errorf("ошибка при создании или обновлении пользователя: %w", err)
+	}
+	user.ID = dbUser.ID
+	return nil
 }
 
 // BatchCreateOrUpdate создает или обновляет пользователей

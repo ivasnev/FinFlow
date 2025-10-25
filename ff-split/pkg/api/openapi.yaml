@@ -1381,7 +1381,46 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/v1/user/{id_user}:
+  /api/v1/user/external:
+    get:
+      tags:
+        - users
+      summary: Получить внутренние ID пользователей по внешним ID
+      description: Возвращает внутренние ID пользователей по списку внешних ID. Если пользователь не найден в системе, синхронизирует его с ff-id сервисом
+      operationId: getUsersByExternalIDs
+      parameters:
+        - name: uids
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+          style: form
+          explode: false
+          description: Список внешних ID пользователей
+      responses:
+        '200':
+          description: Список пользователей с внутренними и внешними ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '400':
+          description: Некорректные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/user/internal/{id_user}:
     get:
       tags:
         - users

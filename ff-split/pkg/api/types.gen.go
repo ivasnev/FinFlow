@@ -37,7 +37,7 @@ type ActivityRequest struct {
 	// IconId ID иконки
 	IconId *int `json:"icon_id,omitempty"`
 
-	// UserId ID пользователя
+	// UserId Внутренний ID пользователя
 	UserId *int64 `json:"user_id,omitempty"`
 }
 
@@ -95,13 +95,13 @@ type DebtDTO struct {
 	// Amount Размер долга
 	Amount *float64 `json:"amount,omitempty"`
 
-	// FromUserId ID должника
+	// FromUserId Внутренний ID должника
 	FromUserId *int64 `json:"from_user_id,omitempty"`
 
 	// Id ID долга
 	Id *int `json:"id,omitempty"`
 
-	// ToUserId ID кредитора
+	// ToUserId Внутренний ID кредитора
 	ToUserId *int64 `json:"to_user_id,omitempty"`
 
 	// TransactionId ID транзакции
@@ -205,13 +205,13 @@ type OptimizedDebtDTO struct {
 	// EventId ID мероприятия
 	EventId *int64 `json:"event_id,omitempty"`
 
-	// FromUserId ID должника
+	// FromUserId Внутренний ID должника
 	FromUserId *int64 `json:"from_user_id,omitempty"`
 
 	// Id ID оптимизированного долга
 	Id *int `json:"id,omitempty"`
 
-	// ToUserId ID кредитора
+	// ToUserId Внутренний ID кредитора
 	ToUserId *int64 `json:"to_user_id,omitempty"`
 }
 
@@ -228,7 +228,7 @@ type ShareDTO struct {
 	// TransactionId ID транзакции
 	TransactionId *int `json:"transaction_id,omitempty"`
 
-	// UserId ID пользователя
+	// UserId Внутренний ID пользователя
 	UserId *int64 `json:"user_id,omitempty"`
 
 	// Value Размер доли
@@ -267,7 +267,7 @@ type TaskDTO struct {
 	// Title Заголовок задачи
 	Title *string `json:"title,omitempty"`
 
-	// UserId ID пользователя
+	// UserId Внутренний ID пользователя
 	UserId *int64 `json:"user_id,omitempty"`
 }
 
@@ -287,7 +287,7 @@ type TaskRequest struct {
 	// Title Заголовок задачи
 	Title string `json:"title"`
 
-	// UserId ID пользователя
+	// UserId Внутренний ID пользователя
 	UserId int64 `json:"user_id"`
 }
 
@@ -306,7 +306,7 @@ type TransactionRequest struct {
 	// Amount Общая сумма транзакции
 	Amount float64 `json:"amount"`
 
-	// FromUser ID пользователя, который заплатил
+	// FromUser Внутренний ID пользователя, который заплатил
 	FromUser int64 `json:"from_user"`
 
 	// Name Название транзакции
@@ -342,7 +342,7 @@ type TransactionResponse struct {
 	// EventId ID мероприятия
 	EventId *int64 `json:"event_id,omitempty"`
 
-	// FromUser ID плательщика
+	// FromUser Внутренний ID плательщика
 	FromUser *int64 `json:"from_user,omitempty"`
 
 	// Id ID транзакции
@@ -380,7 +380,7 @@ type UserProfileDTO struct {
 	// Photo UUID фото пользователя
 	Photo *string `json:"photo,omitempty"`
 
-	// UserId ID пользователя
+	// UserId Внутренний ID пользователя
 	UserId *int64 `json:"user_id,omitempty"`
 }
 
@@ -412,6 +412,12 @@ type DeleteCategoryParams struct {
 type UpdateCategoryParams struct {
 	// CategoryType Тип категории
 	CategoryType CategoryType `form:"category_type" json:"category_type"`
+}
+
+// GetUsersByExternalIDsParams defines parameters for GetUsersByExternalIDs.
+type GetUsersByExternalIDsParams struct {
+	// Uids Список внешних ID пользователей
+	Uids []int64 `form:"uids" json:"uids"`
 }
 
 // CreateEventJSONRequestBody defines body for CreateEvent for application/json ContentType.

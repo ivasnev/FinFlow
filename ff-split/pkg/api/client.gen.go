@@ -234,13 +234,16 @@ type ClientInterface interface {
 
 	UpdateIcon(ctx context.Context, id int, body UpdateIconJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetUsersByExternalIDs request
+	GetUsersByExternalIDs(ctx context.Context, params *GetUsersByExternalIDsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetUserByID request
+	GetUserByID(ctx context.Context, idUser int64, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// SyncUsersWithBody request with any body
 	SyncUsersWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	SyncUsers(ctx context.Context, body SyncUsersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetUserByID request
-	GetUserByID(ctx context.Context, idUser int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) GetCategories(ctx context.Context, params *GetCategoriesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -879,6 +882,30 @@ func (c *Client) UpdateIcon(ctx context.Context, id int, body UpdateIconJSONRequ
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetUsersByExternalIDs(ctx context.Context, params *GetUsersByExternalIDsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetUsersByExternalIDsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetUserByID(ctx context.Context, idUser int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetUserByIDRequest(c.Server, idUser)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) SyncUsersWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSyncUsersRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -893,18 +920,6 @@ func (c *Client) SyncUsersWithBody(ctx context.Context, contentType string, body
 
 func (c *Client) SyncUsers(ctx context.Context, body SyncUsersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSyncUsersRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetUserByID(ctx context.Context, idUser int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetUserByIDRequest(c.Server, idUser)
 	if err != nil {
 		return nil, err
 	}
@@ -2548,6 +2563,85 @@ func NewUpdateIconRequestWithBody(server string, id int, contentType string, bod
 	return req, nil
 }
 
+// NewGetUsersByExternalIDsRequest generates requests for GetUsersByExternalIDs
+func NewGetUsersByExternalIDsRequest(server string, params *GetUsersByExternalIDsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/user/external")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", false, "uids", runtime.ParamLocationQuery, params.Uids); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetUserByIDRequest generates requests for GetUserByID
+func NewGetUserByIDRequest(server string, idUser int64) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_user", runtime.ParamLocationPath, idUser)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/user/internal/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewSyncUsersRequest calls the generic SyncUsers builder with application/json body
 func NewSyncUsersRequest(server string, body SyncUsersJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -2584,40 +2678,6 @@ func NewSyncUsersRequestWithBody(server string, contentType string, body io.Read
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetUserByIDRequest generates requests for GetUserByID
-func NewGetUserByIDRequest(server string, idUser int64) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_user", runtime.ParamLocationPath, idUser)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/user/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
 
 	return req, nil
 }
@@ -2810,13 +2870,16 @@ type ClientWithResponsesInterface interface {
 
 	UpdateIconWithResponse(ctx context.Context, id int, body UpdateIconJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateIconResponse, error)
 
+	// GetUsersByExternalIDsWithResponse request
+	GetUsersByExternalIDsWithResponse(ctx context.Context, params *GetUsersByExternalIDsParams, reqEditors ...RequestEditorFn) (*GetUsersByExternalIDsResponse, error)
+
+	// GetUserByIDWithResponse request
+	GetUserByIDWithResponse(ctx context.Context, idUser int64, reqEditors ...RequestEditorFn) (*GetUserByIDResponse, error)
+
 	// SyncUsersWithBodyWithResponse request with any body
 	SyncUsersWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SyncUsersResponse, error)
 
 	SyncUsersWithResponse(ctx context.Context, body SyncUsersJSONRequestBody, reqEditors ...RequestEditorFn) (*SyncUsersResponse, error)
-
-	// GetUserByIDWithResponse request
-	GetUserByIDWithResponse(ctx context.Context, idUser int64, reqEditors ...RequestEditorFn) (*GetUserByIDResponse, error)
 }
 
 type GetCategoriesResponse struct {
@@ -3749,16 +3812,16 @@ func (r UpdateIconResponse) StatusCode() int {
 	return 0
 }
 
-type SyncUsersResponse struct {
+type GetUsersByExternalIDsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *SuccessResponse
+	JSON200      *UserListResponse
 	JSON400      *ErrorResponse
 	JSON500      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
-func (r SyncUsersResponse) Status() string {
+func (r GetUsersByExternalIDsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -3766,7 +3829,7 @@ func (r SyncUsersResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r SyncUsersResponse) StatusCode() int {
+func (r GetUsersByExternalIDsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -3791,6 +3854,30 @@ func (r GetUserByIDResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetUserByIDResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SyncUsersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SuccessResponse
+	JSON400      *ErrorResponse
+	JSON500      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r SyncUsersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SyncUsersResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -4260,6 +4347,24 @@ func (c *ClientWithResponses) UpdateIconWithResponse(ctx context.Context, id int
 	return ParseUpdateIconResponse(rsp)
 }
 
+// GetUsersByExternalIDsWithResponse request returning *GetUsersByExternalIDsResponse
+func (c *ClientWithResponses) GetUsersByExternalIDsWithResponse(ctx context.Context, params *GetUsersByExternalIDsParams, reqEditors ...RequestEditorFn) (*GetUsersByExternalIDsResponse, error) {
+	rsp, err := c.GetUsersByExternalIDs(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetUsersByExternalIDsResponse(rsp)
+}
+
+// GetUserByIDWithResponse request returning *GetUserByIDResponse
+func (c *ClientWithResponses) GetUserByIDWithResponse(ctx context.Context, idUser int64, reqEditors ...RequestEditorFn) (*GetUserByIDResponse, error) {
+	rsp, err := c.GetUserByID(ctx, idUser, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetUserByIDResponse(rsp)
+}
+
 // SyncUsersWithBodyWithResponse request with arbitrary body returning *SyncUsersResponse
 func (c *ClientWithResponses) SyncUsersWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SyncUsersResponse, error) {
 	rsp, err := c.SyncUsersWithBody(ctx, contentType, body, reqEditors...)
@@ -4275,15 +4380,6 @@ func (c *ClientWithResponses) SyncUsersWithResponse(ctx context.Context, body Sy
 		return nil, err
 	}
 	return ParseSyncUsersResponse(rsp)
-}
-
-// GetUserByIDWithResponse request returning *GetUserByIDResponse
-func (c *ClientWithResponses) GetUserByIDWithResponse(ctx context.Context, idUser int64, reqEditors ...RequestEditorFn) (*GetUserByIDResponse, error) {
-	rsp, err := c.GetUserByID(ctx, idUser, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetUserByIDResponse(rsp)
 }
 
 // ParseGetCategoriesResponse parses an HTTP response from a GetCategoriesWithResponse call
@@ -5804,22 +5900,22 @@ func ParseUpdateIconResponse(rsp *http.Response) (*UpdateIconResponse, error) {
 	return response, nil
 }
 
-// ParseSyncUsersResponse parses an HTTP response from a SyncUsersWithResponse call
-func ParseSyncUsersResponse(rsp *http.Response) (*SyncUsersResponse, error) {
+// ParseGetUsersByExternalIDsResponse parses an HTTP response from a GetUsersByExternalIDsWithResponse call
+func ParseGetUsersByExternalIDsResponse(rsp *http.Response) (*GetUsersByExternalIDsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &SyncUsersResponse{
+	response := &GetUsersByExternalIDsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SuccessResponse
+		var dest UserListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -5871,6 +5967,46 @@ func ParseGetUserByIDResponse(rsp *http.Response) (*GetUserByIDResponse, error) 
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSyncUsersResponse parses an HTTP response from a SyncUsersWithResponse call
+func ParseSyncUsersResponse(rsp *http.Response) (*SyncUsersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SyncUsersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SuccessResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse

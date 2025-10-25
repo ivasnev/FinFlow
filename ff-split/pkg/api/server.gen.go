@@ -130,12 +130,15 @@ type ServerInterface interface {
 	// Обновить иконку
 	// (PUT /api/v1/manage/icons/{id})
 	UpdateIcon(c *gin.Context, id int)
+	// Получить внутренние ID пользователей по внешним ID
+	// (GET /api/v1/user/external)
+	GetUsersByExternalIDs(c *gin.Context, params GetUsersByExternalIDsParams)
+	// Получить профиль пользователя
+	// (GET /api/v1/user/internal/{id_user})
+	GetUserByID(c *gin.Context, idUser int64)
 	// Синхронизировать пользователей
 	// (POST /api/v1/user/sync)
 	SyncUsers(c *gin.Context)
-	// Получить профиль пользователя
-	// (GET /api/v1/user/{id_user})
-	GetUserByID(c *gin.Context, idUser int64)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -1288,10 +1291,30 @@ func (siw *ServerInterfaceWrapper) UpdateIcon(c *gin.Context) {
 	siw.Handler.UpdateIcon(c, id)
 }
 
-// SyncUsers operation middleware
-func (siw *ServerInterfaceWrapper) SyncUsers(c *gin.Context) {
+// GetUsersByExternalIDs operation middleware
+func (siw *ServerInterfaceWrapper) GetUsersByExternalIDs(c *gin.Context) {
+
+	var err error
 
 	c.Set(BearerAuthScopes, []string{})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetUsersByExternalIDsParams
+
+	// ------------- Required query parameter "uids" -------------
+
+	if paramValue := c.Query("uids"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandler(c, fmt.Errorf("Query argument uids is required, but not found"), http.StatusBadRequest)
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", false, true, "uids", c.Request.URL.Query(), &params.Uids)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter uids: %w", err), http.StatusBadRequest)
+		return
+	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -1300,7 +1323,7 @@ func (siw *ServerInterfaceWrapper) SyncUsers(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.SyncUsers(c)
+	siw.Handler.GetUsersByExternalIDs(c, params)
 }
 
 // GetUserByID operation middleware
@@ -1327,6 +1350,21 @@ func (siw *ServerInterfaceWrapper) GetUserByID(c *gin.Context) {
 	}
 
 	siw.Handler.GetUserByID(c, idUser)
+}
+
+// SyncUsers operation middleware
+func (siw *ServerInterfaceWrapper) SyncUsers(c *gin.Context) {
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.SyncUsers(c)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -1395,6 +1433,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.DELETE(options.BaseURL+"/api/v1/manage/icons/:id", wrapper.DeleteIcon)
 	router.GET(options.BaseURL+"/api/v1/manage/icons/:id", wrapper.GetIconByID)
 	router.PUT(options.BaseURL+"/api/v1/manage/icons/:id", wrapper.UpdateIcon)
+	router.GET(options.BaseURL+"/api/v1/user/external", wrapper.GetUsersByExternalIDs)
+	router.GET(options.BaseURL+"/api/v1/user/internal/:id_user", wrapper.GetUserByID)
 	router.POST(options.BaseURL+"/api/v1/user/sync", wrapper.SyncUsers)
-	router.GET(options.BaseURL+"/api/v1/user/:id_user", wrapper.GetUserByID)
 }
