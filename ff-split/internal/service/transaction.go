@@ -39,10 +39,9 @@ type TransactionListResponse struct {
 
 // DebtsUserResponse представляет пользователя в контексте долгов
 type DebtsUserResponse struct {
-	ID         int64  `json:"id"`
-	ExternalID *int64 `json:"external_id"`
-	Name       string `json:"name"`
-	Photo      string `json:"photo"`
+	ID    int64  `json:"id"`
+	Name  string `json:"name"`
+	Photo string `json:"photo"`
 }
 
 // DebtDTO представляет информацию о долге

@@ -1625,7 +1625,7 @@ components:
         from_user:
           type: integer
           format: int64
-          description: ID пользователя, который заплатил
+          description: Внутренний ID пользователя, который заплатил
         type:
           type: string
           enum: [percent, amount, units]
@@ -1666,7 +1666,7 @@ components:
         from_user:
           type: integer
           format: int64
-          description: ID плательщика
+          description: Внутренний ID плательщика
         type:
           type: string
           description: Тип распределения
@@ -1708,7 +1708,7 @@ components:
         user_id:
           type: integer
           format: int64
-          description: ID пользователя
+          description: Внутренний ID пользователя
         value:
           type: number
           format: double
@@ -1726,11 +1726,11 @@ components:
         from_user_id:
           type: integer
           format: int64
-          description: ID должника
+          description: Внутренний ID должника
         to_user_id:
           type: integer
           format: int64
-          description: ID кредитора
+          description: Внутренний ID кредитора
         amount:
           type: number
           format: double
@@ -1757,11 +1757,11 @@ components:
         from_user_id:
           type: integer
           format: int64
-          description: ID должника
+          description: Внутренний ID должника
         to_user_id:
           type: integer
           format: int64
-          description: ID кредитора
+          description: Внутренний ID кредитора
         amount:
           type: number
           format: double
@@ -1785,7 +1785,7 @@ components:
         user_id:
           type: integer
           format: int64
-          description: ID пользователя
+          description: Внутренний ID пользователя
         nickname:
           type: string
           description: Никнейм пользователя
@@ -1851,7 +1851,7 @@ components:
         user_id:
           type: integer
           format: int64
-          description: ID пользователя
+          description: Внутренний ID пользователя
 
     ActivityResponse:
       type: object
@@ -1893,7 +1893,7 @@ components:
         user_id:
           type: integer
           format: int64
-          description: ID пользователя
+          description: Внутренний ID пользователя
         priority:
           type: integer
           description: Приоритет задачи
@@ -1911,7 +1911,7 @@ components:
         user_id:
           type: integer
           format: int64
-          description: ID пользователя
+          description: Внутренний ID пользователя
         title:
           type: string
           description: Заголовок задачи

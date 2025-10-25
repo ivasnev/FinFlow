@@ -321,18 +321,16 @@ func (s *TransactionService) GetDebtsByEventID(ctx context.Context, eventID int6
 			}
 			if debt.FromUser != nil {
 				debtDTO.FromUser = &service.DebtsUserResponse{
-					ID:         debt.FromUser.ID,
-					ExternalID: debt.FromUser.UserID,
-					Name:       getUserName(debt.FromUser),
-					Photo:      debt.FromUser.PhotoUUIDCashed,
+					ID:    debt.FromUser.ID,
+					Name:  getUserName(debt.FromUser),
+					Photo: debt.FromUser.PhotoUUIDCashed,
 				}
 			}
 			if debt.ToUser != nil {
 				debtDTO.ToUser = &service.DebtsUserResponse{
-					ID:         debt.ToUser.ID,
-					ExternalID: debt.ToUser.UserID,
-					Name:       getUserName(debt.ToUser),
-					Photo:      debt.ToUser.PhotoUUIDCashed,
+					ID:    debt.ToUser.ID,
+					Name:  getUserName(debt.ToUser),
+					Photo: debt.ToUser.PhotoUUIDCashed,
 				}
 			}
 			debts = append(debts, debtDTO)
@@ -372,10 +370,9 @@ func (s *TransactionService) GetDebtsByEventIDFromUser(eventID int64, userID int
 			TransactionID: debt.TransactionID,
 
 			Requestor: &service.DebtsUserResponse{
-				ID:         debt.ToUser.ID,
-				ExternalID: debt.ToUser.UserID,
-				Name:       getUserName(debt.ToUser),
-				Photo:      debt.ToUser.PhotoUUIDCashed,
+				ID:    debt.ToUser.ID,
+				Name:  getUserName(debt.ToUser),
+				Photo: debt.ToUser.PhotoUUIDCashed,
 			},
 		})
 	}
@@ -397,10 +394,9 @@ func (s *TransactionService) GetDebtsByEventIDToUser(eventID int64, userID int64
 			TransactionID: debt.TransactionID,
 
 			Requestor: &service.DebtsUserResponse{
-				ID:         debt.FromUser.ID,
-				ExternalID: debt.FromUser.UserID,
-				Name:       getUserName(debt.FromUser),
-				Photo:      debt.FromUser.PhotoUUIDCashed,
+				ID:    debt.FromUser.ID,
+				Name:  getUserName(debt.FromUser),
+				Photo: debt.FromUser.PhotoUUIDCashed,
 			},
 		})
 	}
@@ -523,18 +519,16 @@ func (s *TransactionService) GetOptimizedDebtsByEventID(ctx context.Context, eve
 			}
 			if debt.FromUser != nil {
 				debtDTO.FromUser = &service.DebtsUserResponse{
-					ID:         debt.FromUser.ID,
-					ExternalID: debt.FromUser.UserID,
-					Name:       getUserName(debt.FromUser),
-					Photo:      debt.FromUser.PhotoUUIDCashed,
+					ID:    debt.FromUser.ID,
+					Name:  getUserName(debt.FromUser),
+					Photo: debt.FromUser.PhotoUUIDCashed,
 				}
 			}
 			if debt.ToUser != nil {
 				debtDTO.ToUser = &service.DebtsUserResponse{
-					ID:         debt.ToUser.ID,
-					ExternalID: debt.ToUser.UserID,
-					Name:       getUserName(debt.ToUser),
-					Photo:      debt.ToUser.PhotoUUIDCashed,
+					ID:    debt.ToUser.ID,
+					Name:  getUserName(debt.ToUser),
+					Photo: debt.ToUser.PhotoUUIDCashed,
 				}
 			}
 			debts = append(debts, debtDTO)
@@ -577,10 +571,9 @@ func (s *TransactionService) GetOptimizedDebtsByEventIDFromUser(eventID int64, u
 				EventID:    debt.EventID,
 
 				Requestor: &service.DebtsUserResponse{
-					ID:         debt.ToUser.ID,
-					ExternalID: debt.ToUser.UserID,
-					Name:       getUserName(debt.ToUser),
-					Photo:      debt.ToUser.PhotoUUIDCashed,
+					ID:    debt.ToUser.ID,
+					Name:  getUserName(debt.ToUser),
+					Photo: debt.ToUser.PhotoUUIDCashed,
 				},
 			})
 		}
@@ -606,10 +599,9 @@ func (s *TransactionService) GetOptimizedDebtsByEventIDToUser(eventID int64, use
 				EventID:    debt.EventID,
 
 				Requestor: &service.DebtsUserResponse{
-					ID:         debt.FromUser.ID,
-					ExternalID: debt.FromUser.UserID,
-					Name:       getUserName(debt.FromUser),
-					Photo:      debt.FromUser.PhotoUUIDCashed,
+					ID:    debt.FromUser.ID,
+					Name:  getUserName(debt.FromUser),
+					Photo: debt.FromUser.PhotoUUIDCashed,
 				},
 			})
 		}
@@ -666,18 +658,16 @@ func (s *TransactionService) GetOptimizedDebtsByUserID(ctx context.Context, even
 		}
 		if debt.FromUser != nil {
 			debtDTO.FromUser = &service.DebtsUserResponse{
-				ID:         debt.FromUser.ID,
-				ExternalID: debt.FromUser.UserID,
-				Name:       getUserName(debt.FromUser),
-				Photo:      debt.FromUser.PhotoUUIDCashed,
+				ID:    debt.FromUser.ID,
+				Name:  getUserName(debt.FromUser),
+				Photo: debt.FromUser.PhotoUUIDCashed,
 			}
 		}
 		if debt.ToUser != nil {
 			debtDTO.ToUser = &service.DebtsUserResponse{
-				ID:         debt.ToUser.ID,
-				ExternalID: debt.ToUser.UserID,
-				Name:       getUserName(debt.ToUser),
-				Photo:      debt.ToUser.PhotoUUIDCashed,
+				ID:    debt.ToUser.ID,
+				Name:  getUserName(debt.ToUser),
+				Photo: debt.ToUser.PhotoUUIDCashed,
 			}
 		}
 		result[i] = debtDTO
@@ -725,13 +715,8 @@ func (s *TransactionService) mapTransactionToDTO(
 
 	var fromUser int64
 	if tx.PayerID != nil {
-		user, err := s.userService.GetUserByInternalUserID(context.Background(), *tx.PayerID)
-		if err != nil {
-			return nil, err
-		}
-		if user.UserID != nil {
-			fromUser = *user.UserID
-		}
+		// Всегда используем внутренний ID
+		fromUser = *tx.PayerID
 	}
 
 	return &service.TransactionResponse{
