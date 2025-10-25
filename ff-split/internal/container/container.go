@@ -146,7 +146,7 @@ func (c *Container) initRepositories() {
 func (c *Container) initServices() {
 	c.UserService = user_service.NewUserService(c.UserRepository, c.IDAdapter)
 	c.CategoryService = category_service.NewCategoryService(c.CategoryRepository)
-	c.EventService = event_service.NewEventService(c.EventRepository, c.DB, c.UserService)
+	c.EventService = event_service.NewEventService(c.EventRepository, c.DB, c.UserService, c.CategoryService)
 	c.ActivityService = activity_service.NewActivityService(c.ActivityRepository)
 	c.IconService = icon_service.NewIconService(c.IconRepository)
 	c.TaskService = task_service.NewTaskService(c.TaskRepository, c.UserService)

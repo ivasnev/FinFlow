@@ -60,7 +60,18 @@ func (r *UserRepository) BatchCreate(ctx context.Context, users []*models.User) 
 	for i, user := range users {
 		dbUsers[i] = load(user)
 	}
-	return db.GetTx(ctx, r.db).WithContext(ctx).Create(dbUsers).Error
+
+	err := db.GetTx(ctx, r.db).WithContext(ctx).Create(dbUsers).Error
+	if err != nil {
+		return err
+	}
+
+	// Заполняем ID в исходных моделях после создания
+	for i, dbUser := range dbUsers {
+		users[i].ID = dbUser.ID
+	}
+
+	return nil
 }
 
 // GetByExternalUserIDs находит пользователей по UserID (ID из сервиса идентификации)

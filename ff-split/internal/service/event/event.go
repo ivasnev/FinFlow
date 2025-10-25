@@ -15,17 +15,19 @@ import (
 
 // EventService реализует интерфейс service.Event
 type EventService struct {
-	db          *gorm.DB
-	userService service.User
-	repo        repository.Event
+	db              *gorm.DB
+	userService     service.User
+	categoryService service.Category
+	repo            repository.Event
 }
 
 // NewEventService создает новый экземпляр EventService
-func NewEventService(repo repository.Event, dbImpl *gorm.DB, userService service.User) *EventService {
+func NewEventService(repo repository.Event, dbImpl *gorm.DB, userService service.User, categoryService service.Category) *EventService {
 	return &EventService{
-		repo:        repo,
-		db:          dbImpl,
-		userService: userService,
+		repo:            repo,
+		db:              dbImpl,
+		userService:     userService,
+		categoryService: categoryService,
 	}
 }
 
@@ -52,8 +54,17 @@ func (s *EventService) CreateEvent(ctx context.Context, request *service.EventRe
 		}
 	}
 
+	// Проверяем существование категории, если она указана
+	var categoryID *int
+	if request.CategoryID != nil {
+		_, err := s.categoryService.GetCategoryByID(ctx, *request.CategoryID, "event")
+		if err != nil {
+			return nil, fmt.Errorf("категория мероприятия с ID %d не найдена", *request.CategoryID)
+		}
+		categoryID = request.CategoryID
+	}
+
 	// Преобразуем DTO в модель
-	categoryID := request.CategoryID
 	event := &models.Event{
 		Name:        request.Name,
 		Description: request.Description,
