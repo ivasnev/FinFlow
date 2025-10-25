@@ -2,6 +2,7 @@ package container
 
 import (
 	"fmt"
+	"github.com/ivasnev/FinFlow/ff-id/internal/api/middleware"
 	"log"
 	"os"
 	"strconv"
@@ -156,6 +157,8 @@ func (c *Container) initHandlers() {
 
 // RegisterRoutes - регистрирует все маршруты API
 func (c *Container) RegisterRoutes() {
+	c.Router.Use(middleware.CORSMiddleware())
+
 	// API версии v1
 	v1 := c.Router.Group("")
 
