@@ -82,7 +82,7 @@ func (s *ServerHandler) AddUsersToEvent(c *gin.Context, idEvent int64) {
 		return
 	}
 
-	if apiRequest.UserIds == nil || len(apiRequest.UserIds) == 0 {
+	if len(apiRequest.UserIds) == 0 {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{
 			Error: "список пользователей не может быть пустым",
 		})
@@ -119,7 +119,7 @@ func (s *ServerHandler) SyncUsers(c *gin.Context) {
 		return
 	}
 
-	if apiRequest.UserIds == nil || len(apiRequest.UserIds) == 0 {
+	if len(apiRequest.UserIds) == 0 {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{
 			Error: "список пользователей не может быть пустым",
 		})
@@ -139,9 +139,10 @@ func (s *ServerHandler) SyncUsers(c *gin.Context) {
 
 func convertUserToProfileAPI(user *models.User) api.UserProfileDTO {
 	return api.UserProfileDTO{
-		UserId:   user.UserID,
-		Nickname: &user.NicknameCashed,
-		Name:     &user.NameCashed,
-		Photo:    &user.PhotoUUIDCashed,
+		InternalId: &user.ID,
+		UserId:     user.UserID,
+		Nickname:   &user.NicknameCashed,
+		Name:       &user.NameCashed,
+		Photo:      &user.PhotoUUIDCashed,
 	}
 }

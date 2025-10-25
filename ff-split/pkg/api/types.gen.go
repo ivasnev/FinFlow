@@ -368,6 +368,9 @@ type UserListResponse struct {
 
 // UserProfileDTO defines model for UserProfileDTO.
 type UserProfileDTO struct {
+	// InternalId Внутренний ID пользователя в системе
+	InternalId *int64 `json:"internal_id,omitempty"`
+
 	// Name Имя пользователя
 	Name *string `json:"name,omitempty"`
 

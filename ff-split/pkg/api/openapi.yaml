@@ -1778,6 +1778,10 @@ components:
     UserProfileDTO:
       type: object
       properties:
+        internal_id:
+          type: integer
+          format: int64
+          description: Внутренний ID пользователя в системе
         user_id:
           type: integer
           format: int64
