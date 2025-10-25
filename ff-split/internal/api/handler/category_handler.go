@@ -11,12 +11,8 @@ import (
 )
 
 // GetCategories возвращает список категорий
-func (s *ServerHandler) GetCategories(c *gin.Context) {
-	// TODO: добавить category_type как query параметр в OpenAPI
-	categoryType := c.Query("category_type")
-	if categoryType == "" {
-		categoryType = "transaction" // default type
-	}
+func (s *ServerHandler) GetCategories(c *gin.Context, params api.GetCategoriesParams) {
+	categoryType := string(params.CategoryType)
 
 	categories, err := s.categoryService.GetCategories(c.Request.Context(), categoryType)
 	if err != nil {
@@ -33,12 +29,8 @@ func (s *ServerHandler) GetCategories(c *gin.Context) {
 }
 
 // GetCategoryByID возвращает категорию по ID
-func (s *ServerHandler) GetCategoryByID(c *gin.Context, id int) {
-	// TODO: добавить category_type как query параметр в OpenAPI
-	categoryType := c.Query("category_type")
-	if categoryType == "" {
-		categoryType = "transaction" // default type
-	}
+func (s *ServerHandler) GetCategoryByID(c *gin.Context, id int, params api.GetCategoryByIDParams) {
+	categoryType := string(params.CategoryType)
 
 	category, err := s.categoryService.GetCategoryByID(c.Request.Context(), id, categoryType)
 	if err != nil {
@@ -55,18 +47,14 @@ func (s *ServerHandler) GetCategoryByID(c *gin.Context, id int) {
 }
 
 // CreateCategory создает новую категорию
-func (s *ServerHandler) CreateCategory(c *gin.Context) {
+func (s *ServerHandler) CreateCategory(c *gin.Context, params api.CreateCategoryParams) {
 	var apiRequest api.CategoryRequest
 	if err := c.ShouldBindJSON(&apiRequest); err != nil {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "некорректные данные запроса"})
 		return
 	}
 
-	// TODO: добавить category_type как query параметр в OpenAPI
-	categoryType := c.Query("category_type")
-	if categoryType == "" {
-		categoryType = "transaction" // default type
-	}
+	categoryType := string(params.CategoryType)
 
 	var iconID int
 	if apiRequest.IconId != nil {
@@ -88,18 +76,14 @@ func (s *ServerHandler) CreateCategory(c *gin.Context) {
 }
 
 // UpdateCategory обновляет категорию
-func (s *ServerHandler) UpdateCategory(c *gin.Context, id int) {
+func (s *ServerHandler) UpdateCategory(c *gin.Context, id int, params api.UpdateCategoryParams) {
 	var apiRequest api.CategoryRequest
 	if err := c.ShouldBindJSON(&apiRequest); err != nil {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "некорректные данные запроса"})
 		return
 	}
 
-	// TODO: добавить category_type как query параметр в OpenAPI
-	categoryType := c.Query("category_type")
-	if categoryType == "" {
-		categoryType = "transaction" // default type
-	}
+	categoryType := string(params.CategoryType)
 
 	var iconID int
 	if apiRequest.IconId != nil {
@@ -122,12 +106,8 @@ func (s *ServerHandler) UpdateCategory(c *gin.Context, id int) {
 }
 
 // DeleteCategory удаляет категорию
-func (s *ServerHandler) DeleteCategory(c *gin.Context, id int) {
-	// TODO: добавить category_type как query параметр в OpenAPI
-	categoryType := c.Query("category_type")
-	if categoryType == "" {
-		categoryType = "transaction" // default type
-	}
+func (s *ServerHandler) DeleteCategory(c *gin.Context, id int, params api.DeleteCategoryParams) {
+	categoryType := string(params.CategoryType)
 
 	err := s.categoryService.DeleteCategory(c.Request.Context(), id, categoryType)
 	if err != nil {

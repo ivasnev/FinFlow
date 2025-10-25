@@ -15,10 +15,10 @@ import (
 type ServerInterface interface {
 	// Получить список категорий
 	// (GET /api/v1/category)
-	GetCategories(c *gin.Context)
+	GetCategories(c *gin.Context, params GetCategoriesParams)
 	// Получить категорию
 	// (GET /api/v1/category/{id})
-	GetCategoryByID(c *gin.Context, id int)
+	GetCategoryByID(c *gin.Context, id int, params GetCategoryByIDParams)
 	// Получить список мероприятий
 	// (GET /api/v1/event)
 	GetEvents(c *gin.Context)
@@ -108,13 +108,13 @@ type ServerInterface interface {
 	GetOptimizedDebtsByUserID(c *gin.Context, idEvent int64, idUser int64)
 	// Создать категорию
 	// (POST /api/v1/manage/category)
-	CreateCategory(c *gin.Context)
+	CreateCategory(c *gin.Context, params CreateCategoryParams)
 	// Удалить категорию
 	// (DELETE /api/v1/manage/category/{id})
-	DeleteCategory(c *gin.Context, id int)
+	DeleteCategory(c *gin.Context, id int, params DeleteCategoryParams)
 	// Обновить категорию
 	// (PUT /api/v1/manage/category/{id})
-	UpdateCategory(c *gin.Context, id int)
+	UpdateCategory(c *gin.Context, id int, params UpdateCategoryParams)
 	// Получить список иконок
 	// (GET /api/v1/manage/icons)
 	GetIcons(c *gin.Context)
@@ -150,7 +150,27 @@ type MiddlewareFunc func(c *gin.Context)
 // GetCategories operation middleware
 func (siw *ServerInterfaceWrapper) GetCategories(c *gin.Context) {
 
+	var err error
+
 	c.Set(BearerAuthScopes, []string{})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetCategoriesParams
+
+	// ------------- Required query parameter "category_type" -------------
+
+	if paramValue := c.Query("category_type"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandler(c, fmt.Errorf("Query argument category_type is required, but not found"), http.StatusBadRequest)
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "category_type", c.Request.URL.Query(), &params.CategoryType)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter category_type: %w", err), http.StatusBadRequest)
+		return
+	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -159,7 +179,7 @@ func (siw *ServerInterfaceWrapper) GetCategories(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetCategories(c)
+	siw.Handler.GetCategories(c, params)
 }
 
 // GetCategoryByID operation middleware
@@ -178,6 +198,24 @@ func (siw *ServerInterfaceWrapper) GetCategoryByID(c *gin.Context) {
 
 	c.Set(BearerAuthScopes, []string{})
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetCategoryByIDParams
+
+	// ------------- Required query parameter "category_type" -------------
+
+	if paramValue := c.Query("category_type"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandler(c, fmt.Errorf("Query argument category_type is required, but not found"), http.StatusBadRequest)
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "category_type", c.Request.URL.Query(), &params.CategoryType)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter category_type: %w", err), http.StatusBadRequest)
+		return
+	}
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -185,7 +223,7 @@ func (siw *ServerInterfaceWrapper) GetCategoryByID(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetCategoryByID(c, id)
+	siw.Handler.GetCategoryByID(c, id, params)
 }
 
 // GetEvents operation middleware
@@ -1022,7 +1060,27 @@ func (siw *ServerInterfaceWrapper) GetOptimizedDebtsByUserID(c *gin.Context) {
 // CreateCategory operation middleware
 func (siw *ServerInterfaceWrapper) CreateCategory(c *gin.Context) {
 
+	var err error
+
 	c.Set(BearerAuthScopes, []string{})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateCategoryParams
+
+	// ------------- Required query parameter "category_type" -------------
+
+	if paramValue := c.Query("category_type"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandler(c, fmt.Errorf("Query argument category_type is required, but not found"), http.StatusBadRequest)
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "category_type", c.Request.URL.Query(), &params.CategoryType)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter category_type: %w", err), http.StatusBadRequest)
+		return
+	}
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -1031,7 +1089,7 @@ func (siw *ServerInterfaceWrapper) CreateCategory(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.CreateCategory(c)
+	siw.Handler.CreateCategory(c, params)
 }
 
 // DeleteCategory operation middleware
@@ -1050,6 +1108,24 @@ func (siw *ServerInterfaceWrapper) DeleteCategory(c *gin.Context) {
 
 	c.Set(BearerAuthScopes, []string{})
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteCategoryParams
+
+	// ------------- Required query parameter "category_type" -------------
+
+	if paramValue := c.Query("category_type"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandler(c, fmt.Errorf("Query argument category_type is required, but not found"), http.StatusBadRequest)
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "category_type", c.Request.URL.Query(), &params.CategoryType)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter category_type: %w", err), http.StatusBadRequest)
+		return
+	}
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -1057,7 +1133,7 @@ func (siw *ServerInterfaceWrapper) DeleteCategory(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.DeleteCategory(c, id)
+	siw.Handler.DeleteCategory(c, id, params)
 }
 
 // UpdateCategory operation middleware
@@ -1076,6 +1152,24 @@ func (siw *ServerInterfaceWrapper) UpdateCategory(c *gin.Context) {
 
 	c.Set(BearerAuthScopes, []string{})
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateCategoryParams
+
+	// ------------- Required query parameter "category_type" -------------
+
+	if paramValue := c.Query("category_type"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandler(c, fmt.Errorf("Query argument category_type is required, but not found"), http.StatusBadRequest)
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "category_type", c.Request.URL.Query(), &params.CategoryType)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter category_type: %w", err), http.StatusBadRequest)
+		return
+	}
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -1083,7 +1177,7 @@ func (siw *ServerInterfaceWrapper) UpdateCategory(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.UpdateCategory(c, id)
+	siw.Handler.UpdateCategory(c, id, params)
 }
 
 // GetIcons operation middleware

@@ -11,6 +11,12 @@ const (
 	BearerAuthScopes = "BearerAuth.Scopes"
 )
 
+// Defines values for CategoryType.
+const (
+	Event       CategoryType = "event"
+	Transaction CategoryType = "transaction"
+)
+
 // Defines values for TransactionRequestType.
 const (
 	Amount  TransactionRequestType = "amount"
@@ -80,6 +86,9 @@ type CategoryResponse struct {
 	// Name Название категории
 	Name *string `json:"name,omitempty"`
 }
+
+// CategoryType Тип категории
+type CategoryType string
 
 // DebtDTO defines model for DebtDTO.
 type DebtDTO struct {
@@ -370,6 +379,36 @@ type UserProfileDTO struct {
 
 	// UserId ID пользователя
 	UserId *int64 `json:"user_id,omitempty"`
+}
+
+// GetCategoriesParams defines parameters for GetCategories.
+type GetCategoriesParams struct {
+	// CategoryType Тип категории
+	CategoryType CategoryType `form:"category_type" json:"category_type"`
+}
+
+// GetCategoryByIDParams defines parameters for GetCategoryByID.
+type GetCategoryByIDParams struct {
+	// CategoryType Тип категории
+	CategoryType CategoryType `form:"category_type" json:"category_type"`
+}
+
+// CreateCategoryParams defines parameters for CreateCategory.
+type CreateCategoryParams struct {
+	// CategoryType Тип категории
+	CategoryType CategoryType `form:"category_type" json:"category_type"`
+}
+
+// DeleteCategoryParams defines parameters for DeleteCategory.
+type DeleteCategoryParams struct {
+	// CategoryType Тип категории
+	CategoryType CategoryType `form:"category_type" json:"category_type"`
+}
+
+// UpdateCategoryParams defines parameters for UpdateCategory.
+type UpdateCategoryParams struct {
+	// CategoryType Тип категории
+	CategoryType CategoryType `form:"category_type" json:"category_type"`
 }
 
 // CreateEventJSONRequestBody defines body for CreateEvent for application/json ContentType.

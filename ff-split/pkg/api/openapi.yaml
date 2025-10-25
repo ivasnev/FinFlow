@@ -1023,8 +1023,15 @@ paths:
       tags:
         - categories
       summary: Получить список категорий
-      description: Возвращает список всех категорий
+      description: Возвращает список всех категорий указанного типа
       operationId: getCategories
+      parameters:
+        - name: category_type
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/CategoryType'
+          description: Тип категории
       responses:
         '200':
           description: Список категорий
@@ -1044,7 +1051,7 @@ paths:
       tags:
         - categories
       summary: Получить категорию
-      description: Возвращает информацию о категории по ID
+      description: Возвращает информацию о категории по ID и типу
       operationId: getCategoryByID
       parameters:
         - name: id
@@ -1052,6 +1059,13 @@ paths:
           required: true
           schema:
             type: integer
+          description: ID категории
+        - name: category_type
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/CategoryType'
+          description: Тип категории
       responses:
         '200':
           description: Информация о категории
@@ -1077,8 +1091,15 @@ paths:
       tags:
         - categories
       summary: Создать категорию
-      description: Создает новую категорию
+      description: Создает новую категорию указанного типа
       operationId: createCategory
+      parameters:
+        - name: category_type
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/CategoryType'
+          description: Тип категории
       requestBody:
         required: true
         content:
@@ -1110,7 +1131,7 @@ paths:
       tags:
         - categories
       summary: Обновить категорию
-      description: Обновляет информацию о категории
+      description: Обновляет информацию о категории указанного типа
       operationId: updateCategory
       parameters:
         - name: id
@@ -1118,6 +1139,13 @@ paths:
           required: true
           schema:
             type: integer
+          description: ID категории
+        - name: category_type
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/CategoryType'
+          description: Тип категории
       requestBody:
         required: true
         content:
@@ -1154,7 +1182,7 @@ paths:
       tags:
         - categories
       summary: Удалить категорию
-      description: Удаляет категорию
+      description: Удаляет категорию указанного типа
       operationId: deleteCategory
       parameters:
         - name: id
@@ -1162,6 +1190,13 @@ paths:
           required: true
           schema:
             type: integer
+          description: ID категории
+        - name: category_type
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/CategoryType'
+          description: Тип категории
       responses:
         '200':
           description: Категория удалена
@@ -1961,3 +1996,10 @@ components:
         external_uuid:
           type: string
           description: Внешний UUID
+
+    CategoryType:
+      type: string
+      enum:
+        - event
+        - transaction
+      description: Тип категории

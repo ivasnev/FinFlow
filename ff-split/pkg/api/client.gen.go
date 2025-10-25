@@ -90,10 +90,10 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 	// GetCategories request
-	GetCategories(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetCategories(ctx context.Context, params *GetCategoriesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetCategoryByID request
-	GetCategoryByID(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetCategoryByID(ctx context.Context, id int, params *GetCategoryByIDParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetEvents request
 	GetEvents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -203,17 +203,17 @@ type ClientInterface interface {
 	GetOptimizedDebtsByUserID(ctx context.Context, idEvent int64, idUser int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateCategoryWithBody request with any body
-	CreateCategoryWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateCategoryWithBody(ctx context.Context, params *CreateCategoryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	CreateCategory(ctx context.Context, body CreateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateCategory(ctx context.Context, params *CreateCategoryParams, body CreateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteCategory request
-	DeleteCategory(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteCategory(ctx context.Context, id int, params *DeleteCategoryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateCategoryWithBody request with any body
-	UpdateCategoryWithBody(ctx context.Context, id int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateCategoryWithBody(ctx context.Context, id int, params *UpdateCategoryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpdateCategory(ctx context.Context, id int, body UpdateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateCategory(ctx context.Context, id int, params *UpdateCategoryParams, body UpdateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetIcons request
 	GetIcons(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -243,8 +243,8 @@ type ClientInterface interface {
 	GetUserByID(ctx context.Context, idUser int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-func (c *Client) GetCategories(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetCategoriesRequest(c.Server)
+func (c *Client) GetCategories(ctx context.Context, params *GetCategoriesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCategoriesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -255,8 +255,8 @@ func (c *Client) GetCategories(ctx context.Context, reqEditors ...RequestEditorF
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetCategoryByID(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetCategoryByIDRequest(c.Server, id)
+func (c *Client) GetCategoryByID(ctx context.Context, id int, params *GetCategoryByIDParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCategoryByIDRequest(c.Server, id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -735,8 +735,8 @@ func (c *Client) GetOptimizedDebtsByUserID(ctx context.Context, idEvent int64, i
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateCategoryWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateCategoryRequestWithBody(c.Server, contentType, body)
+func (c *Client) CreateCategoryWithBody(ctx context.Context, params *CreateCategoryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateCategoryRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -747,8 +747,8 @@ func (c *Client) CreateCategoryWithBody(ctx context.Context, contentType string,
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateCategory(ctx context.Context, body CreateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateCategoryRequest(c.Server, body)
+func (c *Client) CreateCategory(ctx context.Context, params *CreateCategoryParams, body CreateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateCategoryRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -759,8 +759,8 @@ func (c *Client) CreateCategory(ctx context.Context, body CreateCategoryJSONRequ
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteCategory(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteCategoryRequest(c.Server, id)
+func (c *Client) DeleteCategory(ctx context.Context, id int, params *DeleteCategoryParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteCategoryRequest(c.Server, id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -771,8 +771,8 @@ func (c *Client) DeleteCategory(ctx context.Context, id int, reqEditors ...Reque
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateCategoryWithBody(ctx context.Context, id int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateCategoryRequestWithBody(c.Server, id, contentType, body)
+func (c *Client) UpdateCategoryWithBody(ctx context.Context, id int, params *UpdateCategoryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateCategoryRequestWithBody(c.Server, id, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -783,8 +783,8 @@ func (c *Client) UpdateCategoryWithBody(ctx context.Context, id int, contentType
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateCategory(ctx context.Context, id int, body UpdateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateCategoryRequest(c.Server, id, body)
+func (c *Client) UpdateCategory(ctx context.Context, id int, params *UpdateCategoryParams, body UpdateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateCategoryRequest(c.Server, id, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -916,7 +916,7 @@ func (c *Client) GetUserByID(ctx context.Context, idUser int64, reqEditors ...Re
 }
 
 // NewGetCategoriesRequest generates requests for GetCategories
-func NewGetCategoriesRequest(server string) (*http.Request, error) {
+func NewGetCategoriesRequest(server string, params *GetCategoriesParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -934,6 +934,24 @@ func NewGetCategoriesRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "category_type", runtime.ParamLocationQuery, params.CategoryType); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
@@ -943,7 +961,7 @@ func NewGetCategoriesRequest(server string) (*http.Request, error) {
 }
 
 // NewGetCategoryByIDRequest generates requests for GetCategoryByID
-func NewGetCategoryByIDRequest(server string, id int) (*http.Request, error) {
+func NewGetCategoryByIDRequest(server string, id int, params *GetCategoryByIDParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -966,6 +984,24 @@ func NewGetCategoryByIDRequest(server string, id int) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "category_type", runtime.ParamLocationQuery, params.CategoryType); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -2156,18 +2192,18 @@ func NewGetOptimizedDebtsByUserIDRequest(server string, idEvent int64, idUser in
 }
 
 // NewCreateCategoryRequest calls the generic CreateCategory builder with application/json body
-func NewCreateCategoryRequest(server string, body CreateCategoryJSONRequestBody) (*http.Request, error) {
+func NewCreateCategoryRequest(server string, params *CreateCategoryParams, body CreateCategoryJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateCategoryRequestWithBody(server, "application/json", bodyReader)
+	return NewCreateCategoryRequestWithBody(server, params, "application/json", bodyReader)
 }
 
 // NewCreateCategoryRequestWithBody generates requests for CreateCategory with any type of body
-func NewCreateCategoryRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+func NewCreateCategoryRequestWithBody(server string, params *CreateCategoryParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -2185,6 +2221,24 @@ func NewCreateCategoryRequestWithBody(server string, contentType string, body io
 		return nil, err
 	}
 
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "category_type", runtime.ParamLocationQuery, params.CategoryType); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
 	req, err := http.NewRequest("POST", queryURL.String(), body)
 	if err != nil {
 		return nil, err
@@ -2196,7 +2250,7 @@ func NewCreateCategoryRequestWithBody(server string, contentType string, body io
 }
 
 // NewDeleteCategoryRequest generates requests for DeleteCategory
-func NewDeleteCategoryRequest(server string, id int) (*http.Request, error) {
+func NewDeleteCategoryRequest(server string, id int, params *DeleteCategoryParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2219,6 +2273,24 @@ func NewDeleteCategoryRequest(server string, id int) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "category_type", runtime.ParamLocationQuery, params.CategoryType); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
@@ -2230,18 +2302,18 @@ func NewDeleteCategoryRequest(server string, id int) (*http.Request, error) {
 }
 
 // NewUpdateCategoryRequest calls the generic UpdateCategory builder with application/json body
-func NewUpdateCategoryRequest(server string, id int, body UpdateCategoryJSONRequestBody) (*http.Request, error) {
+func NewUpdateCategoryRequest(server string, id int, params *UpdateCategoryParams, body UpdateCategoryJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdateCategoryRequestWithBody(server, id, "application/json", bodyReader)
+	return NewUpdateCategoryRequestWithBody(server, id, params, "application/json", bodyReader)
 }
 
 // NewUpdateCategoryRequestWithBody generates requests for UpdateCategory with any type of body
-func NewUpdateCategoryRequestWithBody(server string, id int, contentType string, body io.Reader) (*http.Request, error) {
+func NewUpdateCategoryRequestWithBody(server string, id int, params *UpdateCategoryParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2264,6 +2336,24 @@ func NewUpdateCategoryRequestWithBody(server string, id int, contentType string,
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "category_type", runtime.ParamLocationQuery, params.CategoryType); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("PUT", queryURL.String(), body)
@@ -2576,10 +2666,10 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// GetCategoriesWithResponse request
-	GetCategoriesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCategoriesResponse, error)
+	GetCategoriesWithResponse(ctx context.Context, params *GetCategoriesParams, reqEditors ...RequestEditorFn) (*GetCategoriesResponse, error)
 
 	// GetCategoryByIDWithResponse request
-	GetCategoryByIDWithResponse(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*GetCategoryByIDResponse, error)
+	GetCategoryByIDWithResponse(ctx context.Context, id int, params *GetCategoryByIDParams, reqEditors ...RequestEditorFn) (*GetCategoryByIDResponse, error)
 
 	// GetEventsWithResponse request
 	GetEventsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetEventsResponse, error)
@@ -2689,17 +2779,17 @@ type ClientWithResponsesInterface interface {
 	GetOptimizedDebtsByUserIDWithResponse(ctx context.Context, idEvent int64, idUser int64, reqEditors ...RequestEditorFn) (*GetOptimizedDebtsByUserIDResponse, error)
 
 	// CreateCategoryWithBodyWithResponse request with any body
-	CreateCategoryWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCategoryResponse, error)
+	CreateCategoryWithBodyWithResponse(ctx context.Context, params *CreateCategoryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCategoryResponse, error)
 
-	CreateCategoryWithResponse(ctx context.Context, body CreateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCategoryResponse, error)
+	CreateCategoryWithResponse(ctx context.Context, params *CreateCategoryParams, body CreateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCategoryResponse, error)
 
 	// DeleteCategoryWithResponse request
-	DeleteCategoryWithResponse(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*DeleteCategoryResponse, error)
+	DeleteCategoryWithResponse(ctx context.Context, id int, params *DeleteCategoryParams, reqEditors ...RequestEditorFn) (*DeleteCategoryResponse, error)
 
 	// UpdateCategoryWithBodyWithResponse request with any body
-	UpdateCategoryWithBodyWithResponse(ctx context.Context, id int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCategoryResponse, error)
+	UpdateCategoryWithBodyWithResponse(ctx context.Context, id int, params *UpdateCategoryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCategoryResponse, error)
 
-	UpdateCategoryWithResponse(ctx context.Context, id int, body UpdateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCategoryResponse, error)
+	UpdateCategoryWithResponse(ctx context.Context, id int, params *UpdateCategoryParams, body UpdateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCategoryResponse, error)
 
 	// GetIconsWithResponse request
 	GetIconsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetIconsResponse, error)
@@ -3708,8 +3798,8 @@ func (r GetUserByIDResponse) StatusCode() int {
 }
 
 // GetCategoriesWithResponse request returning *GetCategoriesResponse
-func (c *ClientWithResponses) GetCategoriesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCategoriesResponse, error) {
-	rsp, err := c.GetCategories(ctx, reqEditors...)
+func (c *ClientWithResponses) GetCategoriesWithResponse(ctx context.Context, params *GetCategoriesParams, reqEditors ...RequestEditorFn) (*GetCategoriesResponse, error) {
+	rsp, err := c.GetCategories(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -3717,8 +3807,8 @@ func (c *ClientWithResponses) GetCategoriesWithResponse(ctx context.Context, req
 }
 
 // GetCategoryByIDWithResponse request returning *GetCategoryByIDResponse
-func (c *ClientWithResponses) GetCategoryByIDWithResponse(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*GetCategoryByIDResponse, error) {
-	rsp, err := c.GetCategoryByID(ctx, id, reqEditors...)
+func (c *ClientWithResponses) GetCategoryByIDWithResponse(ctx context.Context, id int, params *GetCategoryByIDParams, reqEditors ...RequestEditorFn) (*GetCategoryByIDResponse, error) {
+	rsp, err := c.GetCategoryByID(ctx, id, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -4067,16 +4157,16 @@ func (c *ClientWithResponses) GetOptimizedDebtsByUserIDWithResponse(ctx context.
 }
 
 // CreateCategoryWithBodyWithResponse request with arbitrary body returning *CreateCategoryResponse
-func (c *ClientWithResponses) CreateCategoryWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCategoryResponse, error) {
-	rsp, err := c.CreateCategoryWithBody(ctx, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateCategoryWithBodyWithResponse(ctx context.Context, params *CreateCategoryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCategoryResponse, error) {
+	rsp, err := c.CreateCategoryWithBody(ctx, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateCategoryResponse(rsp)
 }
 
-func (c *ClientWithResponses) CreateCategoryWithResponse(ctx context.Context, body CreateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCategoryResponse, error) {
-	rsp, err := c.CreateCategory(ctx, body, reqEditors...)
+func (c *ClientWithResponses) CreateCategoryWithResponse(ctx context.Context, params *CreateCategoryParams, body CreateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCategoryResponse, error) {
+	rsp, err := c.CreateCategory(ctx, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -4084,8 +4174,8 @@ func (c *ClientWithResponses) CreateCategoryWithResponse(ctx context.Context, bo
 }
 
 // DeleteCategoryWithResponse request returning *DeleteCategoryResponse
-func (c *ClientWithResponses) DeleteCategoryWithResponse(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*DeleteCategoryResponse, error) {
-	rsp, err := c.DeleteCategory(ctx, id, reqEditors...)
+func (c *ClientWithResponses) DeleteCategoryWithResponse(ctx context.Context, id int, params *DeleteCategoryParams, reqEditors ...RequestEditorFn) (*DeleteCategoryResponse, error) {
+	rsp, err := c.DeleteCategory(ctx, id, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -4093,16 +4183,16 @@ func (c *ClientWithResponses) DeleteCategoryWithResponse(ctx context.Context, id
 }
 
 // UpdateCategoryWithBodyWithResponse request with arbitrary body returning *UpdateCategoryResponse
-func (c *ClientWithResponses) UpdateCategoryWithBodyWithResponse(ctx context.Context, id int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCategoryResponse, error) {
-	rsp, err := c.UpdateCategoryWithBody(ctx, id, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateCategoryWithBodyWithResponse(ctx context.Context, id int, params *UpdateCategoryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCategoryResponse, error) {
+	rsp, err := c.UpdateCategoryWithBody(ctx, id, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateCategoryResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpdateCategoryWithResponse(ctx context.Context, id int, body UpdateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCategoryResponse, error) {
-	rsp, err := c.UpdateCategory(ctx, id, body, reqEditors...)
+func (c *ClientWithResponses) UpdateCategoryWithResponse(ctx context.Context, id int, params *UpdateCategoryParams, body UpdateCategoryJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCategoryResponse, error) {
+	rsp, err := c.UpdateCategory(ctx, id, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
