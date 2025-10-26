@@ -77,6 +77,22 @@ func (s *EventService) GetEventsByUserID(ctx context.Context, userID int64) ([]s
 	return responses, nil
 }
 
+// GetBalanceByEventID рассчитывает баланс пользователя по конкретному событию
+func (s *EventService) GetBalanceByEventID(ctx context.Context, userID int64, eventID int64) (float64, error) {
+	eventIDs := []int64{eventID}
+	balances, err := s.repo.CalculateUserBalances(ctx, userID, eventIDs)
+	if err != nil {
+		return 0, fmt.Errorf("ошибка при расчете баланса: %w", err)
+	}
+
+	balance, exists := balances[eventID]
+	if !exists {
+		return 0, nil
+	}
+
+	return balance, nil
+}
+
 // GetEventByID получает мероприятие по ID
 func (s *EventService) GetEventByID(ctx context.Context, id int64) (*models.Event, error) {
 	return s.repo.GetByID(ctx, id)

@@ -64,6 +64,22 @@ func (s *ServerHandler) GetEvents(c *gin.Context) {
 func (s *ServerHandler) GetEventByID(c *gin.Context, idEvent int64) {
 	ctx := c.Request.Context()
 
+	// Получаем данные пользователя из контекста
+	userData, exists := auth.GetUserData(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, api.ErrorResponse{
+			Error: "пользователь не авторизован",
+		})
+		return
+	}
+
+	// Преобразуем внешний ID во внутренний
+	user, err := s.userService.GetUserByExternalUserID(ctx, userData.UserID)
+	if err != nil {
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении пользователя: %w", err))
+		return
+	}
+
 	event, err := s.eventService.GetEventByID(ctx, idEvent)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении мероприятия: %w", err))
@@ -77,9 +93,15 @@ func (s *ServerHandler) GetEventByID(c *gin.Context, idEvent int64) {
 		return
 	}
 
-	// Заглушка для баланса
-	var balance *int = nil
-	// Здесь будет расчет баланса в будущем
+	// Рассчитываем баланс для пользователя
+	balances, err := s.eventService.GetBalanceByEventID(ctx, user.ID, idEvent)
+	if err != nil {
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при расчете баланса: %w", err))
+		return
+	}
+
+	balanceFloat := balances
+	balanceInt := int(balanceFloat)
 
 	c.JSON(http.StatusOK, api.EventResponse{
 		Id:          &event.ID,
@@ -87,7 +109,7 @@ func (s *ServerHandler) GetEventByID(c *gin.Context, idEvent int64) {
 		Description: &event.Description,
 		CategoryId:  event.CategoryID,
 		PhotoId:     &event.ImageID,
-		Balance:     balance,
+		Balance:     &balanceInt,
 	})
 }
 

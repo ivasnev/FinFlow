@@ -39,6 +39,7 @@ type EventListResponse struct {
 type Event interface {
 	GetEvents(ctx context.Context) ([]models.Event, error)
 	GetEventsByUserID(ctx context.Context, userID int64) ([]EventResponse, error)
+	GetBalanceByEventID(ctx context.Context, userID int64, eventID int64) (float64, error)
 	GetEventByID(ctx context.Context, id int64) (*models.Event, error)
 	CreateEvent(ctx context.Context, request *EventRequest) (*EventResponse, error)
 	UpdateEvent(ctx context.Context, id int64, request *EventRequest) (*EventResponse, error)
