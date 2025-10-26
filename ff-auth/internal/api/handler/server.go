@@ -3,11 +3,11 @@ package handler
 import (
 	"encoding/base64"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
 	"github.com/ivasnev/FinFlow/ff-auth/pkg/api"
+	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
@@ -170,29 +170,10 @@ func (h *ServerHandler) Register(c *gin.Context) {
 
 // GetLoginHistory обрабатывает запрос на получение истории входов
 func (h *ServerHandler) GetLoginHistory(c *gin.Context, params api.GetLoginHistoryParams) {
-	// Получаем ID пользователя из контекста
-	userID, exists := c.Get("user_id")
+	// Получаем данные пользователя из контекста
+	userData, exists := auth.GetUserData(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, api.ErrorResponse{Error: "unauthorized"})
-		return
-	}
-
-	// Преобразуем ID в int64
-	var userIDInt64 int64
-	switch v := userID.(type) {
-	case int64:
-		userIDInt64 = v
-	case float64:
-		userIDInt64 = int64(v)
-	case string:
-		var err error
-		userIDInt64, err = strconv.ParseInt(v, 10, 64)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: "invalid user ID format"})
-			return
-		}
-	default:
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: "invalid user ID type"})
 		return
 	}
 
@@ -207,7 +188,7 @@ func (h *ServerHandler) GetLoginHistory(c *gin.Context, params api.GetLoginHisto
 		offset = *params.Offset
 	}
 
-	history, err := h.loginHistoryService.GetUserLoginHistory(c.Request.Context(), userIDInt64, limit, offset)
+	history, err := h.loginHistoryService.GetUserLoginHistory(c.Request.Context(), userData.UserID, limit, offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: err.Error()})
 		return
@@ -229,33 +210,14 @@ func (h *ServerHandler) GetLoginHistory(c *gin.Context, params api.GetLoginHisto
 
 // GetUserSessions обрабатывает запрос на получение активных сессий пользователя
 func (h *ServerHandler) GetUserSessions(c *gin.Context) {
-	// Получаем ID пользователя из контекста
-	userID, exists := c.Get("user_id")
+	// Получаем данные пользователя из контекста
+	userData, exists := auth.GetUserData(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, api.ErrorResponse{Error: "unauthorized"})
 		return
 	}
 
-	// Преобразуем ID в int64
-	var userIDInt64 int64
-	switch v := userID.(type) {
-	case int64:
-		userIDInt64 = v
-	case float64:
-		userIDInt64 = int64(v)
-	case string:
-		var err error
-		userIDInt64, err = strconv.ParseInt(v, 10, 64)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: "invalid user ID format"})
-			return
-		}
-	default:
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: "invalid user ID type"})
-		return
-	}
-
-	sessions, err := h.sessionService.GetUserSessions(c.Request.Context(), userIDInt64)
+	sessions, err := h.sessionService.GetUserSessions(c.Request.Context(), userData.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: err.Error()})
 		return
@@ -277,33 +239,14 @@ func (h *ServerHandler) GetUserSessions(c *gin.Context) {
 
 // TerminateSession обрабатывает запрос на завершение сессии
 func (h *ServerHandler) TerminateSession(c *gin.Context, id openapi_types.UUID) {
-	// Получаем ID пользователя из контекста
-	userID, exists := c.Get("user_id")
+	// Получаем данные пользователя из контекста
+	userData, exists := auth.GetUserData(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, api.ErrorResponse{Error: "unauthorized"})
 		return
 	}
 
-	// Преобразуем ID в int64
-	var userIDInt64 int64
-	switch v := userID.(type) {
-	case int64:
-		userIDInt64 = v
-	case float64:
-		userIDInt64 = int64(v)
-	case string:
-		var err error
-		userIDInt64, err = strconv.ParseInt(v, 10, 64)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: "invalid user ID format"})
-			return
-		}
-	default:
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: "invalid user ID type"})
-		return
-	}
-
-	err := h.sessionService.TerminateSession(c.Request.Context(), id, userIDInt64)
+	err := h.sessionService.TerminateSession(c.Request.Context(), id, userData.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: err.Error()})
 		return
@@ -320,29 +263,10 @@ func (h *ServerHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	// Получаем ID пользователя из контекста
-	userID, exists := c.Get("user_id")
+	// Получаем данные пользователя из контекста
+	userData, exists := auth.GetUserData(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, api.ErrorResponse{Error: "unauthorized"})
-		return
-	}
-
-	// Преобразуем ID в int64
-	var userIDInt64 int64
-	switch v := userID.(type) {
-	case int64:
-		userIDInt64 = v
-	case float64:
-		userIDInt64 = int64(v)
-	case string:
-		var err error
-		userIDInt64, err = strconv.ParseInt(v, 10, 64)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: "invalid user ID format"})
-			return
-		}
-	default:
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: "invalid user ID type"})
 		return
 	}
 
@@ -359,7 +283,7 @@ func (h *ServerHandler) UpdateUser(c *gin.Context) {
 		Password: req.Password,
 	}
 
-	updatedUser, err := h.userService.UpdateUser(c.Request.Context(), userIDInt64, updateData)
+	updatedUser, err := h.userService.UpdateUser(c.Request.Context(), userData.UserID, updateData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: err.Error()})
 		return

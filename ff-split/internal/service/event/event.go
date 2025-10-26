@@ -36,6 +36,47 @@ func (s *EventService) GetEvents(ctx context.Context) ([]models.Event, error) {
 	return s.repo.GetAll(ctx)
 }
 
+// GetEventsByUserID получает мероприятия пользователя с балансами
+func (s *EventService) GetEventsByUserID(ctx context.Context, userID int64) ([]service.EventResponse, error) {
+	events, err := s.repo.GetByUserID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка при получении мероприятий пользователя: %w", err)
+	}
+
+	if len(events) == 0 {
+		return []service.EventResponse{}, nil
+	}
+
+	// Собираем ID мероприятий
+	eventIDs := make([]int64, len(events))
+	for i, event := range events {
+		eventIDs[i] = event.ID
+	}
+
+	// Рассчитываем балансы
+	balances, err := s.repo.CalculateUserBalances(ctx, userID, eventIDs)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка при расчете балансов: %w", err)
+	}
+
+	// Преобразуем события в ответы с балансами
+	responses := make([]service.EventResponse, len(events))
+	for i, event := range events {
+		balanceFloat := balances[event.ID]
+		balanceInt := int(balanceFloat)
+		responses[i] = service.EventResponse{
+			ID:          event.ID,
+			Name:        event.Name,
+			Description: event.Description,
+			CategoryID:  event.CategoryID,
+			PhotoID:     event.ImageID,
+			Balance:     &balanceInt,
+		}
+	}
+
+	return responses, nil
+}
+
 // GetEventByID получает мероприятие по ID
 func (s *EventService) GetEventByID(ctx context.Context, id int64) (*models.Event, error) {
 	return s.repo.GetByID(ctx, id)

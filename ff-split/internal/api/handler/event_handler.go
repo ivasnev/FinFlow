@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/gin-gonic/gin"
+	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 	"github.com/ivasnev/FinFlow/ff-split/pkg/api"
@@ -15,27 +16,39 @@ import (
 func (s *ServerHandler) GetEvents(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	events, err := s.eventService.GetEvents(ctx)
+	// Получаем данные пользователя из контекста
+	userData, exists := auth.GetUserData(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, api.ErrorResponse{
+			Error: "пользователь не авторизован",
+		})
+		return
+	}
+
+	// Преобразуем внешний ID во внутренний
+	user, err := s.userService.GetUserByExternalUserID(ctx, userData.UserID)
+	if err != nil {
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении пользователя: %w", err))
+		return
+	}
+
+	// Получаем события пользователя с балансами
+	serviceEvents, err := s.eventService.GetEventsByUserID(ctx, user.ID)
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении мероприятий: %w", err))
 		return
 	}
 
-	// Преобразуем модели в API типы для ответа
-	apiEvents := make([]api.EventResponse, 0, len(events))
-
-	for _, event := range events {
-		// Заглушка для баланса
-		var balance *int = nil
-		// Здесь будет расчет баланса в будущем
-
+	// Преобразуем service типы в API типы
+	apiEvents := make([]api.EventResponse, 0, len(serviceEvents))
+	for _, event := range serviceEvents {
 		apiEvent := api.EventResponse{
 			Id:          &event.ID,
 			Name:        &event.Name,
 			Description: &event.Description,
 			CategoryId:  event.CategoryID,
-			PhotoId:     &event.ImageID,
-			Balance:     balance,
+			PhotoId:     &event.PhotoID,
+			Balance:     event.Balance,
 		}
 		apiEvents = append(apiEvents, apiEvent)
 	}

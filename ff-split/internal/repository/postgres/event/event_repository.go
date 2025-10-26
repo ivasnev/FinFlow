@@ -80,6 +80,66 @@ func (r *EventRepository) Update(ctx context.Context, id int64, event *models.Ev
 	return nil
 }
 
+// GetByUserID возвращает мероприятия пользователя
+func (r *EventRepository) GetByUserID(ctx context.Context, userID int64) ([]models.Event, error) {
+	var dbEvents []Event
+	err := r.db.WithContext(ctx).
+		Joins("JOIN user_event ON events.id = user_event.event_id").
+		Where("user_event.user_id = ?", userID).
+		Find(&dbEvents).Error
+	if err != nil {
+		return nil, err
+	}
+	return extractSlice(dbEvents), nil
+}
+
+// CalculateUserBalances рассчитывает баланс пользователя по событиям
+func (r *EventRepository) CalculateUserBalances(ctx context.Context, userID int64, eventIDs []int64) (map[int64]float64, error) {
+	if len(eventIDs) == 0 {
+		return make(map[int64]float64), nil
+	}
+
+	type BalanceResult struct {
+		EventID int64   `gorm:"column:event_id"`
+		Balance float64 `gorm:"column:balance"`
+	}
+
+	var results []BalanceResult
+
+	// Используем прямой SQL запрос для расчета баланса
+	// Баланс = что ему должны (to_user_id = userID) - что он должен (from_user_id = userID)
+	err := r.db.WithContext(ctx).
+		Raw(`
+			SELECT 
+				t.event_id,
+				COALESCE(SUM(CASE WHEN d.to_user_id = ? THEN d.amount ELSE 0 END), 0) - 
+				COALESCE(SUM(CASE WHEN d.from_user_id = ? THEN d.amount ELSE 0 END), 0) as balance
+			FROM debts d
+			JOIN transactions t ON d.transaction_id = t.id
+			WHERE t.event_id IN ?
+			GROUP BY t.event_id
+		`, userID, userID, eventIDs).
+		Scan(&results).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	balances := make(map[int64]float64, len(results))
+	for _, result := range results {
+		balances[result.EventID] = result.Balance
+	}
+
+	// Инициализируем нулевой баланс для событий без долгов
+	for _, eventID := range eventIDs {
+		if _, exists := balances[eventID]; !exists {
+			balances[eventID] = 0
+		}
+	}
+
+	return balances, nil
+}
+
 // Delete удаляет мероприятие
 func (r *EventRepository) Delete(ctx context.Context, id int64) error {
 	err := db.WithTx(ctx, r.db, func(ctx context.Context) error {

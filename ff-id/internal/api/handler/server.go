@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
 	"github.com/ivasnev/FinFlow/ff-id/internal/service"
 	"github.com/ivasnev/FinFlow/ff-id/pkg/api"
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -29,15 +30,10 @@ func NewServerHandler(
 
 // AddFriend обрабатывает запрос на отправку заявки в друзья
 func (h *ServerHandler) AddFriend(c *gin.Context) {
-	// Получаем ID пользователя из контекста
-	userIDStr, exist := c.Get("user_id")
-	if !exist {
+	// Получаем данные пользователя из контекста
+	userData, exists := auth.GetUserData(c)
+	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "отсутствует ID пользователя в контексте"})
-		return
-	}
-	userID, ok := userIDStr.(int64)
-	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "некорректный формат ID пользователя"})
 		return
 	}
 
@@ -53,7 +49,7 @@ func (h *ServerHandler) AddFriend(c *gin.Context) {
 	}
 
 	// Добавляем друга
-	err := h.friendService.AddFriend(c.Request.Context(), userID, serviceReq)
+	err := h.friendService.AddFriend(c.Request.Context(), userData.UserID, serviceReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -65,15 +61,10 @@ func (h *ServerHandler) AddFriend(c *gin.Context) {
 
 // FriendAction обрабатывает запрос на действие с заявкой в друзья
 func (h *ServerHandler) FriendAction(c *gin.Context) {
-	// Получаем ID пользователя из контекста
-	userIDStr, exist := c.Get("user_id")
-	if !exist {
+	// Получаем данные пользователя из контекста
+	userData, exists := auth.GetUserData(c)
+	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "отсутствует ID пользователя в контексте"})
-		return
-	}
-	userID, ok := userIDStr.(int64)
-	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "некорректный формат ID пользователя"})
 		return
 	}
 
@@ -85,7 +76,7 @@ func (h *ServerHandler) FriendAction(c *gin.Context) {
 	}
 
 	serviceReq := service.FriendActionRequest{
-		UserID: userID,
+		UserID: userData.UserID,
 		Action: string(req.Action),
 	}
 
@@ -95,13 +86,13 @@ func (h *ServerHandler) FriendAction(c *gin.Context) {
 	// Выполняем нужное действие в зависимости от параметра action
 	switch req.Action {
 	case "accept":
-		err = h.friendService.AcceptFriendRequest(c.Request.Context(), userID, serviceReq)
+		err = h.friendService.AcceptFriendRequest(c.Request.Context(), userData.UserID, serviceReq)
 		message = "заявка в друзья принята"
 	case "reject":
-		err = h.friendService.RejectFriendRequest(c.Request.Context(), userID, serviceReq)
+		err = h.friendService.RejectFriendRequest(c.Request.Context(), userData.UserID, serviceReq)
 		message = "заявка в друзья отклонена"
 	case "block":
-		err = h.friendService.BlockUser(c.Request.Context(), userID, serviceReq)
+		err = h.friendService.BlockUser(c.Request.Context(), userData.UserID, serviceReq)
 		message = "пользователь заблокирован"
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": "некорректное действие"})
@@ -119,20 +110,15 @@ func (h *ServerHandler) FriendAction(c *gin.Context) {
 
 // RemoveFriend обрабатывает запрос на удаление друга
 func (h *ServerHandler) RemoveFriend(c *gin.Context, friendId int64) {
-	// Получаем ID пользователя из контекста
-	userIDStr, exist := c.Get("user_id")
-	if !exist {
+	// Получаем данные пользователя из контекста
+	userData, exists := auth.GetUserData(c)
+	if !exists {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "отсутствует ID пользователя в контексте"})
-		return
-	}
-	userID, ok := userIDStr.(int64)
-	if !ok {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "некорректный формат ID пользователя"})
 		return
 	}
 
 	// Удаляем друга
-	err := h.friendService.RemoveFriend(c.Request.Context(), userID, friendId)
+	err := h.friendService.RemoveFriend(c.Request.Context(), userData.UserID, friendId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: err.Error()})
 		return
@@ -188,15 +174,10 @@ func (h *ServerHandler) GetFriends(c *gin.Context, nickname string, params api.G
 
 // GetFriendRequests обрабатывает запрос на получение списка заявок в друзья
 func (h *ServerHandler) GetFriendRequests(c *gin.Context, params api.GetFriendRequestsParams) {
-	// Получаем ID пользователя из контекста
-	userIDStr, exist := c.Get("user_id")
-	if !exist {
+	// Получаем данные пользователя из контекста
+	userData, exists := auth.GetUserData(c)
+	if !exists {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "отсутствует ID пользователя в контексте"})
-		return
-	}
-	userID, ok := userIDStr.(int64)
-	if !ok {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "некорректный формат ID пользователя"})
 		return
 	}
 
@@ -217,7 +198,7 @@ func (h *ServerHandler) GetFriendRequests(c *gin.Context, params api.GetFriendRe
 	}
 
 	// Получаем список заявок
-	serviceResponse, err := h.friendService.GetFriendRequests(c.Request.Context(), userID, page, pageSize, incoming)
+	serviceResponse, err := h.friendService.GetFriendRequests(c.Request.Context(), userData.UserID, page, pageSize, incoming)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: err.Error()})
 		return
@@ -264,15 +245,10 @@ func (h *ServerHandler) GetUserByNickname(c *gin.Context, nickname string) {
 
 // UpdateUser обрабатывает запрос на обновление профиля пользователя
 func (h *ServerHandler) UpdateUser(c *gin.Context) {
-	// Получаем ID пользователя из контекста
-	userIDStr, exist := c.Get("user_id")
-	if !exist {
+	// Получаем данные пользователя из контекста
+	userData, exists := auth.GetUserData(c)
+	if !exists {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "user not found in context"})
-		return
-	}
-	userID, canParse := userIDStr.(int64)
-	if !canParse {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "invalid user ID"})
 		return
 	}
 
@@ -297,7 +273,7 @@ func (h *ServerHandler) UpdateUser(c *gin.Context) {
 		Nickname:  req.Nickname,
 	}
 
-	serviceUser, err := h.userService.UpdateUser(c.Request.Context(), userID, serviceReq)
+	serviceUser, err := h.userService.UpdateUser(c.Request.Context(), userData.UserID, serviceReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: err.Error()})
 		return
@@ -311,15 +287,10 @@ func (h *ServerHandler) UpdateUser(c *gin.Context) {
 
 // RegisterUser обрабатывает запрос на регистрацию пользователя от клиента с токеном авторизации
 func (h *ServerHandler) RegisterUser(c *gin.Context) {
-	// Получаем ID пользователя из контекста (установлен middleware)
-	userIDStr, exist := c.Get("user_id")
-	if !exist {
+	// Получаем данные пользователя из контекста (установлен middleware)
+	userData, exists := auth.GetUserData(c)
+	if !exists {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "отсутствует ID пользователя в контексте"})
-		return
-	}
-	userID, ok := userIDStr.(int64)
-	if !ok {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "некорректный формат ID пользователя"})
 		return
 	}
 
@@ -344,7 +315,7 @@ func (h *ServerHandler) RegisterUser(c *gin.Context) {
 	}
 
 	// Регистрируем пользователя
-	serviceUser, err := h.userService.RegisterUser(c.Request.Context(), userID, serviceReq)
+	serviceUser, err := h.userService.RegisterUser(c.Request.Context(), userData.UserID, serviceReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: err.Error()})
 		return

@@ -38,6 +38,7 @@ type EventListResponse struct {
 // Event определяет методы для работы с мероприятиями
 type Event interface {
 	GetEvents(ctx context.Context) ([]models.Event, error)
+	GetEventsByUserID(ctx context.Context, userID int64) ([]EventResponse, error)
 	GetEventByID(ctx context.Context, id int64) (*models.Event, error)
 	CreateEvent(ctx context.Context, request *EventRequest) (*EventResponse, error)
 	UpdateEvent(ctx context.Context, id int64, request *EventRequest) (*EventResponse, error)

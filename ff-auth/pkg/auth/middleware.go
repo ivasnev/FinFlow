@@ -24,6 +24,47 @@ type Token struct {
 	Sig     []byte `json:"sig"`
 }
 
+// contextKey - тип для ключей контекста
+type contextKey string
+
+// Ключ для хранения данных пользователя в контексте
+const userContextKey contextKey = "user"
+
+// UserData содержит данные пользователя из токена
+type UserData struct {
+	UserID  int64
+	Roles   []string
+	IsAdmin bool
+}
+
+// UserContextKey возвращает ключ для хранения данных пользователя в контексте
+func UserContextKey() contextKey {
+	return userContextKey
+}
+
+// GetUserData извлекает данные пользователя из контекста
+func GetUserData(c *gin.Context) (*UserData, bool) {
+	data, exists := c.Get(string(userContextKey))
+	if !exists {
+		return nil, false
+	}
+	userData, ok := data.(UserData)
+	if !ok {
+		return nil, false
+	}
+	return &userData, true
+}
+
+// HasRole проверяет, имеет ли пользователь указанную роль
+func HasRole(userData *UserData, role string) bool {
+	for _, r := range userData.Roles {
+		if r == role {
+			return true
+		}
+	}
+	return false
+}
+
 // AuthMiddleware создает middleware для аутентификации запросов
 func AuthMiddleware(client ValidateClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -53,10 +94,6 @@ func AuthMiddleware(client ValidateClient) gin.HandlerFunc {
 			return
 		}
 
-		// Устанавливаем данные пользователя в контекст
-		c.Set("user_id", payload.UserID)
-		c.Set("user_roles", payload.Roles)
-
 		// Проверяем, имеет ли пользователь роль администратора
 		isAdmin := false
 		for _, role := range payload.Roles {
@@ -65,7 +102,16 @@ func AuthMiddleware(client ValidateClient) gin.HandlerFunc {
 				break
 			}
 		}
-		c.Set("is_admin", isAdmin)
+
+		// Создаем структуру с данными пользователя
+		userData := UserData{
+			UserID:  payload.UserID,
+			Roles:   payload.Roles,
+			IsAdmin: isAdmin,
+		}
+
+		// Устанавливаем данные пользователя в контекст
+		c.Set(string(userContextKey), userData)
 
 		c.Next()
 	}
@@ -74,8 +120,8 @@ func AuthMiddleware(client ValidateClient) gin.HandlerFunc {
 // RoleMiddleware создает middleware для проверки роли пользователя
 func RoleMiddleware(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Получаем роли пользователя из контекста
-		userRoles, exists := c.Get("user_roles")
+		// Получаем данные пользователя из контекста
+		userData, exists := GetUserData(c)
 		if !exists {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			c.Abort()
@@ -85,13 +131,8 @@ func RoleMiddleware(roles ...string) gin.HandlerFunc {
 		// Проверяем наличие требуемой роли
 		hasRequiredRole := false
 		for _, requiredRole := range roles {
-			for _, userRole := range userRoles.([]string) {
-				if userRole == requiredRole {
-					hasRequiredRole = true
-					break
-				}
-			}
-			if hasRequiredRole {
+			if HasRole(userData, requiredRole) {
+				hasRequiredRole = true
 				break
 			}
 		}
