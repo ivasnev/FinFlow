@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-files/internal/api/handler"
+	"github.com/ivasnev/FinFlow/ff-files/internal/api/middleware"
 	"github.com/ivasnev/FinFlow/ff-files/internal/common/config"
 	"github.com/ivasnev/FinFlow/ff-files/internal/service"
 	minioService "github.com/ivasnev/FinFlow/ff-files/internal/service/minio"
@@ -57,8 +58,9 @@ func (c *Container) initHandlers() {
 
 // RegisterRoutes - регистрирует все маршруты API
 func (c *Container) RegisterRoutes() {
+	c.Router.Use(middleware.CORSMiddleware())
 	// API версии v1
-	v1 := c.Router.Group("/api/v1")
+	v1 := c.Router.Group("")
 
 	// Регистрируем маршруты с помощью сгенерированного сервера
 	api.RegisterHandlersWithOptions(v1, c.ServerHandler, api.GinServerOptions{})

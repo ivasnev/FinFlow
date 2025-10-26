@@ -248,7 +248,7 @@ func NewUploadFileRequestWithBody(server string, contentType string, body io.Rea
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/files")
+	operationPath := fmt.Sprintf("/api/v1/files")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -288,7 +288,7 @@ func NewDeleteFilesRequestWithBody(server string, contentType string, body io.Re
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/files/many")
+	operationPath := fmt.Sprintf("/api/v1/files/many")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -328,7 +328,7 @@ func NewGetFilesRequestWithBody(server string, contentType string, body io.Reade
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/files/many")
+	operationPath := fmt.Sprintf("/api/v1/files/many")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -357,7 +357,7 @@ func NewUploadFilesRequestWithBody(server string, contentType string, body io.Re
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/files/many")
+	operationPath := fmt.Sprintf("/api/v1/files/many")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -393,7 +393,7 @@ func NewDeleteFileRequest(server string, fileId openapi_types.UUID) (*http.Reque
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/files/%s", pathParam0)
+	operationPath := fmt.Sprintf("/api/v1/files/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -427,7 +427,7 @@ func NewGetFileRequest(server string, fileId openapi_types.UUID) (*http.Request,
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/files/%s", pathParam0)
+	operationPath := fmt.Sprintf("/api/v1/files/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -461,7 +461,7 @@ func NewGetFileMetadataRequest(server string, fileId openapi_types.UUID) (*http.
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/files/%s/metadata", pathParam0)
+	operationPath := fmt.Sprintf("/api/v1/files/%s/metadata", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -495,7 +495,7 @@ func NewGenerateTemporaryUrlRequest(server string, fileId openapi_types.UUID, pa
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/files/%s/temporary-url", pathParam0)
+	operationPath := fmt.Sprintf("/api/v1/files/%s/temporary-url", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}

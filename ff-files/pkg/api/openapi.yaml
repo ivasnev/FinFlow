@@ -38,7 +38,7 @@ tags:
     description: Операции с файлами
 
 paths:
-  /files:
+  /api/v1/files:
     post:
       tags:
         - files
@@ -96,7 +96,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /files/many:
+  /api/v1/files/many:
     post:
       tags:
         - files
@@ -236,7 +236,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /files/{file_id}:
+  /api/v1/files/{file_id}:
     get:
       tags:
         - files
@@ -312,7 +312,7 @@ paths:
                 error: "Cannot delete the object"
                 code: 500
 
-  /files/{file_id}/metadata:
+  /api/v1/files/{file_id}/metadata:
     get:
       tags:
         - files
@@ -350,7 +350,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /files/{file_id}/temporary-url:
+  /api/v1/files/{file_id}/temporary-url:
     post:
       tags:
         - files

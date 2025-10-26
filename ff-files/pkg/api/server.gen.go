@@ -15,28 +15,28 @@ import (
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Загрузка одного файла
-	// (POST /files)
+	// (POST /api/v1/files)
 	UploadFile(c *gin.Context)
 	// Удаление нескольких файлов
-	// (DELETE /files/many)
+	// (DELETE /api/v1/files/many)
 	DeleteFiles(c *gin.Context)
 	// Получение нескольких файлов
-	// (GET /files/many)
+	// (GET /api/v1/files/many)
 	GetFiles(c *gin.Context)
 	// Загрузка нескольких файлов
-	// (POST /files/many)
+	// (POST /api/v1/files/many)
 	UploadFiles(c *gin.Context)
 	// Удаление файла
-	// (DELETE /files/{file_id})
+	// (DELETE /api/v1/files/{file_id})
 	DeleteFile(c *gin.Context, fileId openapi_types.UUID)
 	// Получение файла
-	// (GET /files/{file_id})
+	// (GET /api/v1/files/{file_id})
 	GetFile(c *gin.Context, fileId openapi_types.UUID)
 	// Получение метаданных файла
-	// (GET /files/{file_id}/metadata)
+	// (GET /api/v1/files/{file_id}/metadata)
 	GetFileMetadata(c *gin.Context, fileId openapi_types.UUID)
 	// Генерация временной ссылки
-	// (POST /files/{file_id}/temporary-url)
+	// (POST /api/v1/files/{file_id}/temporary-url)
 	GenerateTemporaryUrl(c *gin.Context, fileId openapi_types.UUID, params GenerateTemporaryUrlParams)
 }
 
@@ -251,12 +251,12 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
-	router.POST(options.BaseURL+"/files", wrapper.UploadFile)
-	router.DELETE(options.BaseURL+"/files/many", wrapper.DeleteFiles)
-	router.GET(options.BaseURL+"/files/many", wrapper.GetFiles)
-	router.POST(options.BaseURL+"/files/many", wrapper.UploadFiles)
-	router.DELETE(options.BaseURL+"/files/:file_id", wrapper.DeleteFile)
-	router.GET(options.BaseURL+"/files/:file_id", wrapper.GetFile)
-	router.GET(options.BaseURL+"/files/:file_id/metadata", wrapper.GetFileMetadata)
-	router.POST(options.BaseURL+"/files/:file_id/temporary-url", wrapper.GenerateTemporaryUrl)
+	router.POST(options.BaseURL+"/api/v1/files", wrapper.UploadFile)
+	router.DELETE(options.BaseURL+"/api/v1/files/many", wrapper.DeleteFiles)
+	router.GET(options.BaseURL+"/api/v1/files/many", wrapper.GetFiles)
+	router.POST(options.BaseURL+"/api/v1/files/many", wrapper.UploadFiles)
+	router.DELETE(options.BaseURL+"/api/v1/files/:file_id", wrapper.DeleteFile)
+	router.GET(options.BaseURL+"/api/v1/files/:file_id", wrapper.GetFile)
+	router.GET(options.BaseURL+"/api/v1/files/:file_id/metadata", wrapper.GetFileMetadata)
+	router.POST(options.BaseURL+"/api/v1/files/:file_id/temporary-url", wrapper.GenerateTemporaryUrl)
 }
