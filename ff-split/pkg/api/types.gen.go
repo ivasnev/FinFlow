@@ -70,7 +70,7 @@ type CategoryListResponse struct {
 // CategoryRequest defines model for CategoryRequest.
 type CategoryRequest struct {
 	// IconId ID иконки
-	IconId *int `json:"icon_id,omitempty"`
+	IconId int `json:"icon_id"`
 
 	// Name Название категории
 	Name string `json:"name"`

@@ -56,14 +56,15 @@ func (s *ServerHandler) CreateCategory(c *gin.Context, params api.CreateCategory
 
 	categoryType := string(params.CategoryType)
 
-	var iconID int
-	if apiRequest.IconId != nil {
-		iconID = *apiRequest.IconId
-	}
-
 	dtoCategory := &service.CategoryDTO{
 		Name:   apiRequest.Name,
-		IconID: iconID,
+		IconID: apiRequest.IconId,
+	}
+
+	_, err := s.iconService.GetIconByID(c.Request.Context(), uint(apiRequest.IconId))
+	if err != nil {
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении иконки: %w", err))
+		return
 	}
 
 	category, err := s.categoryService.CreateCategory(c.Request.Context(), dtoCategory, categoryType)
@@ -85,15 +86,16 @@ func (s *ServerHandler) UpdateCategory(c *gin.Context, id int, params api.Update
 
 	categoryType := string(params.CategoryType)
 
-	var iconID int
-	if apiRequest.IconId != nil {
-		iconID = *apiRequest.IconId
-	}
-
 	dtoCategory := &service.CategoryDTO{
 		ID:     id,
 		Name:   apiRequest.Name,
-		IconID: iconID,
+		IconID: apiRequest.IconId,
+	}
+
+	_, err := s.iconService.GetIconByID(c.Request.Context(), uint(apiRequest.IconId))
+	if err != nil {
+		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при получении иконки: %w", err))
+		return
 	}
 
 	category, err := s.categoryService.UpdateCategory(c.Request.Context(), id, dtoCategory, categoryType)
