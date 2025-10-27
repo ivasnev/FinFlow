@@ -40,7 +40,7 @@ type UpdateUserRequest struct {
 type RegisterUserRequest struct {
 	Email     string
 	Nickname  string
-	Name      string
+	Name      *string
 	Phone     *string
 	Birthdate *int64
 	AvatarID  *uuid.UUID

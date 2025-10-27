@@ -90,6 +90,7 @@ func (s *AuthService) Register(ctx context.Context, params service.RegisterParam
 		Email:    user.Email,
 		Nickname: user.Nickname,
 		UserID:   user.ID,
+		Name:     params.Name,
 	}
 
 	_, err = s.idClient.RegisterUser(ctx, reqRegister)

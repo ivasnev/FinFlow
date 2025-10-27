@@ -305,13 +305,10 @@ func (h *ServerHandler) RegisterUser(c *gin.Context) {
 	serviceReq := &service.RegisterUserRequest{
 		Email:     string(req.Email),
 		Nickname:  req.Nickname,
-		Name:      "",
 		Phone:     req.Phone,
 		Birthdate: req.Birthdate,
 		AvatarID:  req.AvatarId,
-	}
-	if req.Name != nil {
-		serviceReq.Name = *req.Name
+		Name:      req.Name,
 	}
 
 	// Регистрируем пользователя
@@ -341,6 +338,7 @@ func (h *ServerHandler) RegisterUserFromService(c *gin.Context) {
 	serviceReq := &service.RegisterUserRequest{
 		Email:    string(req.Email),
 		Nickname: req.Nickname,
+		Name:     req.Name,
 	}
 
 	// Регистрируем пользователя

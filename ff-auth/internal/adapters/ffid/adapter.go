@@ -33,6 +33,7 @@ func (a *Adapter) RegisterUser(ctx context.Context, req *RegisterUserRequest) (*
 		UserId:   req.UserID,
 		Email:    openapi_types.Email(req.Email),
 		Nickname: req.Nickname,
+		Name:     req.Name,
 	}
 
 	resp, err := a.client.RegisterUserFromServiceWithResponse(ctx, apiReq)

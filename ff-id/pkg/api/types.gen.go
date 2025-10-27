@@ -118,6 +118,9 @@ type ServiceRegisterUserRequest struct {
 	// Email Email пользователя
 	Email openapi_types.Email `json:"email"`
 
+	// Name Полное имя пользователя
+	Name *string `json:"name,omitempty"`
+
 	// Nickname Никнейм пользователя
 	Nickname string `json:"nickname"`
 

@@ -265,8 +265,8 @@ func (s *UserService) RegisterUser(ctx context.Context, userID int64, req *servi
 	}
 
 	// Добавляем имя, если оно указано
-	if req.Name != "" {
-		user.Name.String = req.Name
+	if req.Name != nil {
+		user.Name.String = *req.Name
 		user.Name.Valid = true
 	}
 

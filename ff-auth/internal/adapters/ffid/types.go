@@ -5,6 +5,7 @@ type RegisterUserRequest struct {
 	UserID   int64
 	Email    string
 	Nickname string
+	Name     *string
 }
 
 // UserDTO - данные пользователя

@@ -534,6 +534,7 @@ paths:
               user_id: 123
               email: "user@example.com"
               nickname: "johndoe"
+              name: "John Doe"
       responses:
         '201':
           description: Пользователь успешно зарегистрирован
@@ -731,6 +732,10 @@ components:
           type: string
           description: Никнейм пользователя
           example: "johndoe"
+        name:
+          type: string
+          description: Полное имя пользователя
+          example: "John Doe"
 
     AddFriendRequest:
       type: object
