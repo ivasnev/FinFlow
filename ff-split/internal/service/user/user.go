@@ -150,11 +150,23 @@ func (s *UserService) GetUsersByInternalUserIDs(ctx context.Context, userIDs []i
 func (s *UserService) GetUserByExternalUserID(ctx context.Context, userID int64) (*models.User, error) {
 	// Пытаемся найти пользователя в базе данных
 	user, err := s.userRepository.GetByExternalUserID(ctx, userID)
-	if err != nil {
+	if err == nil {
+		// Пользователь найден
+		return user, nil
+	}
+
+	// Проверяем, что это именно ошибка "не найден"
+	if !errors.Is(err, repository.ErrUserNotFound) {
 		return nil, fmt.Errorf("ошибка при получении пользователя: %w", err)
 	}
 
-	return user, nil
+	// Пользователь не найден, синхронизируем с ID-сервисом
+	syncedUser, syncErr := s.SyncUserWithIDService(ctx, userID)
+	if syncErr != nil {
+		return nil, fmt.Errorf("ошибка при синхронизации пользователя: %w", syncErr)
+	}
+
+	return syncedUser, nil
 }
 
 // GetUsersByEventID получает всех пользователей мероприятия

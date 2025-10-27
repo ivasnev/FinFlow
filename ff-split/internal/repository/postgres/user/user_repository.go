@@ -7,6 +7,7 @@ import (
 
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/db"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
+	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -117,7 +118,7 @@ func (r *UserRepository) GetByExternalUserID(ctx context.Context, userID int64) 
 	err := r.db.WithContext(ctx).Where("user_id = ?", userID).First(&dbUser).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("пользователь не найден")
+			return nil, repository.ErrUserNotFound
 		}
 		return nil, fmt.Errorf("ошибка при получении пользователя: %w", err)
 	}

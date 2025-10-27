@@ -2,9 +2,12 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 )
+
+var ErrUserNotFound = errors.New("пользователь не найден")
 
 // User определяет методы для работы с пользователями в репозитории
 type User interface {
@@ -53,4 +56,3 @@ type User interface {
 	// RemoveUserFromEvent удаляет пользователя из мероприятия
 	RemoveUserFromEvent(ctx context.Context, userID, eventID int64) error
 }
-
