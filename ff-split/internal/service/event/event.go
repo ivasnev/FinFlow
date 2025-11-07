@@ -137,7 +137,7 @@ func (s *EventService) CreateEvent(ctx context.Context, request *service.EventRe
 			return fmt.Errorf("Ошибка при создании мероприятия: %w", err)
 		}
 		var internalIds []int64
-		if request.Members.DummiesNames != nil {
+		if request.Members.DummiesNames != nil && len(request.Members.DummiesNames) > 0 {
 			dummies, createErr := s.userService.BatchCreateDummyUsers(ctx, request.Members.DummiesNames, event.ID)
 			if createErr != nil {
 				return fmt.Errorf("ошибка при создании dummy пользователей: %w", createErr)
