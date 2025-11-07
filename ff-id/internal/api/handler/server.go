@@ -76,7 +76,7 @@ func (h *ServerHandler) FriendAction(c *gin.Context) {
 	}
 
 	serviceReq := service.FriendActionRequest{
-		UserID: userData.UserID,
+		UserID: req.UserId,
 		Action: string(req.Action),
 	}
 
