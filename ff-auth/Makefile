@@ -4,7 +4,7 @@
 help:
 	@echo "Available targets:"
 	@echo "  mock-gen    - Generate mocks for services and repositories"
-	@echo "  test        - Run tests"
+	@echo "  test        - Run tests with gotestsum"
 	@echo "  build       - Build the application"
 	@echo "  run         - Run the application"
 	@echo "  clean       - Clean generated files"
@@ -29,7 +29,7 @@ mock-gen:
 
 # Run tests
 test:
-	go test ./...
+	gotestsum --format testname ./...
 
 # Build the application
 build:

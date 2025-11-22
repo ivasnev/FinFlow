@@ -10,6 +10,7 @@ import (
 	"github.com/ivasnev/FinFlow/ff-auth/internal/models"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/repository/mock"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestUserService_GetUserByID(t *testing.T) {
@@ -48,36 +49,13 @@ func TestUserService_GetUserByID(t *testing.T) {
 
 		result, err := userService.GetUserByID(ctx, userID)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
-
-		if result == nil {
-			t.Fatal("Ожидались данные пользователя, получен nil")
-		}
-
-		if result.Id != userID {
-			t.Errorf("Ожидался ID %d, получен %d", userID, result.Id)
-		}
-
-		if result.Email != "test@example.com" {
-			t.Errorf("Ожидался email 'test@example.com', получен '%s'", result.Email)
-		}
-
-		if result.Nickname != "testuser" {
-			t.Errorf("Ожидался nickname 'testuser', получен '%s'", result.Nickname)
-		}
-
-		if len(result.Roles) != 2 {
-			t.Errorf("Ожидалось 2 роли, получено %d", len(result.Roles))
-		}
-
-		expectedRoles := []string{"user", "admin"}
-		for i, role := range result.Roles {
-			if role != expectedRoles[i] {
-				t.Errorf("Ожидалась роль '%s', получена '%s'", expectedRoles[i], role)
-			}
-		}
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, userID, result.Id)
+		assert.Equal(t, "test@example.com", result.Email)
+		assert.Equal(t, "testuser", result.Nickname)
+		assert.Equal(t, 2, len(result.Roles))
+		assert.Equal(t, []string{"user", "admin"}, result.Roles)
 	})
 
 	t.Run("ошибка получения пользователя", func(t *testing.T) {
@@ -89,17 +67,9 @@ func TestUserService_GetUserByID(t *testing.T) {
 
 		result, err := userService.GetUserByID(ctx, userID)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if result != nil {
-			t.Fatal("Ожидался nil результат при ошибке")
-		}
-
-		if !errors.Is(err, expectedErr) {
-			t.Errorf("Ожидалась ошибка %v, получена %v", expectedErr, err)
-		}
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.ErrorIs(t, err, expectedErr)
 	})
 
 	t.Run("ошибка получения ролей", func(t *testing.T) {
@@ -122,17 +92,9 @@ func TestUserService_GetUserByID(t *testing.T) {
 
 		result, err := userService.GetUserByID(ctx, userID)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if result != nil {
-			t.Fatal("Ожидался nil результат при ошибке")
-		}
-
-		if !errors.Is(err, expectedErr) {
-			t.Errorf("Ожидалась ошибка %v, получена %v", expectedErr, err)
-		}
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.ErrorIs(t, err, expectedErr)
 	})
 }
 
@@ -171,17 +133,9 @@ func TestUserService_GetUserByNickname(t *testing.T) {
 
 		result, err := userService.GetUserByNickname(ctx, nickname)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
-
-		if result == nil {
-			t.Fatal("Ожидались данные пользователя, получен nil")
-		}
-
-		if result.Nickname != nickname {
-			t.Errorf("Ожидался nickname '%s', получен '%s'", nickname, result.Nickname)
-		}
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, nickname, result.Nickname)
 	})
 
 	t.Run("ошибка получения пользователя по никнейму", func(t *testing.T) {
@@ -193,17 +147,9 @@ func TestUserService_GetUserByNickname(t *testing.T) {
 
 		result, err := userService.GetUserByNickname(ctx, nickname)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if result != nil {
-			t.Fatal("Ожидался nil результат при ошибке")
-		}
-
-		if !errors.Is(err, expectedErr) {
-			t.Errorf("Ожидалась ошибка %v, получена %v", expectedErr, err)
-		}
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.ErrorIs(t, err, expectedErr)
 	})
 }
 
@@ -251,9 +197,7 @@ func TestUserService_UpdateUser(t *testing.T) {
 		mockRepo.EXPECT().
 			Update(ctx, gomock.Any()).
 			DoAndReturn(func(ctx context.Context, user *models.User) error {
-				if user.Email != newEmail {
-					t.Errorf("Ожидался email '%s', получен '%s'", newEmail, user.Email)
-				}
+				assert.Equal(t, newEmail, user.Email)
 				return nil
 			}).
 			Times(1)
@@ -279,17 +223,9 @@ func TestUserService_UpdateUser(t *testing.T) {
 
 		result, err := userService.UpdateUser(ctx, userID, updateData)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
-
-		if result == nil {
-			t.Fatal("Ожидались данные пользователя, получен nil")
-		}
-
-		if result.Email != newEmail {
-			t.Errorf("Ожидался email '%s', получен '%s'", newEmail, result.Email)
-		}
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, newEmail, result.Email)
 	})
 
 	t.Run("email уже используется", func(t *testing.T) {
@@ -321,18 +257,9 @@ func TestUserService_UpdateUser(t *testing.T) {
 
 		result, err := userService.UpdateUser(ctx, userID, updateData)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if result != nil {
-			t.Fatal("Ожидался nil результат при ошибке")
-		}
-
-		expectedErrMsg := "указанный email уже используется"
-		if err.Error() != expectedErrMsg {
-			t.Errorf("Ожидалась ошибка '%s', получена '%s'", expectedErrMsg, err.Error())
-		}
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.Equal(t, "указанный email уже используется", err.Error())
 	})
 
 	t.Run("успешное обновление пароля", func(t *testing.T) {
@@ -361,9 +288,7 @@ func TestUserService_UpdateUser(t *testing.T) {
 		mockRepo.EXPECT().
 			Update(ctx, gomock.Any()).
 			DoAndReturn(func(ctx context.Context, user *models.User) error {
-				if user.PasswordHash == "" {
-					t.Error("Ожидался хешированный пароль")
-				}
+				assert.NotEmpty(t, user.PasswordHash)
 				return nil
 			}).
 			Times(1)
@@ -388,13 +313,8 @@ func TestUserService_UpdateUser(t *testing.T) {
 
 		result, err := userService.UpdateUser(ctx, userID, updateData)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
-
-		if result == nil {
-			t.Fatal("Ожидались данные пользователя, получен nil")
-		}
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
 	})
 
 	t.Run("ошибка получения пользователя", func(t *testing.T) {
@@ -408,17 +328,9 @@ func TestUserService_UpdateUser(t *testing.T) {
 
 		result, err := userService.UpdateUser(ctx, userID, updateData)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if result != nil {
-			t.Fatal("Ожидался nil результат при ошибке")
-		}
-
-		if !errors.Is(err, expectedErr) {
-			t.Errorf("Ожидалась ошибка %v, получена %v", expectedErr, err)
-		}
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.ErrorIs(t, err, expectedErr)
 	})
 }
 
@@ -440,9 +352,7 @@ func TestUserService_DeleteUser(t *testing.T) {
 
 		err := userService.DeleteUser(ctx, userID)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("ошибка удаления пользователя", func(t *testing.T) {
@@ -454,12 +364,7 @@ func TestUserService_DeleteUser(t *testing.T) {
 
 		err := userService.DeleteUser(ctx, userID)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if !errors.Is(err, expectedErr) {
-			t.Errorf("Ожидалась ошибка %v, получена %v", expectedErr, err)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, expectedErr)
 	})
 }

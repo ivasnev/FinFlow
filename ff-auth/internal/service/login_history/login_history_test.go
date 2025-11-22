@@ -10,6 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/models"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/repository/mock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLoginHistoryService_GetUserLoginHistory(t *testing.T) {
@@ -56,50 +57,19 @@ func TestLoginHistoryService_GetUserLoginHistory(t *testing.T) {
 
 		result, err := loginHistoryService.GetUserLoginHistory(ctx, userID, limit, offset)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
-
-		if len(result) != 3 {
-			t.Fatalf("Ожидалось 3 записи, получено %d", len(result))
-		}
-
-		// Проверяем первую запись
-		if result[0].Id != 1 {
-			t.Errorf("Ожидался ID 1, получен %d", result[0].Id)
-		}
-		if result[0].IpAddress != "192.168.1.1" {
-			t.Errorf("Ожидался IP '192.168.1.1', получен '%s'", result[0].IpAddress)
-		}
-		if result[0].UserAgent == nil {
-			t.Error("Ожидался UserAgent, получен nil")
-		} else if *result[0].UserAgent != "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" {
-			t.Errorf("Ожидался UserAgent 'Mozilla/5.0...', получен '%s'", *result[0].UserAgent)
-		}
-
-		// Проверяем вторую запись
-		if result[1].Id != 2 {
-			t.Errorf("Ожидался ID 2, получен %d", result[1].Id)
-		}
-		if result[1].IpAddress != "192.168.1.2" {
-			t.Errorf("Ожидался IP '192.168.1.2', получен '%s'", result[1].IpAddress)
-		}
-		if result[1].UserAgent == nil {
-			t.Error("Ожидался UserAgent, получен nil")
-		} else if *result[1].UserAgent != "Chrome/91.0.4472.124 Safari/537.36" {
-			t.Errorf("Ожидался UserAgent 'Chrome/91.0...', получен '%s'", *result[1].UserAgent)
-		}
-
-		// Проверяем третью запись (с пустым UserAgent)
-		if result[2].Id != 3 {
-			t.Errorf("Ожидался ID 3, получен %d", result[2].Id)
-		}
-		if result[2].IpAddress != "10.0.0.1" {
-			t.Errorf("Ожидался IP '10.0.0.1', получен '%s'", result[2].IpAddress)
-		}
-		if result[2].UserAgent != nil {
-			t.Errorf("Ожидался nil UserAgent, получен '%s'", *result[2].UserAgent)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, 3, len(result))
+		assert.Equal(t, 1, result[0].Id)
+		assert.Equal(t, "192.168.1.1", result[0].IpAddress)
+		assert.NotNil(t, result[0].UserAgent)
+		assert.Equal(t, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", *result[0].UserAgent)
+		assert.Equal(t, 2, result[1].Id)
+		assert.Equal(t, "192.168.1.2", result[1].IpAddress)
+		assert.NotNil(t, result[1].UserAgent)
+		assert.Equal(t, "Chrome/91.0.4472.124 Safari/537.36", *result[1].UserAgent)
+		assert.Equal(t, 3, result[2].Id)
+		assert.Equal(t, "10.0.0.1", result[2].IpAddress)
+		assert.Nil(t, result[2].UserAgent)
 	})
 
 	t.Run("пустая история входов", func(t *testing.T) {
@@ -110,13 +80,8 @@ func TestLoginHistoryService_GetUserLoginHistory(t *testing.T) {
 
 		result, err := loginHistoryService.GetUserLoginHistory(ctx, userID, limit, offset)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
-
-		if len(result) != 0 {
-			t.Fatalf("Ожидалось 0 записей, получено %d", len(result))
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, 0, len(result))
 	})
 
 	t.Run("ошибка репозитория", func(t *testing.T) {
@@ -128,17 +93,9 @@ func TestLoginHistoryService_GetUserLoginHistory(t *testing.T) {
 
 		result, err := loginHistoryService.GetUserLoginHistory(ctx, userID, limit, offset)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if result != nil {
-			t.Fatal("Ожидался nil результат при ошибке")
-		}
-
-		if !errors.Is(err, expectedErr) {
-			t.Errorf("Ожидалась ошибка %v, получена %v", expectedErr, err)
-		}
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.ErrorIs(t, err, expectedErr)
 	})
 
 	t.Run("разные лимиты и оффсеты", func(t *testing.T) {
@@ -171,13 +128,8 @@ func TestLoginHistoryService_GetUserLoginHistory(t *testing.T) {
 
 				result, err := loginHistoryService.GetUserLoginHistory(ctx, userID, tc.limit, tc.offset)
 
-				if err != nil {
-					t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-				}
-
-				if len(result) != 1 {
-					t.Fatalf("Ожидалась 1 запись, получено %d", len(result))
-				}
+				assert.NoError(t, err)
+				assert.Equal(t, 1, len(result))
 			})
 		}
 	})

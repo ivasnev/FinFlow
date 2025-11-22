@@ -29,7 +29,7 @@ mock-gen:
 
 # Run tests
 test:
-	go test ./...
+	gotestsum --format testname ./...
 
 # Build the application
 build:

@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/models"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/repository/mock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSessionService_GetUserSessions(t *testing.T) {
@@ -50,29 +51,12 @@ func TestSessionService_GetUserSessions(t *testing.T) {
 
 		result, err := sessionService.GetUserSessions(ctx, userID)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
-
-		if len(result) != 2 {
-			t.Fatalf("Ожидалось 2 сессии, получено %d", len(result))
-		}
-
-		// Проверяем первую сессию
-		if result[0].Id != sessionID1 {
-			t.Errorf("Ожидался ID %s, получен %s", sessionID1, result[0].Id)
-		}
-		if result[0].IpAddress != "192.168.1.1" {
-			t.Errorf("Ожидался IP '192.168.1.1', получен '%s'", result[0].IpAddress)
-		}
-
-		// Проверяем вторую сессию (должен взять первый IP)
-		if result[1].Id != sessionID2 {
-			t.Errorf("Ожидался ID %s, получен %s", sessionID2, result[1].Id)
-		}
-		if result[1].IpAddress != "192.168.1.2" {
-			t.Errorf("Ожидался IP '192.168.1.2', получен '%s'", result[1].IpAddress)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(result))
+		assert.Equal(t, sessionID1, result[0].Id)
+		assert.Equal(t, "192.168.1.1", result[0].IpAddress)
+		assert.Equal(t, sessionID2, result[1].Id)
+		assert.Equal(t, "192.168.1.2", result[1].IpAddress)
 	})
 
 	t.Run("сессии с пустым IP", func(t *testing.T) {
@@ -94,17 +78,9 @@ func TestSessionService_GetUserSessions(t *testing.T) {
 
 		result, err := sessionService.GetUserSessions(ctx, userID)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
-
-		if len(result) != 1 {
-			t.Fatalf("Ожидалась 1 сессия, получено %d", len(result))
-		}
-
-		if result[0].IpAddress != "" {
-			t.Errorf("Ожидался пустой IP, получен '%s'", result[0].IpAddress)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(result))
+		assert.Empty(t, result[0].IpAddress)
 	})
 
 	t.Run("ошибка репозитория", func(t *testing.T) {
@@ -116,17 +92,9 @@ func TestSessionService_GetUserSessions(t *testing.T) {
 
 		result, err := sessionService.GetUserSessions(ctx, userID)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if result != nil {
-			t.Fatal("Ожидался nil результат при ошибке")
-		}
-
-		if !errors.Is(err, expectedErr) {
-			t.Errorf("Ожидалась ошибка %v, получена %v", expectedErr, err)
-		}
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.ErrorIs(t, err, expectedErr)
 	})
 }
 
@@ -162,9 +130,7 @@ func TestSessionService_TerminateSession(t *testing.T) {
 
 		err := sessionService.TerminateSession(ctx, sessionID, userID)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("сессия не найдена", func(t *testing.T) {
@@ -176,13 +142,8 @@ func TestSessionService_TerminateSession(t *testing.T) {
 
 		err := sessionService.TerminateSession(ctx, sessionID, userID)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if !errors.Is(err, expectedErr) {
-			t.Errorf("Ожидалась ошибка %v, получена %v", expectedErr, err)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, expectedErr)
 	})
 
 	t.Run("сессия принадлежит другому пользователю", func(t *testing.T) {
@@ -202,14 +163,8 @@ func TestSessionService_TerminateSession(t *testing.T) {
 
 		err := sessionService.TerminateSession(ctx, sessionID, userID)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		expectedErrMsg := "у вас нет прав на удаление этой сессии"
-		if err.Error() != expectedErrMsg {
-			t.Errorf("Ожидалась ошибка '%s', получена '%s'", expectedErrMsg, err.Error())
-		}
+		assert.Error(t, err)
+		assert.Equal(t, "у вас нет прав на удаление этой сессии", err.Error())
 	})
 
 	t.Run("ошибка удаления сессии", func(t *testing.T) {
@@ -234,13 +189,8 @@ func TestSessionService_TerminateSession(t *testing.T) {
 
 		err := sessionService.TerminateSession(ctx, sessionID, userID)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if !errors.Is(err, expectedErr) {
-			t.Errorf("Ожидалась ошибка %v, получена %v", expectedErr, err)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, expectedErr)
 	})
 }
 
@@ -262,9 +212,7 @@ func TestSessionService_TerminateAllSessions(t *testing.T) {
 
 		err := sessionService.TerminateAllSessions(ctx, userID)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("ошибка завершения всех сессий", func(t *testing.T) {
@@ -276,12 +224,7 @@ func TestSessionService_TerminateAllSessions(t *testing.T) {
 
 		err := sessionService.TerminateAllSessions(ctx, userID)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if !errors.Is(err, expectedErr) {
-			t.Errorf("Ожидалась ошибка %v, получена %v", expectedErr, err)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, expectedErr)
 	})
 }

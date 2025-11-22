@@ -9,6 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/models"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/repository/mock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDeviceService_GetUserDevices(t *testing.T) {
@@ -47,24 +48,11 @@ func TestDeviceService_GetUserDevices(t *testing.T) {
 
 		result, err := deviceService.GetUserDevices(ctx, userID)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
-
-		if len(result) != 2 {
-			t.Fatalf("Ожидалось 2 устройства, получено %d", len(result))
-		}
-
-		// Проверяем первое устройство
-		if result[0].Id != 1 {
-			t.Errorf("Ожидался ID 1, получен %d", result[0].Id)
-		}
-		if result[0].DeviceID != "device1" {
-			t.Errorf("Ожидался DeviceID 'device1', получен '%s'", result[0].DeviceID)
-		}
-		if result[0].UserAgent != "Mozilla/5.0" {
-			t.Errorf("Ожидался UserAgent 'Mozilla/5.0', получен '%s'", result[0].UserAgent)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(result))
+		assert.Equal(t, 1, result[0].Id)
+		assert.Equal(t, "device1", result[0].DeviceID)
+		assert.Equal(t, "Mozilla/5.0", result[0].UserAgent)
 	})
 
 	t.Run("ошибка репозитория", func(t *testing.T) {
@@ -76,17 +64,9 @@ func TestDeviceService_GetUserDevices(t *testing.T) {
 
 		result, err := deviceService.GetUserDevices(ctx, userID)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if result != nil {
-			t.Fatal("Ожидался nil результат при ошибке")
-		}
-
-		if !errors.Is(err, expectedErr) {
-			t.Errorf("Ожидалась ошибка %v, получена %v", expectedErr, err)
-		}
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.ErrorIs(t, err, expectedErr)
 	})
 }
 
@@ -124,9 +104,7 @@ func TestDeviceService_RemoveDevice(t *testing.T) {
 
 		err := deviceService.RemoveDevice(ctx, deviceID, userID)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
+		assert.NoError(t, err)
 	})
 
 	t.Run("устройство не найдено", func(t *testing.T) {
@@ -147,14 +125,8 @@ func TestDeviceService_RemoveDevice(t *testing.T) {
 
 		err := deviceService.RemoveDevice(ctx, deviceID, userID)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		expectedErrMsg := "устройство не найдено или вы не имеете прав на его удаление"
-		if err.Error() != expectedErrMsg {
-			t.Errorf("Ожидалась ошибка '%s', получена '%s'", expectedErrMsg, err.Error())
-		}
+		assert.Error(t, err)
+		assert.Equal(t, "устройство не найдено или вы не имеете прав на его удаление", err.Error())
 	})
 
 	t.Run("ошибка получения устройств", func(t *testing.T) {
@@ -166,13 +138,8 @@ func TestDeviceService_RemoveDevice(t *testing.T) {
 
 		err := deviceService.RemoveDevice(ctx, deviceID, userID)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if !errors.Is(err, expectedErr) {
-			t.Errorf("Ожидалась ошибка %v, получена %v", expectedErr, err)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, expectedErr)
 	})
 }
 
@@ -209,22 +176,10 @@ func TestDeviceService_GetOrCreateDevice(t *testing.T) {
 
 		result, err := deviceService.GetOrCreateDevice(ctx, deviceID, userAgent, userID)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
-
-		if result == nil {
-			t.Fatal("Ожидалось устройство, получен nil")
-		}
-
-		if result.DeviceID != deviceID {
-			t.Errorf("Ожидался DeviceID '%s', получен '%s'", deviceID, result.DeviceID)
-		}
-
-		// Проверяем, что время обновилось
-		if result.LastLogin.Before(time.Now().Add(-1 * time.Minute)) {
-			t.Error("Время последнего входа должно быть обновлено")
-		}
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, deviceID, result.DeviceID)
+		assert.True(t, result.LastLogin.After(time.Now().Add(-1*time.Minute)))
 	})
 
 	t.Run("устройство не найдено, создаем новое", func(t *testing.T) {
@@ -236,16 +191,9 @@ func TestDeviceService_GetOrCreateDevice(t *testing.T) {
 		mockRepo.EXPECT().
 			Create(ctx, gomock.Any()).
 			DoAndReturn(func(ctx context.Context, device *models.Device) error {
-				// Проверяем, что устройство создается с правильными данными
-				if device.UserID != userID {
-					t.Errorf("Ожидался UserID %d, получен %d", userID, device.UserID)
-				}
-				if device.DeviceID != deviceID {
-					t.Errorf("Ожидался DeviceID '%s', получен '%s'", deviceID, device.DeviceID)
-				}
-				if device.UserAgent != userAgent {
-					t.Errorf("Ожидался UserAgent '%s', получен '%s'", userAgent, device.UserAgent)
-				}
+				assert.Equal(t, userID, device.UserID)
+				assert.Equal(t, deviceID, device.DeviceID)
+				assert.Equal(t, userAgent, device.UserAgent)
 				device.ID = 1 // Устанавливаем ID для возврата
 				return nil
 			}).
@@ -253,17 +201,9 @@ func TestDeviceService_GetOrCreateDevice(t *testing.T) {
 
 		result, err := deviceService.GetOrCreateDevice(ctx, deviceID, userAgent, userID)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
-
-		if result == nil {
-			t.Fatal("Ожидалось устройство, получен nil")
-		}
-
-		if result.DeviceID != deviceID {
-			t.Errorf("Ожидался DeviceID '%s', получен '%s'", deviceID, result.DeviceID)
-		}
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, deviceID, result.DeviceID)
 	})
 
 	t.Run("ошибка при обновлении времени входа", func(t *testing.T) {
@@ -288,17 +228,9 @@ func TestDeviceService_GetOrCreateDevice(t *testing.T) {
 
 		result, err := deviceService.GetOrCreateDevice(ctx, deviceID, userAgent, userID)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if result != nil {
-			t.Fatal("Ожидался nil результат при ошибке")
-		}
-
-		if !errors.Is(err, expectedErr) {
-			t.Errorf("Ожидалась ошибка %v, получена %v", expectedErr, err)
-		}
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.ErrorIs(t, err, expectedErr)
 	})
 
 	t.Run("ошибка при создании устройства", func(t *testing.T) {
@@ -315,16 +247,8 @@ func TestDeviceService_GetOrCreateDevice(t *testing.T) {
 
 		result, err := deviceService.GetOrCreateDevice(ctx, deviceID, userAgent, userID)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if result != nil {
-			t.Fatal("Ожидался nil результат при ошибке")
-		}
-
-		if !errors.Is(err, expectedErr) {
-			t.Errorf("Ожидалась ошибка %v, получена %v", expectedErr, err)
-		}
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.ErrorIs(t, err, expectedErr)
 	})
 }

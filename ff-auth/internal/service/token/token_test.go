@@ -4,23 +4,25 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/models"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/repository/mock"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
 )
 
 func TestED25519TokenManager_LoadOrGenerateKeys(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockRepo := mock.NewMockKeyPair(ctrl)
-
 	t.Run("загрузка ключей из БД", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockRepo := mock.NewMockKeyPair(ctrl)
 		keyPair := &models.KeyPair{
 			ID:         1,
 			PublicKey:  "dGVzdF9wdWJsaWNfa2V5",     // base64 encoded test key
@@ -35,62 +37,48 @@ func TestED25519TokenManager_LoadOrGenerateKeys(t *testing.T) {
 
 		manager, err := NewED25519TokenManager(mockRepo)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
-
-		if manager == nil {
-			t.Fatal("Ожидался менеджер, получен nil")
-		}
+		assert.NoError(t, err)
+		assert.NotNil(t, manager)
 
 		// Проверяем, что публичный ключ установлен
 		publicKey := manager.GetPublicKey()
-		if publicKey == nil {
-			t.Error("Ожидался публичный ключ, получен nil")
-		}
+		assert.NotNil(t, publicKey)
 	})
 
 	t.Run("генерация новых ключей при отсутствии в БД", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockRepo := mock.NewMockKeyPair(ctrl)
+		// Первый вызов GetActive в LoadOrGenerateKeys - ключей нет (nil, nil)
 		mockRepo.EXPECT().
 			GetActive(context.Background()).
-			Return(nil, errors.New("not found")).
+			Return(nil, nil).
 			Times(1)
 
-		// Ожидаем вызов RegenerateKeys - сначала GetActive для проверки существующих ключей
-		mockRepo.EXPECT().
-			GetActive(context.Background()).
-			Return(nil, errors.New("not found")).
-			Times(1)
-
-		// Затем Create для создания новых ключей
+		// RegenerateKeys не вызывает GetActive, так как loadedFromDB == false
+		// Сразу вызывается Create для создания новых ключей
 		mockRepo.EXPECT().
 			Create(context.Background(), gomock.Any()).
 			DoAndReturn(func(ctx context.Context, keyPair *models.KeyPair) error {
-				if !keyPair.IsActive {
-					t.Error("Ожидался активный ключ")
-				}
-				if keyPair.PublicKey == "" {
-					t.Error("Ожидался публичный ключ")
-				}
-				if keyPair.PrivateKey == "" {
-					t.Error("Ожидался приватный ключ")
-				}
+				assert.True(t, keyPair.IsActive)
+				assert.NotEmpty(t, keyPair.PublicKey)
+				assert.NotEmpty(t, keyPair.PrivateKey)
 				return nil
 			}).
 			Times(1)
 
 		manager, err := NewED25519TokenManager(mockRepo)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
-
-		if manager == nil {
-			t.Fatal("Ожидался менеджер, получен nil")
-		}
+		assert.NoError(t, err)
+		assert.NotNil(t, manager)
 	})
 
 	t.Run("ошибка загрузки ключей", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockRepo := mock.NewMockKeyPair(ctrl)
 		expectedErr := errors.New("database error")
 		mockRepo.EXPECT().
 			GetActive(context.Background()).
@@ -99,17 +87,9 @@ func TestED25519TokenManager_LoadOrGenerateKeys(t *testing.T) {
 
 		manager, err := NewED25519TokenManager(mockRepo)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if manager != nil {
-			t.Fatal("Ожидался nil менеджер при ошибке")
-		}
-
-		if !errors.Is(err, expectedErr) {
-			t.Errorf("Ожидалась ошибка %v, получена %v", expectedErr, err)
-		}
+		assert.Error(t, err)
+		assert.Nil(t, manager)
+		assert.Contains(t, err.Error(), "ошибка при загрузке ключей")
 	})
 }
 
@@ -142,27 +122,14 @@ func TestED25519TokenManager_GenerateToken(t *testing.T) {
 
 		token, err := manager.GenerateToken(payload)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
-
-		if token == "" {
-			t.Fatal("Ожидался токен, получена пустая строка")
-		}
+		assert.NoError(t, err)
+		assert.NotEmpty(t, token)
 
 		// Проверяем, что токен можно декодировать
 		decodedPayload, err := manager.ValidateToken(token)
-		if err != nil {
-			t.Fatalf("Ошибка валидации токена: %v", err)
-		}
-
-		if decodedPayload.UserID != payload.UserID {
-			t.Errorf("Ожидался UserID %d, получен %d", payload.UserID, decodedPayload.UserID)
-		}
-
-		if len(decodedPayload.Roles) != len(payload.Roles) {
-			t.Errorf("Ожидалось %d ролей, получено %d", len(payload.Roles), len(decodedPayload.Roles))
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, payload.UserID, decodedPayload.UserID)
+		assert.Equal(t, len(payload.Roles), len(decodedPayload.Roles))
 	})
 
 	t.Run("ошибка сериализации payload", func(t *testing.T) {
@@ -176,13 +143,8 @@ func TestED25519TokenManager_GenerateToken(t *testing.T) {
 		// Это должно работать нормально, так как TokenPayload не содержит циклических ссылок
 		token, err := manager.GenerateToken(invalidPayload)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
-
-		if token == "" {
-			t.Fatal("Ожидался токен, получена пустая строка")
-		}
+		assert.NoError(t, err)
+		assert.NotEmpty(t, token)
 	})
 }
 
@@ -220,21 +182,10 @@ func TestED25519TokenManager_ValidateToken(t *testing.T) {
 
 		decodedPayload, err := manager.ValidateToken(token)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
-
-		if decodedPayload == nil {
-			t.Fatal("Ожидался payload, получен nil")
-		}
-
-		if decodedPayload.UserID != payload.UserID {
-			t.Errorf("Ожидался UserID %d, получен %d", payload.UserID, decodedPayload.UserID)
-		}
-
-		if len(decodedPayload.Roles) != len(payload.Roles) {
-			t.Errorf("Ожидалось %d ролей, получено %d", len(payload.Roles), len(decodedPayload.Roles))
-		}
+		assert.NoError(t, err)
+		assert.NotNil(t, decodedPayload)
+		assert.Equal(t, payload.UserID, decodedPayload.UserID)
+		assert.Equal(t, len(payload.Roles), len(decodedPayload.Roles))
 	})
 
 	t.Run("истекший токен", func(t *testing.T) {
@@ -251,18 +202,9 @@ func TestED25519TokenManager_ValidateToken(t *testing.T) {
 
 		decodedPayload, err := manager.ValidateToken(token)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if decodedPayload != nil {
-			t.Fatal("Ожидался nil payload при ошибке")
-		}
-
-		expectedErrMsg := "token expired"
-		if err.Error() != expectedErrMsg {
-			t.Errorf("Ожидалась ошибка '%s', получена '%s'", expectedErrMsg, err.Error())
-		}
+		assert.Error(t, err)
+		assert.Nil(t, decodedPayload)
+		assert.Equal(t, "token expired", err.Error())
 	})
 
 	t.Run("невалидный формат токена", func(t *testing.T) {
@@ -270,18 +212,9 @@ func TestED25519TokenManager_ValidateToken(t *testing.T) {
 
 		decodedPayload, err := manager.ValidateToken(invalidToken)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if decodedPayload != nil {
-			t.Fatal("Ожидался nil payload при ошибке")
-		}
-
-		expectedErrMsg := "invalid token format"
-		if err.Error() != expectedErrMsg {
-			t.Errorf("Ожидалась ошибка '%s', получена '%s'", expectedErrMsg, err.Error())
-		}
+		assert.Error(t, err)
+		assert.Nil(t, decodedPayload)
+		assert.Equal(t, "invalid token format", err.Error())
 	})
 
 	t.Run("невалидная подпись токена", func(t *testing.T) {
@@ -293,27 +226,25 @@ func TestED25519TokenManager_ValidateToken(t *testing.T) {
 		}
 
 		token, err := manager.GenerateToken(payload)
-		if err != nil {
-			t.Fatalf("Ошибка генерации токена: %v", err)
-		}
+		assert.NoError(t, err)
 
-		// Повреждаем токен (изменяем последний символ)
-		corruptedToken := token[:len(token)-1] + "X"
+		// Декодируем токен, изменяем подпись и кодируем обратно
+		tokenBytes, _ := base64.StdEncoding.DecodeString(token)
+		var tokenStruct service.Token
+		json.Unmarshal(tokenBytes, &tokenStruct)
+		
+		// Изменяем подпись
+		tokenStruct.Sig[0] ^= 0xFF
+		
+		// Кодируем обратно
+		corruptedTokenBytes, _ := json.Marshal(tokenStruct)
+		corruptedToken := base64.StdEncoding.EncodeToString(corruptedTokenBytes)
 
 		decodedPayload, err := manager.ValidateToken(corruptedToken)
 
-		if err == nil {
-			t.Fatal("Ожидалась ошибка, получен успех")
-		}
-
-		if decodedPayload != nil {
-			t.Fatal("Ожидался nil payload при ошибке")
-		}
-
-		expectedErrMsg := "invalid token signature"
-		if err.Error() != expectedErrMsg {
-			t.Errorf("Ожидалась ошибка '%s', получена '%s'", expectedErrMsg, err.Error())
-		}
+		assert.Error(t, err)
+		assert.Nil(t, decodedPayload)
+		assert.Equal(t, "invalid token signature", err.Error())
 	})
 }
 
@@ -347,51 +278,24 @@ func TestED25519TokenManager_GenerateTokenPair(t *testing.T) {
 			userID, roles, accessTTL, refreshTTL,
 		)
 
-		if err != nil {
-			t.Fatalf("Ожидался успех, получена ошибка: %v", err)
-		}
-
-		if accessToken == "" {
-			t.Fatal("Ожидался access токен, получена пустая строка")
-		}
-
-		if refreshToken == "" {
-			t.Fatal("Ожидался refresh токен, получена пустая строка")
-		}
-
-		if accessExpiresAt <= time.Now().Unix() {
-			t.Error("Время истечения access токена должно быть в будущем")
-		}
-
-		// Проверяем, что токены разные
-		if accessToken == refreshToken {
-			t.Error("Access и refresh токены не должны быть одинаковыми")
-		}
+		assert.NoError(t, err)
+		assert.NotEmpty(t, accessToken)
+		assert.NotEmpty(t, refreshToken)
+		assert.Greater(t, accessExpiresAt, time.Now().Unix())
+		assert.NotEqual(t, accessToken, refreshToken)
 
 		// Проверяем валидность access токена
 		accessPayload, err := manager.ValidateToken(accessToken)
-		if err != nil {
-			t.Fatalf("Ошибка валидации access токена: %v", err)
-		}
-
-		if accessPayload.UserID != userID {
-			t.Errorf("Ожидался UserID %d, получен %d", userID, accessPayload.UserID)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, userID, accessPayload.UserID)
 
 		// Проверяем валидность refresh токена
 		refreshPayload, err := manager.ValidateToken(refreshToken)
-		if err != nil {
-			t.Fatalf("Ошибка валидации refresh токена: %v", err)
-		}
-
-		if refreshPayload.UserID != userID {
-			t.Errorf("Ожидался UserID %d, получен %d", userID, refreshPayload.UserID)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, userID, refreshPayload.UserID)
 
 		// Проверяем, что refresh токен живет дольше access токена
-		if refreshPayload.Exp <= accessPayload.Exp {
-			t.Error("Refresh токен должен жить дольше access токена")
-		}
+		assert.Greater(t, refreshPayload.Exp, accessPayload.Exp)
 	})
 }
 

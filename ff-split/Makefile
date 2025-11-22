@@ -24,7 +24,7 @@ clean:
 
 # Запуск тестов
 test:
-	go test -v ./...
+	gotestsum --format testname ./...
 
 # Запуск линтера
 lint:

@@ -4,6 +4,7 @@
 help:
 	@echo "Available targets:"
 	@echo "  generate    - Generate API code from OpenAPI spec"
+	@echo "  test        - Run tests with gotestsum"
 	@echo "  build       - Build the application"
 	@echo "  run         - Run the application"
 	@echo "  clean       - Clean generated files"
@@ -16,6 +17,10 @@ generate:
 	oapi-codegen -package api -generate gin-server -o pkg/api/server.gen.go pkg/api/openapi.yaml
 	oapi-codegen -package api -generate spec -o pkg/api/spec.gen.go pkg/api/openapi.yaml
 	@echo "API code generated successfully!"
+
+# Run tests
+test:
+	gotestsum --format testname ./...
 
 # Build the application
 build:
