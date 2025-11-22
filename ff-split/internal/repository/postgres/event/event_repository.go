@@ -142,16 +142,55 @@ func (r *EventRepository) CalculateUserBalances(ctx context.Context, userID int6
 	return balances, nil
 }
 
-// Delete удаляет мероприятие
+// Delete удаляет мероприятие и все связанные данные
 func (r *EventRepository) Delete(ctx context.Context, id int64) error {
 	err := db.WithTx(ctx, r.db, func(ctx context.Context) error {
+		tx := db.GetTx(ctx, r.db).WithContext(ctx)
 
-		result := db.GetTx(ctx, r.db).WithContext(ctx).Exec("DELETE FROM user_event WHERE event_id = ?", id)
+		// Сначала удаляем долги (они ссылаются на транзакции)
+		result := tx.Exec("DELETE FROM debts WHERE transaction_id IN (SELECT id FROM transactions WHERE event_id = ?)", id)
 		if result.Error != nil {
 			return result.Error
 		}
 
-		result = db.GetTx(ctx, r.db).WithContext(ctx).Delete(&Event{}, id)
+		// Удаляем доли транзакций
+		result = tx.Exec("DELETE FROM transaction_shares WHERE transaction_id IN (SELECT id FROM transactions WHERE event_id = ?)", id)
+		if result.Error != nil {
+			return result.Error
+		}
+
+		// Удаляем транзакции
+		result = tx.Exec("DELETE FROM transactions WHERE event_id = ?", id)
+		if result.Error != nil {
+			return result.Error
+		}
+
+		// Удаляем оптимизированные долги
+		result = tx.Exec("DELETE FROM optimized_debts WHERE event_id = ?", id)
+		if result.Error != nil {
+			return result.Error
+		}
+
+		// Удаляем активности
+		result = tx.Exec("DELETE FROM activities WHERE event_id = ?", id)
+		if result.Error != nil {
+			return result.Error
+		}
+
+		// Удаляем задачи
+		result = tx.Exec("DELETE FROM tasks WHERE event_id = ?", id)
+		if result.Error != nil {
+			return result.Error
+		}
+
+		// Удаляем связи пользователей с мероприятием
+		result = tx.Exec("DELETE FROM user_event WHERE event_id = ?", id)
+		if result.Error != nil {
+			return result.Error
+		}
+
+		// Наконец, удаляем само мероприятие
+		result = tx.Delete(&Event{}, id)
 		if result.Error != nil {
 			return result.Error
 		}

@@ -149,6 +149,9 @@ func (r *TransactionRepository) GetDebtsByEventIDFromUser(eventID int64, userID 
 
 // CreateTransactionShares создает доли пользователей в транзакции
 func (r *TransactionRepository) CreateTransactionShares(shares []models.TransactionShare) error {
+	if len(shares) == 0 {
+		return nil // Нет долей для создания
+	}
 	dbShares := make([]TransactionShare, len(shares))
 	for i, share := range shares {
 		dbShares[i] = *loadTransactionShare(&share)
@@ -158,6 +161,9 @@ func (r *TransactionRepository) CreateTransactionShares(shares []models.Transact
 
 // CreateDebts создает долги между пользователями
 func (r *TransactionRepository) CreateDebts(debts []models.Debt) error {
+	if len(debts) == 0 {
+		return nil // Нет долгов для создания
+	}
 	dbDebts := make([]Debt, len(debts))
 	for i, debt := range debts {
 		dbDebts[i] = *loadDebt(&debt)
