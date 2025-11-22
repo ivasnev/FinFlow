@@ -1,0 +1,35 @@
+[
+  {
+    "id": 1,
+    "email": "user1@example.com",
+    "nickname": "user1",
+    "name": "User One",
+    "phone": null,
+    "avatar_id": null,
+    "birthdate": null,
+    "created_at": 1724684557,
+    "updated_at": 1724684557
+  },
+  {
+    "id": 2,
+    "email": "user2@example.com",
+    "nickname": "user2",
+    "name": "User Two",
+    "phone": null,
+    "avatar_id": null,
+    "birthdate": null,
+    "created_at": 1724684557,
+    "updated_at": 1724684557
+  },
+  {
+    "id": 3,
+    "email": "user3@example.com",
+    "nickname": "user3",
+    "name": "User Three",
+    "phone": null,
+    "avatar_id": null,
+    "birthdate": null,
+    "created_at": 1724684557,
+    "updated_at": 1724684557
+  }
+]

@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/db"
+	customErrors "github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
 	"gorm.io/gorm"
@@ -105,7 +107,7 @@ func (r *UserRepository) GetByInternalUserID(ctx context.Context, id int64) (*mo
 	err := r.db.WithContext(ctx).First(&dbUser, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("пользователь не найден")
+			return nil, customErrors.NewEntityNotFoundError(strconv.FormatInt(id, 10), "user")
 		}
 		return nil, fmt.Errorf("ошибка при получении пользователя: %w", err)
 	}
@@ -167,7 +169,7 @@ func (r *UserRepository) Delete(ctx context.Context, id int64) error {
 		return fmt.Errorf("ошибка при удалении пользователя: %w", result.Error)
 	}
 	if result.RowsAffected == 0 {
-		return errors.New("пользователь не найден")
+		return customErrors.NewEntityNotFoundError(strconv.FormatInt(id, 10), "user")
 	}
 	return nil
 }

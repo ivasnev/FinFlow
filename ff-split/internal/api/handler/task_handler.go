@@ -35,7 +35,13 @@ func (s *ServerHandler) GetTaskByID(c *gin.Context, idEvent int64, idTask int) {
 	}
 
 	if task == nil {
-		c.JSON(http.StatusNotFound, api.ErrorResponse{Error: "задача не найдена"})
+		c.JSON(http.StatusNotFound, api.ErrorResponse{
+		Id: c.GetHeader("X-Request-ID"),
+		Error: api.ErrorResponseDetail{
+			Code:    "not_found",
+			Message: "задача не найдена",
+		},
+	})
 		return
 	}
 
@@ -46,7 +52,13 @@ func (s *ServerHandler) GetTaskByID(c *gin.Context, idEvent int64, idTask int) {
 func (s *ServerHandler) CreateTask(c *gin.Context, idEvent int64) {
 	var apiRequest api.TaskRequest
 	if err := c.ShouldBindJSON(&apiRequest); err != nil {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "некорректные данные запроса"})
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{
+		Id: c.GetHeader("X-Request-ID"),
+		Error: api.ErrorResponseDetail{
+			Code:    "validation",
+			Message: "некорректные данные запроса",
+		},
+	})
 		return
 	}
 
@@ -76,7 +88,13 @@ func (s *ServerHandler) CreateTask(c *gin.Context, idEvent int64) {
 func (s *ServerHandler) UpdateTask(c *gin.Context, idEvent int64, idTask int) {
 	var apiRequest api.TaskRequest
 	if err := c.ShouldBindJSON(&apiRequest); err != nil {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "некорректные данные запроса"})
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{
+		Id: c.GetHeader("X-Request-ID"),
+		Error: api.ErrorResponseDetail{
+			Code:    "validation",
+			Message: "некорректные данные запроса",
+		},
+	})
 		return
 	}
 

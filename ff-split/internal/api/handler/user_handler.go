@@ -14,7 +14,11 @@ import (
 func (s *ServerHandler) GetUsersByExternalIDs(c *gin.Context, params api.GetUsersByExternalIDsParams) {
 	if len(params.Uids) == 0 {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{
-			Error: "список внешних ID не может быть пустым",
+			Id: c.GetHeader("X-Request-ID"),
+			Error: api.ErrorResponseDetail{
+				Code:    "validation",
+				Message: "список внешних ID не может быть пустым",
+			},
 		})
 		return
 	}
@@ -81,7 +85,11 @@ func (s *ServerHandler) CreateDummyUser(c *gin.Context, idEvent int64) {
 	var apiRequest api.DummyUserRequest
 	if err := c.ShouldBindJSON(&apiRequest); err != nil {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{
-			Error: "некорректные данные запроса",
+			Id: c.GetHeader("X-Request-ID"),
+			Error: api.ErrorResponseDetail{
+				Code:    "validation",
+				Message: "некорректные данные запроса",
+			},
 		})
 		return
 	}
@@ -100,14 +108,22 @@ func (s *ServerHandler) AddUsersToEvent(c *gin.Context, idEvent int64) {
 	var apiRequest api.AddUsersRequest
 	if err := c.ShouldBindJSON(&apiRequest); err != nil {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{
-			Error: "некорректные данные запроса",
+			Id: c.GetHeader("X-Request-ID"),
+			Error: api.ErrorResponseDetail{
+				Code:    "validation",
+				Message: "некорректные данные запроса",
+			},
 		})
 		return
 	}
 
 	if len(apiRequest.UserIds) == 0 {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{
-			Error: "список пользователей не может быть пустым",
+			Id: c.GetHeader("X-Request-ID"),
+			Error: api.ErrorResponseDetail{
+				Code:    "validation",
+				Message: "список пользователей не может быть пустым",
+			},
 		})
 		return
 	}
@@ -137,14 +153,22 @@ func (s *ServerHandler) SyncUsers(c *gin.Context) {
 	var apiRequest api.SyncUsersRequest
 	if err := c.ShouldBindJSON(&apiRequest); err != nil {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{
-			Error: "некорректные данные запроса",
+			Id: c.GetHeader("X-Request-ID"),
+			Error: api.ErrorResponseDetail{
+				Code:    "validation",
+				Message: "некорректные данные запроса",
+			},
 		})
 		return
 	}
 
 	if len(apiRequest.UserIds) == 0 {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{
-			Error: "список пользователей не может быть пустым",
+			Id: c.GetHeader("X-Request-ID"),
+			Error: api.ErrorResponseDetail{
+				Code:    "validation",
+				Message: "список пользователей не может быть пустым",
+			},
 		})
 		return
 	}

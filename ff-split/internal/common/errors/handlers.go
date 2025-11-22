@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgconn"
+	"gorm.io/gorm"
 )
 
 func isDatabaseError(err error) bool {
@@ -42,6 +43,9 @@ func HTTPErrorHandler(c *gin.Context, err error) {
 		code = http.StatusConflict
 	case errors.As(err, &entityNotFoundError):
 		errorResponse = NewNotFoundErrorResponse(c.Request, entityNotFoundError.Error())
+		code = http.StatusNotFound
+	case errors.Is(err, gorm.ErrRecordNotFound):
+		errorResponse = NewNotFoundErrorResponse(c.Request, "запись не найдена")
 		code = http.StatusNotFound
 	case errors.As(err, &logicError):
 		errorResponse = NewLogicErrorResponse(c.Request, logicError.Error(), "")

@@ -42,7 +42,13 @@ func (s *ServerHandler) GetActivityByID(c *gin.Context, idEvent int64, idActivit
 	}
 
 	if activity == nil {
-		c.JSON(http.StatusNotFound, api.ErrorResponse{Error: "активность не найдена"})
+		c.JSON(http.StatusNotFound, api.ErrorResponse{
+		Id: c.GetHeader("X-Request-ID"),
+		Error: api.ErrorResponseDetail{
+			Code:    "not_found",
+			Message: "активность не найдена",
+		},
+	})
 		return
 	}
 
@@ -60,7 +66,13 @@ func (s *ServerHandler) GetActivityByID(c *gin.Context, idEvent int64, idActivit
 func (s *ServerHandler) CreateActivity(c *gin.Context, idEvent int64) {
 	var apiRequest api.ActivityRequest
 	if err := c.ShouldBindJSON(&apiRequest); err != nil {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "некорректные данные запроса"})
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{
+		Id: c.GetHeader("X-Request-ID"),
+		Error: api.ErrorResponseDetail{
+			Code:    "validation",
+			Message: "некорректные данные запроса",
+		},
+	})
 		return
 	}
 
@@ -96,7 +108,13 @@ func (s *ServerHandler) CreateActivity(c *gin.Context, idEvent int64) {
 func (s *ServerHandler) UpdateActivity(c *gin.Context, idEvent int64, idActivity int) {
 	var apiRequest api.ActivityRequest
 	if err := c.ShouldBindJSON(&apiRequest); err != nil {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "некорректные данные запроса"})
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{
+		Id: c.GetHeader("X-Request-ID"),
+		Error: api.ErrorResponseDetail{
+			Code:    "validation",
+			Message: "некорректные данные запроса",
+		},
+	})
 		return
 	}
 

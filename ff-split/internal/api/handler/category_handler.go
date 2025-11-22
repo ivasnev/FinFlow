@@ -39,7 +39,13 @@ func (s *ServerHandler) GetCategoryByID(c *gin.Context, id int, params api.GetCa
 	}
 
 	if category == nil {
-		c.JSON(http.StatusNotFound, api.ErrorResponse{Error: "категория не найдена"})
+		c.JSON(http.StatusNotFound, api.ErrorResponse{
+		Id: c.GetHeader("X-Request-ID"),
+		Error: api.ErrorResponseDetail{
+			Code:    "not_found",
+			Message: "категория не найдена",
+		},
+	})
 		return
 	}
 
@@ -50,7 +56,13 @@ func (s *ServerHandler) GetCategoryByID(c *gin.Context, id int, params api.GetCa
 func (s *ServerHandler) CreateCategory(c *gin.Context, params api.CreateCategoryParams) {
 	var apiRequest api.CategoryRequest
 	if err := c.ShouldBindJSON(&apiRequest); err != nil {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "некорректные данные запроса"})
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{
+		Id: c.GetHeader("X-Request-ID"),
+		Error: api.ErrorResponseDetail{
+			Code:    "validation",
+			Message: "некорректные данные запроса",
+		},
+	})
 		return
 	}
 
@@ -80,7 +92,13 @@ func (s *ServerHandler) CreateCategory(c *gin.Context, params api.CreateCategory
 func (s *ServerHandler) UpdateCategory(c *gin.Context, id int, params api.UpdateCategoryParams) {
 	var apiRequest api.CategoryRequest
 	if err := c.ShouldBindJSON(&apiRequest); err != nil {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "некорректные данные запроса"})
+		c.JSON(http.StatusBadRequest, api.ErrorResponse{
+		Id: c.GetHeader("X-Request-ID"),
+		Error: api.ErrorResponseDetail{
+			Code:    "validation",
+			Message: "некорректные данные запроса",
+		},
+	})
 		return
 	}
 

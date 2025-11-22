@@ -42,9 +42,13 @@ func (s *ServerHandler) GetTransactionByID(c *gin.Context, idEvent int64, idTran
 func (s *ServerHandler) CreateTransaction(c *gin.Context, idEvent int64) {
 	var apiRequest api.TransactionRequest
 	if err := c.ShouldBindJSON(&apiRequest); err != nil {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse{
-			Error: "некорректные данные запроса",
-		})
+	c.JSON(http.StatusBadRequest, api.ErrorResponse{
+		Id: c.GetHeader("X-Request-ID"),
+		Error: api.ErrorResponseDetail{
+			Code:    "validation",
+			Message: "некорректные данные запроса",
+		},
+	})
 		return
 	}
 
@@ -64,9 +68,13 @@ func (s *ServerHandler) CreateTransaction(c *gin.Context, idEvent int64) {
 func (s *ServerHandler) UpdateTransaction(c *gin.Context, idEvent int64, idTransaction int) {
 	var apiRequest api.TransactionRequest
 	if err := c.ShouldBindJSON(&apiRequest); err != nil {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse{
-			Error: "некорректные данные запроса",
-		})
+	c.JSON(http.StatusBadRequest, api.ErrorResponse{
+		Id: c.GetHeader("X-Request-ID"),
+		Error: api.ErrorResponseDetail{
+			Code:    "validation",
+			Message: "некорректные данные запроса",
+		},
+	})
 		return
 	}
 

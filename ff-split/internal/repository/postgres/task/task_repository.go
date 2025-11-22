@@ -2,7 +2,9 @@ package task
 
 import (
 	"errors"
+	"strconv"
 
+	customErrors "github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"gorm.io/gorm"
 )
@@ -31,7 +33,7 @@ func (r *TaskRepository) GetTaskByID(id uint) (*models.Task, error) {
 	var dbTask Task
 	if err := r.db.First(&dbTask, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("задача не найдена")
+			return nil, customErrors.NewEntityNotFoundError(strconv.Itoa(int(id)), "task")
 		}
 		return nil, err
 	}

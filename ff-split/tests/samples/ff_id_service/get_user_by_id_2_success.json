@@ -1,0 +1,11 @@
+[{
+  "id": 2,
+  "email": "user2@example.com",
+  "nickname": "user2",
+  "name": "User Two",
+  "phone": null,
+  "avatar_id": null,
+  "birthdate": null,
+  "created_at": 1724684557,
+  "updated_at": 1724684557
+}]

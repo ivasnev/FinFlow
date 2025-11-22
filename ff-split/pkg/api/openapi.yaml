@@ -1567,11 +1567,39 @@ components:
     ErrorResponse:
       type: object
       required:
+        - id
         - error
       properties:
-        error:
+        id:
           type: string
-          description: Описание ошибки
+          description: ID запроса
+        error:
+          $ref: '#/components/schemas/ErrorResponseDetail'
+
+    ErrorResponseDetail:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Код ошибки
+          example: "validation"
+        message:
+          type: string
+          description: Сообщение об ошибке
+          example: "invalid input"
+        data:
+          $ref: '#/components/schemas/ErrorResponseAdditionalData'
+
+    ErrorResponseAdditionalData:
+      type: object
+      properties:
+        slug:
+          type: string
+          description: Дополнительная информация
+          example: "slug"
 
     SuccessResponse:
       type: object

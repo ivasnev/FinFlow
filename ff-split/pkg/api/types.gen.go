@@ -121,8 +121,26 @@ type DummyUserRequest struct {
 
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
-	// Error Описание ошибки
-	Error string `json:"error"`
+	Error ErrorResponseDetail `json:"error"`
+
+	// Id ID запроса
+	Id string `json:"id"`
+}
+
+// ErrorResponseAdditionalData defines model for ErrorResponseAdditionalData.
+type ErrorResponseAdditionalData struct {
+	// Slug Дополнительная информация
+	Slug *string `json:"slug,omitempty"`
+}
+
+// ErrorResponseDetail defines model for ErrorResponseDetail.
+type ErrorResponseDetail struct {
+	// Code Код ошибки
+	Code string                       `json:"code"`
+	Data *ErrorResponseAdditionalData `json:"data,omitempty"`
+
+	// Message Сообщение об ошибке
+	Message string `json:"message"`
 }
 
 // EventListResponse defines model for EventListResponse.

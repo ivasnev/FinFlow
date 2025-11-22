@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/db"
+	customErrors "github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"gorm.io/gorm"
 )
@@ -155,7 +157,7 @@ func (r *EventRepository) Delete(ctx context.Context, id int64) error {
 		}
 
 		if result.RowsAffected == 0 {
-			return errors.New("мероприятие не найдено")
+			return customErrors.NewEntityNotFoundError(strconv.FormatInt(id, 10), "event")
 		}
 
 		return nil

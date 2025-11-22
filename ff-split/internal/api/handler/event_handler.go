@@ -20,7 +20,11 @@ func (s *ServerHandler) GetEvents(c *gin.Context) {
 	userData, exists := auth.GetUserData(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, api.ErrorResponse{
-			Error: "пользователь не авторизован",
+			Id: c.GetHeader("X-Request-ID"),
+			Error: api.ErrorResponseDetail{
+				Code:    "unauthorized",
+				Message: "пользователь не авторизован",
+			},
 		})
 		return
 	}
@@ -68,7 +72,11 @@ func (s *ServerHandler) GetEventByID(c *gin.Context, idEvent int64) {
 	userData, exists := auth.GetUserData(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, api.ErrorResponse{
-			Error: "пользователь не авторизован",
+			Id: c.GetHeader("X-Request-ID"),
+			Error: api.ErrorResponseDetail{
+				Code:    "unauthorized",
+				Message: "пользователь не авторизован",
+			},
 		})
 		return
 	}
@@ -88,7 +96,11 @@ func (s *ServerHandler) GetEventByID(c *gin.Context, idEvent int64) {
 
 	if event == nil {
 		c.JSON(http.StatusNotFound, api.ErrorResponse{
-			Error: "мероприятие не найдено",
+			Id: c.GetHeader("X-Request-ID"),
+			Error: api.ErrorResponseDetail{
+				Code:    "not_found",
+				Message: "мероприятие не найдено",
+			},
 		})
 		return
 	}
@@ -121,7 +133,11 @@ func (s *ServerHandler) CreateEvent(c *gin.Context) {
 	var apiRequest api.EventRequest
 	if err := c.ShouldBindJSON(&apiRequest); err != nil {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{
-			Error: "некорректные данные запроса",
+			Id: c.GetHeader("X-Request-ID"),
+			Error: api.ErrorResponseDetail{
+				Code:    "validation",
+				Message: "некорректные данные запроса",
+			},
 		})
 		return
 	}
@@ -179,7 +195,11 @@ func (s *ServerHandler) UpdateEvent(c *gin.Context, idEvent int64) {
 	var apiRequest api.EventRequest
 	if err := c.ShouldBindJSON(&apiRequest); err != nil {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{
-			Error: "некорректные данные запроса",
+			Id: c.GetHeader("X-Request-ID"),
+			Error: api.ErrorResponseDetail{
+				Code:    "validation",
+				Message: "некорректные данные запроса",
+			},
 		})
 		return
 	}

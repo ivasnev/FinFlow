@@ -2,7 +2,9 @@ package icon
 
 import (
 	"errors"
+	"strconv"
 
+	customErrors "github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"gorm.io/gorm"
 )
@@ -31,7 +33,7 @@ func (r *IconRepository) GetIconByID(id uint) (*models.Icon, error) {
 	var dbIcon Icon
 	if err := r.db.First(&dbIcon, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("иконка не найдена")
+			return nil, customErrors.NewEntityNotFoundError(strconv.Itoa(int(id)), "icon")
 		}
 		return nil, err
 	}

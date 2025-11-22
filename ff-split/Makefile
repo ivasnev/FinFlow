@@ -1,4 +1,4 @@
-.PHONY: build run clean test test-cov generate
+.PHONY: build run clean test generate
 
 # Переменные
 APP_NAME = ff-split
