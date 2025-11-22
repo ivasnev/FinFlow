@@ -10,6 +10,7 @@ type TokenPayload struct {
 	UserID int64    `json:"user_id"`
 	Roles  []string `json:"roles"`
 	Exp    int64    `json:"exp"`
+	JTI    string   `json:"jti,omitempty"` // JWT ID для уникальности токена
 }
 
 // Token представляет структуру токена

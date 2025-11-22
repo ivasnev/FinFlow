@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/models"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/repository"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
@@ -214,6 +215,7 @@ func (m *ED25519TokenManager) GenerateTokenPair(userID int64, roles []string, ac
 		UserID: userID,
 		Roles:  roles,
 		Exp:    accessExpiresAt,
+		JTI:    uuid.New().String(), // Уникальный ID для access токена
 	}
 
 	// Генерируем access токен
@@ -228,6 +230,7 @@ func (m *ED25519TokenManager) GenerateTokenPair(userID int64, roles []string, ac
 		UserID: userID,
 		Roles:  roles,
 		Exp:    refreshExpiresAt,
+		JTI:    uuid.New().String(), // Уникальный ID для refresh токена
 	}
 
 	// Генерируем refresh токен

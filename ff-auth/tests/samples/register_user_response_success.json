@@ -1,0 +1,9 @@
+{
+  "id": 123,
+  "email": "test@example.com",
+  "nickname": "testuser",
+  "name": "Test User",
+  "created_at": 1640995200,
+  "updated_at": 1640995200
+}
+
