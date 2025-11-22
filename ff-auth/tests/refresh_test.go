@@ -25,6 +25,12 @@ func TestRefreshSuite(t *testing.T) {
 func (s *RefreshSuite) TestRefresh_Success() {
 	ctx := context.Background()
 
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
+
 	// Сначала регистрируем пользователя
 	registerReq := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("refresh@example.com"),
@@ -85,6 +91,12 @@ func (s *RefreshSuite) TestRefresh_InvalidToken() {
 // TestRefresh_ExpiredToken тестирует обновление с недействительным токеном
 func (s *RefreshSuite) TestRefresh_ExpiredToken() {
 	ctx := context.Background()
+
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
 
 	// Создаем пользователя и получаем токен
 	registerReq := api.RegisterJSONRequestBody{

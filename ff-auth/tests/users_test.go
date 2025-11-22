@@ -25,6 +25,12 @@ func TestUsersSuite(t *testing.T) {
 func (s *UsersSuite) TestGetUserByID_Success() {
 	ctx := context.Background()
 
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
+
 	// Регистрируем пользователя
 	registerReq := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("getuser@example.com"),
@@ -50,6 +56,12 @@ func (s *UsersSuite) TestGetUserByID_Success() {
 // TestGetUserByNickname_Success тестирует успешное получение пользователя по nickname
 func (s *UsersSuite) TestGetUserByNickname_Success() {
 	ctx := context.Background()
+
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
 
 	// Регистрируем пользователя
 	registerReq := api.RegisterJSONRequestBody{
@@ -88,6 +100,12 @@ func (s *UsersSuite) TestGetUserByNickname_NotFound() {
 func (s *UsersSuite) TestUpdateUser_Success() {
 	ctx := context.Background()
 
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
+
 	// Регистрируем пользователя
 	registerReq := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("update@example.com"),
@@ -121,7 +139,13 @@ func (s *UsersSuite) TestUpdateUser_Success() {
 func (s *UsersSuite) TestUpdateUser_DuplicateEmail() {
 	ctx := context.Background()
 
-	// Регистрируем двух пользователей
+	// Настройка мока для первой регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
+
+	// Регистрируем первого пользователя
 	registerReq1 := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("user1@example.com"),
 		Nickname: "user1",
@@ -131,6 +155,13 @@ func (s *UsersSuite) TestUpdateUser_DuplicateEmail() {
 	s.NoError(err)
 	s.Equal(201, registerResp1.StatusCode())
 
+	// Настройка мока для второй регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
+
+	// Регистрируем второго пользователя
 	registerReq2 := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("user2@example.com"),
 		Nickname: "user2",
@@ -167,6 +198,12 @@ func (s *UsersSuite) TestUpdateUser_DuplicateEmail() {
 // для проверки удаления. В реальном приложении это может быть внутренний endpoint.
 func (s *UsersSuite) TestDeleteUser_Success() {
 	ctx := context.Background()
+
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
 
 	// Регистрируем пользователя
 	registerReq := api.RegisterJSONRequestBody{

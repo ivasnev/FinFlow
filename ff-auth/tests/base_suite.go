@@ -95,6 +95,11 @@ func (s *BaseSuite) SetupTest() {
 
 // TearDownTest выполняется после каждого теста
 func (s *BaseSuite) TearDownTest() {
+	// Очищаем мок-сервер и проверяем, что все ожидаемые вызовы были сделаны
+	if s.MockServer != nil {
+		s.MockServer.Clear(s.T())
+	}
+
 	// Очищаем данные после каждого теста
 	s.cleanupDatabase()
 }

@@ -24,6 +24,12 @@ func TestSessionsSuite(t *testing.T) {
 func (s *SessionsSuite) TestGetUserSessions_Success() {
 	ctx := context.Background()
 
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
+
 	// Регистрируем пользователя
 	registerReq := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("sessions@example.com"),
@@ -51,6 +57,12 @@ func (s *SessionsSuite) TestGetUserSessions_Success() {
 // Примечание: API не предоставляет метод для завершения всех сессий, поэтому используем сервис
 func (s *SessionsSuite) TestGetUserSessions_Empty() {
 	ctx := context.Background()
+
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
 
 	// Регистрируем пользователя
 	registerReq := api.RegisterJSONRequestBody{
@@ -82,6 +94,12 @@ func (s *SessionsSuite) TestGetUserSessions_Empty() {
 // TestTerminateSession_Success тестирует успешное завершение сессии
 func (s *SessionsSuite) TestTerminateSession_Success() {
 	ctx := context.Background()
+
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
 
 	// Регистрируем пользователя
 	registerReq := api.RegisterJSONRequestBody{
@@ -129,6 +147,12 @@ func (s *SessionsSuite) TestTerminateSession_Success() {
 // Примечание: API не предоставляет метод для завершения всех сессий, поэтому используем сервис
 func (s *SessionsSuite) TestTerminateAllSessions_Success() {
 	ctx := context.Background()
+
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
 
 	// Регистрируем пользователя
 	registerReq := api.RegisterJSONRequestBody{

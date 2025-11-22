@@ -25,6 +25,12 @@ func TestLoginSuite(t *testing.T) {
 func (s *LoginSuite) TestLogin_ByEmail() {
 	ctx := context.Background()
 
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
+
 	// Сначала регистрируем пользователя
 	registerReq := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("login@example.com"),
@@ -90,6 +96,12 @@ func (s *LoginSuite) TestLogin_ByEmail() {
 func (s *LoginSuite) TestLogin_ByNickname() {
 	ctx := context.Background()
 
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
+
 	// Сначала регистрируем пользователя
 	registerReq := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("nickname@example.com"),
@@ -135,6 +147,12 @@ func (s *LoginSuite) TestLogin_ByNickname() {
 // TestLogin_InvalidCredentials тестирует вход с неверными учетными данными
 func (s *LoginSuite) TestLogin_InvalidCredentials() {
 	ctx := context.Background()
+
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
 
 	// Сначала регистрируем пользователя
 	registerReq := api.RegisterJSONRequestBody{
@@ -183,6 +201,12 @@ func (s *LoginSuite) TestLogin_UserNotFound() {
 // TestLogin_MultipleActiveSessions тестирует возможность наличия нескольких активных сессий
 func (s *LoginSuite) TestLogin_MultipleActiveSessions() {
 	ctx := context.Background()
+
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
 
 	// Регистрируем пользователя (создает первую сессию)
 	registerReq := api.RegisterJSONRequestBody{

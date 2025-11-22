@@ -24,6 +24,12 @@ func TestLogoutSuite(t *testing.T) {
 func (s *LogoutSuite) TestLogout_Success() {
 	ctx := context.Background()
 
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
+
 	// Сначала регистрируем пользователя
 	registerReq := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("logout@example.com"),
@@ -62,6 +68,12 @@ func (s *LogoutSuite) TestLogout_Success() {
 func (s *LogoutSuite) TestLogout_InvalidToken() {
 	ctx := context.Background()
 
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
+
 	// Сначала регистрируем пользователя для получения валидного access токена
 	registerReq := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("invalidtoken@example.com"),
@@ -90,6 +102,12 @@ func (s *LogoutSuite) TestLogout_InvalidToken() {
 // TestLogout_AlreadyLoggedOut тестирует повторный выход
 func (s *LogoutSuite) TestLogout_AlreadyLoggedOut() {
 	ctx := context.Background()
+
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
 
 	// Сначала регистрируем пользователя
 	registerReq := api.RegisterJSONRequestBody{

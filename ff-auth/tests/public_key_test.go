@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"encoding/base64"
+	"net/http"
 	"testing"
 
 	"github.com/ivasnev/FinFlow/ff-auth/pkg/api"
@@ -58,6 +59,12 @@ func (s *PublicKeySuite) TestGetPublicKey_Consistency() {
 // Примечание: Для валидации токена используем TokenManager, так как это внутренняя функциональность
 func (s *PublicKeySuite) TestGetPublicKey_CanValidateToken() {
 	ctx := context.Background()
+
+	// Настройка мока для регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
 
 	// Регистрируем пользователя
 	registerReq := api.RegisterJSONRequestBody{

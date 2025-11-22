@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/ivasnev/FinFlow/ff-auth/pkg/api"
-	"github.com/ivasnev/FinFlow/ff-auth/tests/mockserver"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	"github.com/stretchr/testify/suite"
 )
@@ -25,6 +24,18 @@ func TestRegisterSuite(t *testing.T) {
 // TestRegister_Success тестирует успешную регистрацию пользователя
 func (s *RegisterSuite) TestRegister_Success() {
 	ctx := context.Background()
+
+	// Настройка мока для ff-id сервиса
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		CheckRequest(func(body []byte) {
+			var req map[string]interface{}
+			json.Unmarshal(body, &req)
+			s.Require().Equal("test@example.com", req["email"])
+			s.Require().Equal("testuser", req["nickname"])
+		}).
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
 
 	reqBody := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("test@example.com"),
@@ -56,6 +67,12 @@ func (s *RegisterSuite) TestRegister_Success() {
 func (s *RegisterSuite) TestRegister_DuplicateEmail() {
 	ctx := context.Background()
 
+	// Настройка мока для первой регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
+
 	reqBody := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("duplicate@example.com"),
 		Nickname: "user1",
@@ -67,7 +84,7 @@ func (s *RegisterSuite) TestRegister_DuplicateEmail() {
 	s.NoError(err)
 	s.Equal(201, resp1.StatusCode())
 
-	// Вторая регистрация с тем же email
+	// Вторая регистрация с тем же email (мок не нужен, так как ошибка на уровне БД)
 	reqBody2 := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("duplicate@example.com"),
 		Nickname: "user2",
@@ -84,6 +101,12 @@ func (s *RegisterSuite) TestRegister_DuplicateEmail() {
 func (s *RegisterSuite) TestRegister_DuplicateNickname() {
 	ctx := context.Background()
 
+	// Настройка мока для первой регистрации
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_success.json").
+		HTTPCode(http.StatusCreated)
+
 	reqBody := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("user1@example.com"),
 		Nickname: "duplicatenick",
@@ -95,7 +118,7 @@ func (s *RegisterSuite) TestRegister_DuplicateNickname() {
 	s.NoError(err)
 	s.Equal(201, resp1.StatusCode())
 
-	// Вторая регистрация с тем же nickname
+	// Вторая регистрация с тем же nickname (мок не нужен, так как ошибка на уровне БД)
 	reqBody2 := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("user2@example.com"),
 		Nickname: "duplicatenick",
@@ -110,17 +133,13 @@ func (s *RegisterSuite) TestRegister_DuplicateNickname() {
 
 // TestRegister_WithMockServerError тестирует обработку ошибок от мок-сервера
 func (s *RegisterSuite) TestRegister_WithMockServerError() {
-	// Устанавливаем обработчик, который возвращает ошибку 500
-	errorHandler := func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(mockserver.ErrorResponse{
-			Error: "внутренняя ошибка сервера",
-		})
-	}
-	s.MockServer.SetRegisterUserFromServiceHandler(errorHandler)
-
 	ctx := context.Background()
+
+	// Настройка мока для возврата ошибки 500
+	s.MockServer.
+		Expect(http.MethodPost, "/api/v1/internal/users/register").
+		Return("ff_id_service/register_user_response_error_500.json").
+		HTTPCode(http.StatusInternalServerError)
 
 	reqBody := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("test@example.com"),
