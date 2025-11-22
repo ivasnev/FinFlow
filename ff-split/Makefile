@@ -1,4 +1,4 @@
-.PHONY: build run clean test generate
+.PHONY: build run clean test test-cov generate
 
 # Переменные
 APP_NAME = ff-split
@@ -25,6 +25,15 @@ clean:
 # Запуск тестов
 test:
 	gotestsum --format testname ./...
+
+# Запуск тестов с покрытием
+test-cov:
+	@echo "Running tests with coverage..."
+	go test -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
+	@echo ""
+	@echo "Coverage report saved to coverage.out"
+	@echo "To view HTML report: go tool cover -html=coverage.out"
 
 # Запуск линтера
 lint:

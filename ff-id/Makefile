@@ -6,6 +6,7 @@ help:
 	@echo "  generate    - Generate code from OpenAPI spec"
 	@echo "  mock-gen    - Generate mocks for services and repositories"
 	@echo "  test        - Run tests"
+	@echo "  test-cov    - Run tests with coverage"
 	@echo "  build       - Build the application"
 	@echo "  run         - Run the application"
 	@echo "  clean       - Clean generated files"
@@ -30,6 +31,15 @@ mock-gen:
 # Run tests
 test:
 	gotestsum --format testname ./...
+
+# Run tests with coverage
+test-cov:
+	@echo "Running tests with coverage..."
+	go test -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
+	@echo ""
+	@echo "Coverage report saved to coverage.out"
+	@echo "To view HTML report: go tool cover -html=coverage.out"
 
 # Build the application
 build:
