@@ -167,4 +167,3 @@ func (s *SessionsSuite) TestTerminateAllSessions_Success() {
 	sessionsAfter := *sessionsAfterResp.JSON200
 	s.Empty(sessionsAfter, "все сессии должны быть удалены")
 }
-
