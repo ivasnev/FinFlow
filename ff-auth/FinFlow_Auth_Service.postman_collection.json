@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "FinFlow Auth Service",
-    "description": "FinFlow Auth Service API для управления пользователями, аутентификацией и сессиями",
+    "name": "FinFlow Auth Service - Integration Tests",
+    "description": "Интеграционные тесты для FinFlow Auth Service API на основе актуальной спецификации OpenAPI",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "12345678"
   },
@@ -11,7 +11,44 @@
       "description": "Методы для регистрации, входа и управления токенами",
       "item": [
         {
-          "name": "Регистрация",
+          "name": "Регистрация - Успешная",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит токены и пользователя', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('access_token');",
+                  "    pm.expect(jsonData).to.have.property('refresh_token');",
+                  "    pm.expect(jsonData).to.have.property('expires_at');",
+                  "    pm.expect(jsonData).to.have.property('user');",
+                  "    pm.expect(jsonData.user).to.have.property('id');",
+                  "    pm.expect(jsonData.user).to.have.property('email');",
+                  "    pm.expect(jsonData.user).to.have.property('nickname');",
+                  "    pm.expect(jsonData.user).to.have.property('roles');",
+                  "    ",
+                  "    // Сохранение токенов",
+                  "    pm.environment.set('access_token', jsonData.access_token);",
+                  "    pm.environment.set('refresh_token', jsonData.refresh_token);",
+                  "    pm.environment.set('user_id', jsonData.user.id);",
+                  "    pm.environment.set('nickname', jsonData.user.nickname);",
+                  "});",
+                  "",
+                  "pm.test('Токены не пустые', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.access_token).to.not.be.empty;",
+                  "    pm.expect(jsonData.refresh_token).to.not.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -22,26 +59,37 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"StrongPassword123\",\n    \"nickname\": \"user123\",\n    \"name\": \"John Doe\",\n    \"phone\": \"+71234567890\"\n}"
+              "raw": "{\n    \"email\": \"testuser@example.com\",\n    \"password\": \"StrongPassword123\",\n    \"nickname\": \"testuser123\",\n    \"name\": \"Test User\",\n    \"phone\": \"+71234567890\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/auth/register",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "register"
-              ]
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
             },
             "description": "Регистрирует нового пользователя в системе."
           },
           "response": []
         },
         {
-          "name": "Вход",
+          "name": "Регистрация - Дубликат email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 409', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит ошибку', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -52,26 +100,187 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"login\": \"user@example.com\",\n    \"password\": \"StrongPassword123\"\n}"
+              "raw": "{\n    \"email\": \"testuser@example.com\",\n    \"password\": \"StrongPassword123\",\n    \"nickname\": \"anotheruser\",\n    \"name\": \"Another User\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/auth/login",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "login"
-              ]
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Попытка регистрации с уже существующим email должна вернуть 409."
+          },
+          "response": []
+        },
+        {
+          "name": "Регистрация - Невалидные данные",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит ошибку', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"invalid-email\",\n    \"password\": \"123\",\n    \"nickname\": \"ab\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Попытка регистрации с невалидными данными должна вернуть 400."
+          },
+          "response": []
+        },
+        {
+          "name": "Вход - Успешный",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит токены и пользователя', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('access_token');",
+                  "    pm.expect(jsonData).to.have.property('refresh_token');",
+                  "    pm.expect(jsonData).to.have.property('expires_at');",
+                  "    pm.expect(jsonData).to.have.property('user');",
+                  "    ",
+                  "    // Сохранение токенов",
+                  "    pm.environment.set('access_token', jsonData.access_token);",
+                  "    pm.environment.set('refresh_token', jsonData.refresh_token);",
+                  "    pm.environment.set('nickname', jsonData.user.nickname);",
+                  "});",
+                  "",
+                  "pm.test('Время истечения токена в будущем', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const expiresAt = new Date(jsonData.expires_at);",
+                  "    const now = new Date();",
+                  "    pm.expect(expiresAt.getTime()).to.be.above(now.getTime());",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"login\": \"testuser@example.com\",\n    \"password\": \"StrongPassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
             },
             "description": "Аутентифицирует пользователя и создает новую сессию."
           },
           "response": []
         },
         {
-          "name": "Обновление токена",
+          "name": "Вход - Неверные учетные данные",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит ошибку', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"login\": \"testuser@example.com\",\n    \"password\": \"WrongPassword\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Попытка входа с неверным паролем должна вернуть 401."
+          },
+          "response": []
+        },
+        {
+          "name": "Обновление токена - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит новые токены', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('access_token');",
+                  "    pm.expect(jsonData).to.have.property('refresh_token');",
+                  "    pm.expect(jsonData).to.have.property('expires_at');",
+                  "    ",
+                  "    // Сохранение новых токенов",
+                  "    pm.environment.set('access_token', jsonData.access_token);",
+                  "    pm.environment.set('refresh_token', jsonData.refresh_token);",
+                  "});",
+                  "",
+                  "pm.test('Новые токены отличаются от старых', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const oldToken = pm.environment.get('access_token');",
+                  "    pm.expect(jsonData.access_token).to.not.equal(oldToken);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -85,44 +294,110 @@
               "raw": "{\n    \"refresh_token\": \"{{refresh_token}}\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/auth/refresh",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "refresh"
-              ]
+              "raw": "{{base_url}}/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "refresh"]
             },
             "description": "Обновляет access-токен с помощью refresh-токена."
           },
           "response": []
         },
         {
+          "name": "Обновление токена - Недействительный токен",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит ошибку', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refresh_token\": \"invalid_token_12345\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "Попытка обновления с недействительным токеном должна вернуть 401."
+          },
+          "response": []
+        },
+        {
           "name": "Получение публичного ключа",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит публичный ключ', function () {",
+                  "    const responseText = pm.response.text();",
+                  "    pm.expect(responseText).to.not.be.empty;",
+                  "    // Проверка что это base64 строка",
+                  "    pm.expect(responseText).to.match(/^[A-Za-z0-9+/=]+$/);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v1/auth/public-key",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "public-key"
-              ]
+              "raw": "{{base_url}}/auth/public-key",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "public-key"]
             },
             "description": "Возвращает публичный ключ для проверки токенов в формате base64."
           },
           "response": []
         },
         {
-          "name": "Выход",
+          "name": "Выход - Успешный",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит сообщение об успехе', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData.message).to.include('successfully logged out');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -146,18 +421,47 @@
               "raw": "{\n    \"refresh_token\": \"{{refresh_token}}\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/auth/logout",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "logout"
-              ]
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
             },
             "description": "Завершает текущую сессию пользователя."
+          },
+          "response": []
+        },
+        {
+          "name": "Выход - Без авторизации",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refresh_token\": \"some_token\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Попытка выхода без авторизации должна вернуть 401."
           },
           "response": []
         }
@@ -168,28 +472,98 @@
       "description": "Методы для работы с пользователями",
       "item": [
         {
-          "name": "Получение информации о пользователе",
+          "name": "Получение информации о пользователе - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит информацию о пользователе', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('email');",
+                  "    pm.expect(jsonData).to.have.property('nickname');",
+                  "    pm.expect(jsonData).to.have.property('roles');",
+                  "    pm.expect(jsonData).to.have.property('created_at');",
+                  "    pm.expect(jsonData).to.have.property('updated_at');",
+                  "    pm.expect(jsonData.roles).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v1/users/{{nickname}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "users",
-                "{{nickname}}"
-              ]
+              "raw": "{{base_url}}/users/{{nickname}}",
+              "host": ["{{base_url}}"],
+              "path": ["users", "{{nickname}}"]
             },
             "description": "Возвращает информацию о пользователе по его никнейму."
           },
           "response": []
         },
         {
-          "name": "Обновление профиля",
+          "name": "Получение информации о пользователе - Не найден",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит ошибку', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/nonexistent_user_12345",
+              "host": ["{{base_url}}"],
+              "path": ["users", "nonexistent_user_12345"]
+            },
+            "description": "Попытка получить информацию о несуществующем пользователе должна вернуть 404."
+          },
+          "response": []
+        },
+        {
+          "name": "Обновление профиля - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит обновленную информацию', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('email');",
+                  "    pm.expect(jsonData).to.have.property('nickname');",
+                  "    pm.expect(jsonData).to.have.property('roles');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -210,21 +584,50 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"nickname\": \"updated_nickname\",\n    \"email\": \"updated@example.com\",\n    \"password\": \"NewStrongPassword123\"\n}"
+              "raw": "{\n    \"nickname\": \"updated_nickname\",\n    \"email\": \"updated@example.com\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/users/me",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "users",
-                "me"
-              ]
+              "raw": "{{base_url}}/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["users", "me"]
             },
             "description": "Обновляет информацию о текущем пользователе."
+          },
+          "response": []
+        },
+        {
+          "name": "Обновление профиля - Без авторизации",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nickname\": \"updated_nickname\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Попытка обновления профиля без авторизации должна вернуть 401."
           },
           "response": []
         }
@@ -235,7 +638,39 @@
       "description": "Методы для работы с сессиями пользователя",
       "item": [
         {
-          "name": "Получение сессий",
+          "name": "Получение сессий - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ является массивом', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Каждая сессия содержит необходимые поля', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.length > 0) {",
+                  "        const session = jsonData[0];",
+                  "        pm.expect(session).to.have.property('id');",
+                  "        pm.expect(session).to.have.property('ip_address');",
+                  "        pm.expect(session).to.have.property('created_at');",
+                  "        pm.expect(session).to.have.property('expires_at');",
+                  "        ",
+                  "        // Сохранение первой сессии для тестов",
+                  "        pm.environment.set('session_id', session.id);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -250,22 +685,62 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v1/sessions",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "sessions"
-              ]
+              "raw": "{{base_url}}/sessions",
+              "host": ["{{base_url}}"],
+              "path": ["sessions"]
             },
             "description": "Возвращает список активных сессий текущего пользователя."
           },
           "response": []
         },
         {
-          "name": "Завершение сессии",
+          "name": "Получение сессий - Без авторизации",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/sessions",
+              "host": ["{{base_url}}"],
+              "path": ["sessions"]
+            },
+            "description": "Попытка получить сессии без авторизации должна вернуть 401."
+          },
+          "response": []
+        },
+        {
+          "name": "Завершение сессии - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит сообщение об успехе', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData.message).to.include('session terminated');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -280,16 +755,9 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v1/sessions/{{session_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "sessions",
-                "{{session_id}}"
-              ]
+              "raw": "{{base_url}}/sessions/{{session_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["sessions", "{{session_id}}"]
             },
             "description": "Завершает указанную сессию текущего пользователя."
           },
@@ -302,7 +770,35 @@
       "description": "Методы для работы с историей входов пользователя",
       "item": [
         {
-          "name": "Получение истории входов",
+          "name": "Получение истории входов - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ является массивом', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Каждая запись содержит необходимые поля', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.length > 0) {",
+                  "        const history = jsonData[0];",
+                  "        pm.expect(history).to.have.property('id');",
+                  "        pm.expect(history).to.have.property('ip_address');",
+                  "        pm.expect(history).to.have.property('created_at');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -317,15 +813,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v1/login-history?limit=10&offset=0",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "login-history"
-              ],
+              "raw": "{{base_url}}/login-history?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["login-history"],
               "query": [
                 {
                   "key": "limit",
@@ -340,6 +830,43 @@
             "description": "Возвращает историю входов текущего пользователя с пагинацией."
           },
           "response": []
+        },
+        {
+          "name": "Получение истории входов - Без авторизации",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/login-history?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["login-history"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Попытка получить историю входов без авторизации должна вернуть 401."
+          },
+          "response": []
         }
       ]
     }
@@ -349,9 +876,7 @@
       "listen": "prerequest",
       "script": {
         "type": "text/javascript",
-        "exec": [
-          ""
-        ]
+        "exec": [""]
       }
     },
     {
@@ -359,19 +884,14 @@
       "script": {
         "type": "text/javascript",
         "exec": [
-          "// Автоматическое сохранение токенов при входе или обновлении",
-          "if (pm.response.code === 200 || pm.response.code === 201) {",
-          "    const jsonData = pm.response.json();",
-          "    if (jsonData && jsonData.access_token) {",
-          "        pm.environment.set('access_token', jsonData.access_token);",
-          "    }",
-          "    if (jsonData && jsonData.refresh_token) {",
-          "        pm.environment.set('refresh_token', jsonData.refresh_token);",
-          "    }",
-          "    if (jsonData && jsonData.user && jsonData.user.nickname) {",
-          "        pm.environment.set('nickname', jsonData.user.nickname);",
-          "    }",
-          "}"
+          "// Глобальные тесты для всех запросов",
+          "pm.test('Время ответа меньше 5 секунд', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test('Content-Type присутствует', function () {",
+          "    pm.expect(pm.response.headers.get('Content-Type')).to.exist;",
+          "});"
         ]
       }
     }
@@ -379,8 +899,8 @@
   "variable": [
     {
       "key": "base_url",
-      "value": "http://localhost:8083",
+      "value": "http://localhost:8084/api/v1",
       "type": "string"
     }
   ]
-} 
+}

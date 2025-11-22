@@ -1,143 +1,527 @@
 {
-	"info": {
-		"_postman_id": "ff-tvm-collection",
-		"name": "TVM API",
-		"description": "Коллекция для тестирования TVM API",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-	},
-	"item": [
-		{
-			"name": "Создание сервиса",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"name\": \"test-service\"\n}"
-				},
-				"url": {
-					"raw": "http://localhost:8080/service",
-					"protocol": "http",
-					"host": ["localhost"],
-					"port": "8080",
-					"path": ["service"]
-				},
-				"description": "Создает новый сервис и возвращает его идентификатор и ключи"
-			}
-		},
-		{
-			"name": "Получение публичного ключа",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:8080/service/{{service_id}}/key",
-					"protocol": "http",
-					"host": ["localhost"],
-					"port": "8080",
-					"path": ["service", "{{service_id}}", "key"]
-				},
-				"description": "Возвращает публичный ключ сервиса по его ID"
-			}
-		},
-		{
-			"name": "Предоставление доступа",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"from\": {{from_service_id}},\n    \"to\": {{to_service_id}}\n}"
-				},
-				"url": {
-					"raw": "http://localhost:8080/access/grant",
-					"protocol": "http",
-					"host": ["localhost"],
-					"port": "8080",
-					"path": ["access", "grant"]
-				},
-				"description": "Предоставляет доступ от одного сервиса к другому"
-			}
-		},
-		{
-			"name": "Отзыв доступа",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"from\": {{from_service_id}},\n    \"to\": {{to_service_id}}\n}"
-				},
-				"url": {
-					"raw": "http://localhost:8080/access/revoke",
-					"protocol": "http",
-					"host": ["localhost"],
-					"port": "8080",
-					"path": ["access", "revoke"]
-				},
-				"description": "Отзывает доступ от одного сервиса к другому"
-			}
-		},
-		{
-			"name": "Генерация тикета",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"from\": {{from_service_id}},\n    \"to\": {{to_service_id}},\n    \"secret\": \"{{private_key}}\"\n}"
-				},
-				"url": {
-					"raw": "http://localhost:8080/ticket",
-					"protocol": "http",
-					"host": ["localhost"],
-					"port": "8080",
-					"path": ["ticket"]
-				},
-				"description": "Генерирует тикет для доступа от одного сервиса к другому"
-			}
-		}
-	],
-	"variable": [
-		{
-			"key": "service_id",
-			"value": "1",
-			"type": "string"
-		},
-		{
-			"key": "from_service_id",
-			"value": "1",
-			"type": "string"
-		},
-		{
-			"key": "to_service_id",
-			"value": "2",
-			"type": "string"
-		},
-		{
-			"key": "private_key",
-			"value": "your-private-key",
-			"type": "string"
-		}
-	]
-} 
+  "info": {
+    "name": "FinFlow TVM API - Integration Tests",
+    "description": "Интеграционные тесты для FinFlow TVM (Ticket-based Verification Module) API на основе актуальной спецификации OpenAPI",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12345678"
+  },
+  "item": [
+    {
+      "name": "Сервисы",
+      "description": "Управление сервисами",
+      "item": [
+        {
+          "name": "Создание сервиса - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит информацию о сервисе', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('name');",
+                  "    pm.expect(jsonData).to.have.property('public_key');",
+                  "    pm.expect(jsonData).to.have.property('private_key');",
+                  "    ",
+                  "    // Сохранение данных для последующих тестов",
+                  "    pm.environment.set('service_id', jsonData.id);",
+                  "    pm.environment.set('service_private_key', jsonData.private_key);",
+                  "    pm.environment.set('service_public_key', jsonData.public_key);",
+                  "});",
+                  "",
+                  "pm.test('Ключи не пустые', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.public_key).to.not.be.empty;",
+                  "    pm.expect(jsonData.private_key).to.not.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"test-service\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/service",
+              "host": ["{{base_url}}"],
+              "path": ["service"]
+            },
+            "description": "Создает новый сервис и возвращает его идентификатор и ключи ED25519"
+          },
+          "response": []
+        },
+        {
+          "name": "Создание сервиса - Невалидные данные",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит ошибку', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/service",
+              "host": ["{{base_url}}"],
+              "path": ["service"]
+            },
+            "description": "Попытка создать сервис с пустым именем должна вернуть 400."
+          },
+          "response": []
+        },
+        {
+          "name": "Получение публичного ключа - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит публичный ключ', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('public_key');",
+                  "    pm.expect(jsonData.public_key).to.not.be.empty;",
+                  "});",
+                  "",
+                  "pm.test('Публичный ключ совпадает с сохраненным', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const savedKey = pm.environment.get('service_public_key');",
+                  "    if (savedKey) {",
+                  "        pm.expect(jsonData.public_key).to.equal(savedKey);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/service/{{service_id}}/key",
+              "host": ["{{base_url}}"],
+              "path": ["service", "{{service_id}}", "key"]
+            },
+            "description": "Возвращает публичный ключ сервиса по его ID для валидации тикетов"
+          },
+          "response": []
+        },
+        {
+          "name": "Получение публичного ключа - Сервис не найден",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит ошибку', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/service/99999/key",
+              "host": ["{{base_url}}"],
+              "path": ["service", "99999", "key"]
+            },
+            "description": "Попытка получить публичный ключ несуществующего сервиса должна вернуть 404."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Тикеты",
+      "description": "Генерация тикетов доступа",
+      "item": [
+        {
+          "name": "Создать второй сервис для теста",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const jsonData = pm.response.json();",
+                  "pm.environment.set('target_service_id', jsonData.id);",
+                  "pm.environment.set('target_service_public_key', jsonData.public_key);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"target-service\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/service",
+              "host": ["{{base_url}}"],
+              "path": ["service"]
+            },
+            "description": "Создает второй сервис для тестирования генерации тикетов"
+          },
+          "response": []
+        },
+        {
+          "name": "Предоставить доступ",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит сообщение об успехе', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData.message).to.include('access granted');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"from\": {{service_id}},\n    \"to\": {{target_service_id}}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/access/grant",
+              "host": ["{{base_url}}"],
+              "path": ["access", "grant"]
+            },
+            "description": "Предоставляет право доступа от одного сервиса к другому"
+          },
+          "response": []
+        },
+        {
+          "name": "Генерация тикета - Успешная",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит тикет', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('ticket');",
+                  "    pm.expect(jsonData.ticket).to.not.be.empty;",
+                  "    ",
+                  "    // Сохранение тикета для последующих тестов",
+                  "    pm.environment.set('tvm_ticket', jsonData.ticket);",
+                  "});",
+                  "",
+                  "pm.test('Тикет имеет правильный формат', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    // Формат: serv:base64(serviceID):base64(ticketJSON)",
+                  "    pm.expect(jsonData.ticket).to.match(/^serv:/);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"from\": {{service_id}},\n    \"to\": {{target_service_id}},\n    \"secret\": \"{{service_private_key}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/ticket",
+              "host": ["{{base_url}}"],
+              "path": ["ticket"]
+            },
+            "description": "Генерирует подписанный тикет для доступа от одного сервиса к другому."
+          },
+          "response": []
+        },
+        {
+          "name": "Генерация тикета - Неверный секрет",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 400 или 500', function () {",
+                  "    pm.expect([400, 500]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит ошибку', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"from\": {{service_id}},\n    \"to\": {{target_service_id}},\n    \"secret\": \"invalid_secret_key\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/ticket",
+              "host": ["{{base_url}}"],
+              "path": ["ticket"]
+            },
+            "description": "Попытка сгенерировать тикет с неверным секретом должна вернуть ошибку."
+          },
+          "response": []
+        },
+        {
+          "name": "Генерация тикета - Нет доступа",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 500', function () {",
+                  "    pm.response.to.have.status(500);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит ошибку', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"from\": {{service_id}},\n    \"to\": 99999,\n    \"secret\": \"{{service_private_key}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/ticket",
+              "host": ["{{base_url}}"],
+              "path": ["ticket"]
+            },
+            "description": "Попытка сгенерировать тикет без предоставленного доступа должна вернуть ошибку."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Управление доступом",
+      "description": "Управление правами доступа между сервисами",
+      "item": [
+        {
+          "name": "Отзыв доступа - Успешный",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит сообщение об успехе', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData.message).to.include('access revoked');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"from\": {{service_id}},\n    \"to\": {{target_service_id}}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/access/revoke",
+              "host": ["{{base_url}}"],
+              "path": ["access", "revoke"]
+            },
+            "description": "Отзывает право доступа от одного сервиса к другому"
+          },
+          "response": []
+        },
+        {
+          "name": "Отзыв доступа - Невалидные данные",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит ошибку', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"from\": -1,\n    \"to\": -1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/access/revoke",
+              "host": ["{{base_url}}"],
+              "path": ["access", "revoke"]
+            },
+            "description": "Попытка отозвать доступ с невалидными данными должна вернуть 400."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Глобальные тесты для всех запросов",
+          "pm.test('Время ответа меньше 5 секунд', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test('Content-Type присутствует', function () {",
+          "    pm.expect(pm.response.headers.get('Content-Type')).to.exist;",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8081",
+      "type": "string"
+    }
+  ]
+}

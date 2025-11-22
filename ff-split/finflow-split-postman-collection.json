@@ -1,1623 +1,536 @@
 {
-	"info": {
-		"_postman_id": "0f5cf816-134a-429e-898c-8ea6cebc7507",
-		"name": "FinFlow Split API",
-		"description": "API коллекция для сервиса FinFlow Split, который обеспечивает управление групповыми расходами и мероприятиями",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "43146034"
-	},
-	"item": [
-		{
-			"name": "Мероприятия (Events)",
-			"item": [
-				{
-					"name": "Получить все мероприятия",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/events",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"events"
-							]
-						},
-						"description": "Получение списка всех мероприятий"
-					},
-					"response": []
-				},
-				{
-					"name": "Получить мероприятие по ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								}
-							]
-						},
-						"description": "Получение информации о конкретном мероприятии по его ID"
-					},
-					"response": []
-				},
-				{
-					"name": "Создать новое мероприятие",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"name\": \"Поездка в горы\",\n    \"description\": \"Поездка в горы на выходных\",\n    \"category_id\": 1,\n    \"members\": {\n        \"user_ids\": [1, 2, 3],\n        \"dummies_names\": [\"Гость 1\", \"Гость 2\"]\n    }\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/event",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event"
-							]
-						},
-						"description": "Создание нового мероприятия"
-					},
-					"response": []
-				},
-				{
-					"name": "Обновить мероприятие",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"name\": \"Обновленное название мероприятия\",\n    \"description\": \"Обновленное описание\",\n    \"category_id\": 2,\n    \"members\": {\n        \"user_ids\": [1, 2, 3, 4],\n        \"dummies_names\": [\"Гость 1\"]\n    }\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия для обновления"
-								}
-							]
-						},
-						"description": "Обновление существующего мероприятия"
-					},
-					"response": []
-				},
-				{
-					"name": "Удалить мероприятие",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия для удаления"
-								}
-							]
-						},
-						"description": "Удаление мероприятия по ID"
-					},
-					"response": []
-				}
-			],
-			"description": "Операции с мероприятиями"
-		},
-		{
-			"name": "Активности (Activities)",
-			"item": [
-				{
-					"name": "Получить все активности мероприятия",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/activity",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"activity"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								}
-							]
-						},
-						"description": "Получение списка всех активностей для конкретного мероприятия"
-					},
-					"response": []
-				},
-				{
-					"name": "Получить активность по ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/activity/:id_activity",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"activity",
-								":id_activity"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								},
-								{
-									"key": "id_activity",
-									"value": "1",
-									"description": "ID активности"
-								}
-							]
-						},
-						"description": "Получение информации о конкретной активности по её ID"
-					},
-					"response": []
-				},
-				{
-					"name": "Создать новую активность",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"user_id\": 1,\n    \"description\": \"Активность в рамках мероприятия\",\n    \"icon_id\": \"icon1\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/activity",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"activity"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								}
-							]
-						},
-						"description": "Создание новой активности для мероприятия"
-					},
-					"response": []
-				},
-				{
-					"name": "Обновить активность",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"user_id\": 2,\n    \"description\": \"Обновленное описание активности\",\n    \"icon_id\": \"icon2\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/activity/:id_activity",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"activity",
-								":id_activity"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								},
-								{
-									"key": "id_activity",
-									"value": "1",
-									"description": "ID активности"
-								}
-							]
-						},
-						"description": "Обновление существующей активности"
-					},
-					"response": []
-				},
-				{
-					"name": "Удалить активность",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/activity/:id_activity",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"activity",
-								":id_activity"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								},
-								{
-									"key": "id_activity",
-									"value": "1",
-									"description": "ID активности"
-								}
-							]
-						},
-						"description": "Удаление активности по ID"
-					},
-					"response": []
-				}
-			],
-			"description": "Операции с активностями мероприятий"
-		},
-		{
-			"name": "Задачи (Tasks)",
-			"item": [
-				{
-					"name": "Получить все задачи мероприятия",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/task",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"task"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								}
-							]
-						},
-						"description": "Получение списка всех задач для конкретного мероприятия"
-					},
-					"response": []
-				},
-				{
-					"name": "Получить задачу по ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/task/:id_task",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"task",
-								":id_task"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								},
-								{
-									"key": "id_task",
-									"value": "1",
-									"description": "ID задачи"
-								}
-							]
-						},
-						"description": "Получение информации о конкретной задаче по её ID"
-					},
-					"response": []
-				},
-				{
-					"name": "Создать новую задачу",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"user_id\": 1,\n    \"title\": \"Купить продукты\",\n    \"description\": \"Нужно купить продукты для мероприятия\",\n    \"priority\": 2\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/task",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"task"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								}
-							]
-						},
-						"description": "Создание новой задачи для мероприятия"
-					},
-					"response": []
-				},
-				{
-					"name": "Обновить задачу",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"user_id\": 2,\n    \"title\": \"Обновленное название задачи\",\n    \"description\": \"Обновленное описание задачи\",\n    \"priority\": 3\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/task/:id_task",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"task",
-								":id_task"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								},
-								{
-									"key": "id_task",
-									"value": "1",
-									"description": "ID задачи"
-								}
-							]
-						},
-						"description": "Обновление существующей задачи"
-					},
-					"response": []
-				},
-				{
-					"name": "Удалить задачу",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/task/:id_task",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"task",
-								":id_task"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								},
-								{
-									"key": "id_task",
-									"value": "1",
-									"description": "ID задачи"
-								}
-							]
-						},
-						"description": "Удаление задачи по ID"
-					},
-					"response": []
-				}
-			],
-			"description": "Операции с задачами мероприятий"
-		},
-		{
-			"name": "Категории (Categories)",
-			"item": [
-				{
-					"name": "Получить все категории",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/category",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"category"
-							]
-						},
-						"description": "Получение списка всех категорий"
-					},
-					"response": []
-				},
-				{
-					"name": "Получить категорию по ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/category/:id",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"category",
-								":id"
-							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "1",
-									"description": "ID категории"
-								}
-							]
-						},
-						"description": "Получение информации о конкретной категории по её ID"
-					},
-					"response": []
-				}
-			],
-			"description": "Операции с категориями"
-		},
-		{
-			"name": "Управление (Management)",
-			"item": [
-				{
-					"name": "Создать категорию",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"name\": \"Новая категория\",\n    \"description\": \"Описание новой категории\",\n    \"icon_id\": \"icon1\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/manage/category",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"manage",
-								"category"
-							]
-						},
-						"description": "Создание новой категории (требуется роль service_admin)"
-					},
-					"response": []
-				},
-				{
-					"name": "Обновить категорию",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"name\": \"Обновленная категория\",\n    \"description\": \"Обновленное описание категории\",\n    \"icon_id\": \"icon2\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/manage/category/:id",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"manage",
-								"category",
-								":id"
-							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "1",
-									"description": "ID категории"
-								}
-							]
-						},
-						"description": "Обновление существующей категории (требуется роль service_admin)"
-					},
-					"response": []
-				},
-				{
-					"name": "Удалить категорию",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/manage/category/:id",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"manage",
-								"category",
-								":id"
-							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "1",
-									"description": "ID категории"
-								}
-							]
-						},
-						"description": "Удаление категории по ID (требуется роль service_admin)"
-					},
-					"response": []
-				},
-				{
-					"name": "Типы категорий",
-					"request": {
-						"method": "OPTIONS",
-						"header": []
-					},
-					"response": []
-				}
-			],
-			"description": "Операции управления, требующие административных прав"
-		},
-		{
-			"name": "Иконки (Icons)",
-			"item": [
-				{
-					"name": "Получить все иконки",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/manage/icons",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"manage",
-								"icons"
-							]
-						},
-						"description": "Получение списка всех иконок"
-					},
-					"response": []
-				},
-				{
-					"name": "Получить иконку по ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/manage/icons/:id",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"manage",
-								"icons",
-								":id"
-							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "1",
-									"description": "ID иконки"
-								}
-							]
-						},
-						"description": "Получение информации о конкретной иконке по её ID"
-					},
-					"response": []
-				},
-				{
-					"name": "Создать новую иконку",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"name\": \"Новая иконка\",\n    \"file_uuid\": \"f7e5e4d3-c2b1-a0b9-8f7e-6d5e4c3b2a10\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/manage/icons",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"manage",
-								"icons"
-							]
-						},
-						"description": "Создание новой иконки (требуется роль service_admin)"
-					},
-					"response": []
-				},
-				{
-					"name": "Обновить иконку",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"name\": \"Обновленная иконка\",\n    \"file_uuid\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/manage/icons/:id",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"manage",
-								"icons",
-								":id"
-							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "1",
-									"description": "ID иконки"
-								}
-							]
-						},
-						"description": "Обновление существующей иконки (требуется роль service_admin)"
-					},
-					"response": []
-				},
-				{
-					"name": "Удалить иконку",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/manage/icons/:id",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"manage",
-								"icons",
-								":id"
-							],
-							"variable": [
-								{
-									"key": "id",
-									"value": "1",
-									"description": "ID иконки"
-								}
-							]
-						},
-						"description": "Удаление иконки по ID (требуется роль service_admin)"
-					},
-					"response": []
-				}
-			],
-			"description": "Операции с иконками"
-		},
-		{
-			"name": "Транзакции (Transactions)",
-			"item": [
-				{
-					"name": "Получить все транзакции мероприятия",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/transaction",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"transaction"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								}
-							]
-						},
-						"description": "Получение списка всех транзакций для конкретного мероприятия"
-					},
-					"response": []
-				},
-				{
-					"name": "Получить транзакцию по ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/transaction/:id_transaction",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"transaction",
-								":id_transaction"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								},
-								{
-									"key": "id_transaction",
-									"value": "1",
-									"description": "ID транзакции"
-								}
-							]
-						},
-						"description": "Получение информации о конкретной транзакции по её ID"
-					},
-					"response": []
-				},
-				{
-					"name": "Создать транзакцию (проценты)",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"type\": \"percent\",\n    \"from_user\": 1,\n    \"amount\": 240.0,\n    \"name\": \"Обед в ресторане\",\n    \"transaction_category_id\": 1,\n    \"portion\": {\n        \"1\": 20,\n        \"2\": 30,\n        \"3\": 50\n    },\n    \"users\": [1, 2, 3],\n    \"metadata\": {\n        \"note\": \"Бизнес-ланч\",\n        \"tags\": [\"еда\", \"ресторан\"]\n    }\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/transaction",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"transaction"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								}
-							]
-						},
-						"description": "Создание новой транзакции с распределением по процентам"
-					},
-					"response": []
-				},
-				{
-					"name": "Создать транзакцию (фикс. суммы)",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"type\": \"amount\",\n    \"from_user\": 1,\n    \"amount\": 240.0,\n    \"name\": \"Поход в кино\",\n    \"transaction_category_id\": 2,\n    \"portion\": {\n        \"1\": 100,\n        \"2\": 40,\n        \"3\": 100\n    },\n    \"users\": [1, 2, 3],\n    \"metadata\": {\n        \"note\": \"Билеты в кино\",\n        \"tags\": [\"развлечения\", \"кино\"]\n    }\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/transaction",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"transaction"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								}
-							]
-						},
-						"description": "Создание новой транзакции с распределением по фиксированным суммам"
-					},
-					"response": []
-				},
-				{
-					"name": "Создать транзакцию (доли)",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"type\": \"units\",\n    \"from_user\": 1,\n    \"amount\": 140.0,\n    \"name\": \"Продукты для пикника\",\n    \"transaction_category_id\": 3,\n    \"portion\": {\n        \"1\": 1,\n        \"2\": 3\n    },\n    \"users\": [1, 2, 3, 4],\n    \"metadata\": {\n        \"note\": \"Продукты для пикника на выходных\",\n        \"tags\": [\"еда\", \"отдых\"]\n    }\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/transaction",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"transaction"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								}
-							]
-						},
-						"description": "Создание новой транзакции с распределением по долям"
-					},
-					"response": []
-				},
-				{
-					"name": "Обновить транзакцию",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"type\": \"percent\",\n    \"from_user\": 1,\n    \"amount\": 300.0,\n    \"name\": \"Обновленное название\",\n    \"transaction_category_id\": 1,\n    \"portion\": {\n        \"1\": 30,\n        \"2\": 30,\n        \"3\": 40\n    },\n    \"users\": [1, 2, 3],\n    \"metadata\": {\n        \"note\": \"Обновленная заметка\",\n        \"tags\": [\"обновлено\", \"еда\"]\n    }\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/transaction/:id_transaction",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"transaction",
-								":id_transaction"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								},
-								{
-									"key": "id_transaction",
-									"value": "1",
-									"description": "ID транзакции"
-								}
-							]
-						},
-						"description": "Обновление существующей транзакции"
-					},
-					"response": []
-				},
-				{
-					"name": "Удалить транзакцию",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/transaction/:id_transaction",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"transaction",
-								":id_transaction"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								},
-								{
-									"key": "id_transaction",
-									"value": "1",
-									"description": "ID транзакции"
-								}
-							]
-						},
-						"description": "Удаление транзакции по ID"
-					},
-					"response": []
-				},
-				{
-					"name": "Получить долги мероприятия",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/debts",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"debts"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								}
-							]
-						},
-						"description": "Получение списка всех долгов в рамках мероприятия"
-					},
-					"response": []
-				},
-				{
-					"name": "Получить оптимизированные долги мероприятия",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/optimized-debts",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"optimized-debts"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								}
-							]
-						},
-						"description": "Получение списка оптимизированных долгов в рамках мероприятия"
-					},
-					"response": []
-				},
-				{
-					"name": "Оптимизировать долги мероприятия",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/optimized-debts",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"optimized-debts"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								}
-							]
-						},
-						"description": "Запуск оптимизации долгов мероприятия и получение результатов"
-					},
-					"response": []
-				},
-				{
-					"name": "Получить оптимизированные долги пользователя",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/user/:id_user/optimized-debts",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"user",
-								":id_user",
-								"optimized-debts"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1",
-									"description": "ID мероприятия"
-								},
-								{
-									"key": "id_user",
-									"value": "1",
-									"description": "ID пользователя"
-								}
-							]
-						},
-						"description": "Получение списка оптимизированных долгов пользователя в рамках мероприятия"
-					},
-					"response": []
-				}
-			],
-			"description": "Операции с транзакциями"
-		},
-		{
-			"name": "Служебные",
-			"item": [
-				{
-					"name": "Проверка работоспособности",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/health",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"health"
-							]
-						},
-						"description": "Проверка работоспособности сервиса"
-					},
-					"response": []
-				}
-			],
-			"description": "Служебные операции"
-		},
-		{
-			"name": "Пользователи (Users)",
-			"item": [
-				{
-					"name": "Получить пользователя по ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/user/:id_user",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"user",
-								":id_user"
-							],
-							"variable": [
-								{
-									"key": "id_user",
-									"value": "1"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Получить пользователей по ID (список)",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"user_ids\": [1, 2, 3]\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/user/list",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"user",
-								"list"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Синхронизировать пользователей с ID-сервисом",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"user_ids\": [1, 2, 3]\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/user/sync",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"user",
-								"sync"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Обновить пользователя",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"name\": \"Новое имя\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/user/:id_user",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"user",
-								":id_user"
-							],
-							"variable": [
-								{
-									"key": "id_user",
-									"value": "1"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Удалить пользователя",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/user/:id_user",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"user",
-								":id_user"
-							],
-							"variable": [
-								{
-									"key": "id_user",
-									"value": "1"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Получить пользователей мероприятия",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/user",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"user"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Добавить пользователей в мероприятие",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"user_ids\": [1, 2, 3]\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/user",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"user"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Удалить пользователя из мероприятия",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/user/:id_user",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"user",
-								":id_user"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1"
-								},
-								{
-									"key": "id_user",
-									"value": "1"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Получить dummy-пользователей мероприятия",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/user/dummies",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"user",
-								"dummies"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Создать dummy-пользователя",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"name\": \"Гость\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/user/dummy",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"user",
-								"dummy"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Создать несколько dummy-пользователей",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"names\": [\"Гость 1\", \"Гость 2\", \"Гость 3\"]\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/v1/event/:id_event/user/dummies",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"v1",
-								"event",
-								":id_event",
-								"user",
-								"dummies"
-							],
-							"variable": [
-								{
-									"key": "id_event",
-									"value": "1"
-								}
-							]
-						}
-					},
-					"response": []
-				}
-			],
-			"protocolProfileBehavior": {}
-		}
-	],
-	"variable": [
-		{
-			"key": "base_url",
-			"value": "http://localhost:8085",
-			"type": "string"
-		},
-		{
-			"key": "id_event",
-			"value": "",
-			"type": "default"
-		}
-	]
+  "info": {
+    "_postman_id": "0f5cf816-134a-429e-898c-8ea6cebc7507",
+    "name": "FinFlow Split API - Integration Tests",
+    "description": "Интеграционные тесты для FinFlow Split Service API на основе актуальной спецификации OpenAPI",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "43146034"
+  },
+  "item": [
+    {
+      "name": "Мероприятия (Events)",
+      "description": "Операции с мероприятиями",
+      "item": [
+        {
+          "name": "Получить все мероприятия - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит список мероприятий', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('events');",
+                  "    pm.expect(jsonData.events).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/event",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "event"]
+            },
+            "description": "Получение списка всех мероприятий"
+          },
+          "response": []
+        },
+        {
+          "name": "Создать мероприятие - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит созданное мероприятие', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('name');",
+                  "    ",
+                  "    // Сохранение ID для последующих тестов",
+                  "    pm.environment.set('event_id', jsonData.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Тестовое мероприятие\",\n    \"description\": \"Описание тестового мероприятия\",\n    \"category_id\": 1,\n    \"members\": {\n        \"user_ids\": [1, 2],\n        \"dummies_names\": [\"Гость 1\"]\n    }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/event",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "event"]
+            },
+            "description": "Создание нового мероприятия"
+          },
+          "response": []
+        },
+        {
+          "name": "Получить мероприятие по ID - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит информацию о мероприятии', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('name');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/event/{{event_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "event", "{{event_id}}"]
+            },
+            "description": "Получение информации о конкретном мероприятии по его ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Получить мероприятие - Не найдено",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит ошибку', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/event/99999",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "event", "99999"]
+            },
+            "description": "Попытка получить несуществующее мероприятие должна вернуть 404."
+          },
+          "response": []
+        },
+        {
+          "name": "Обновить мероприятие - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит обновленное мероприятие', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData.name).to.equal('Обновленное название');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Обновленное название\",\n    \"description\": \"Обновленное описание\",\n    \"category_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/event/{{event_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "event", "{{event_id}}"]
+            },
+            "description": "Обновление существующего мероприятия"
+          },
+          "response": []
+        },
+        {
+          "name": "Удалить мероприятие - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит сообщение об успехе', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success');",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/event/{{event_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "event", "{{event_id}}"]
+            },
+            "description": "Удаление мероприятия по ID"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Транзакции (Transactions)",
+      "description": "Операции с транзакциями",
+      "item": [
+        {
+          "name": "Создать транзакцию - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит созданную транзакцию', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('name');",
+                  "    pm.expect(jsonData).to.have.property('amount');",
+                  "    pm.expect(jsonData).to.have.property('from_user');",
+                  "    ",
+                  "    // Сохранение ID для последующих тестов",
+                  "    pm.environment.set('transaction_id', jsonData.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Обед\",\n    \"amount\": 1000.50,\n    \"from_user\": 1,\n    \"type\": \"amount\",\n    \"users\": [1, 2],\n    \"portion\": {\n        \"1\": 500.25,\n        \"2\": 500.25\n    },\n    \"transaction_category_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/event/{{event_id}}/transaction",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "event", "{{event_id}}", "transaction"]
+            },
+            "description": "Создание новой транзакции в мероприятии"
+          },
+          "response": []
+        },
+        {
+          "name": "Получить транзакции мероприятия - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит список транзакций', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('transactions');",
+                  "    pm.expect(jsonData.transactions).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/event/{{event_id}}/transaction",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "event", "{{event_id}}", "transaction"]
+            },
+            "description": "Получение списка транзакций мероприятия"
+          },
+          "response": []
+        },
+        {
+          "name": "Получить долги мероприятия - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит список долгов', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('debts');",
+                  "    pm.expect(jsonData.debts).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/event/{{event_id}}/debts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "event", "{{event_id}}", "debts"]
+            },
+            "description": "Получение списка долгов мероприятия"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Категории (Categories)",
+      "description": "Операции с категориями",
+      "item": [
+        {
+          "name": "Получить категории - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит список категорий', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('categories');",
+                  "    pm.expect(jsonData.categories).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/category?category_type=event",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "category"],
+              "query": [
+                {
+                  "key": "category_type",
+                  "value": "event"
+                }
+              ]
+            },
+            "description": "Получение списка категорий указанного типа"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Иконки (Icons)",
+      "description": "Операции с иконками",
+      "item": [
+        {
+          "name": "Получить список иконок - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ является массивом иконок', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "    if (jsonData.length > 0) {",
+                  "        pm.expect(jsonData[0]).to.have.property('id');",
+                  "        pm.expect(jsonData[0]).to.have.property('name');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/manage/icons",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "manage", "icons"]
+            },
+            "description": "Получение списка всех иконок"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Глобальные тесты для всех запросов",
+          "pm.test('Время ответа меньше 5 секунд', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test('Content-Type присутствует', function () {",
+          "    pm.expect(pm.response.headers.get('Content-Type')).to.exist;",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8085",
+      "type": "string"
+    }
+  ]
 }

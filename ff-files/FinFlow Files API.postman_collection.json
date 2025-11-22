@@ -1,181 +1,462 @@
 {
-	"info": {
-		"_postman_id": "8aa8f375-8e87-4f9b-a49b-e4a1f221b382",
-		"name": "FinFlow Files API",
-		"description": "API для работы с файлами в FinFlow",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "43146034"
-	},
-	"item": [
-		{
-			"name": "Загрузка файла",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "X-TVM-Ticket",
-						"value": "{{tvm_ticket}}",
-						"type": "text"
-					},
-					{
-						"key": "Content-Type",
-						"value": "multipart/form-data",
-						"type": "text"
-					}
-				],
-				"body": {
-					"mode": "formdata",
-					"formdata": [
-						{
-							"key": "file",
-							"type": "file",
-							"src": []
-						},
-						{
-							"key": "metadata",
-							"value": "{\n    \"description\": \"Описание файла\",\n    \"tags\": [\"важный\", \"документ\"],\n    \"category\": \"финансы\"\n}",
-							"type": "text"
-						}
-					]
-				},
-				"url": {
-					"raw": "{{base_url}}/upload",
-					"host": [
-						"{{base_url}}"
-					],
-					"path": [
-						"upload"
-					]
-				},
-				"description": "Загрузка нового файла. Поддерживаемые типы: изображения, PDF, DOC, DOCX, XLS, XLSX, TXT. Максимальный размер: 100MB. Метаданные передаются в формате JSON"
-			},
-			"response": []
-		},
-		{
-			"name": "Получение файла",
-			"request": {
-				"method": "GET",
-				"header": [
-					{
-						"key": "X-TVM-Ticket",
-						"value": "{{tvm_ticket}}",
-						"type": "text"
-					}
-				],
-				"url": {
-					"raw": "{{base_url}}/files/{{file_id}}",
-					"host": [
-						"{{base_url}}"
-					],
-					"path": [
-						"files",
-						"{{file_id}}"
-					]
-				},
-				"description": "Получение файла по его ID. Файл будет скачан с оригинальным именем"
-			},
-			"response": []
-		},
-		{
-			"name": "Получение метаданных файла",
-			"request": {
-				"method": "GET",
-				"header": [
-					{
-						"key": "X-TVM-Ticket",
-						"value": "{{tvm_ticket}}",
-						"type": "text"
-					}
-				],
-				"url": {
-					"raw": "{{base_url}}/files/{{file_id}}/metadata",
-					"host": [
-						"{{base_url}}"
-					],
-					"path": [
-						"files",
-						"{{file_id}}",
-						"metadata"
-					]
-				},
-				"description": "Получение метаданных файла по его ID. Возвращает информацию о файле, включая размер, тип, владельца и дополнительные метаданные"
-			},
-			"response": []
-		},
-		{
-			"name": "Удаление файла",
-			"request": {
-				"method": "DELETE",
-				"header": [
-					{
-						"key": "X-TVM-Ticket",
-						"value": "{{tvm_ticket}}",
-						"type": "text"
-					}
-				],
-				"url": {
-					"raw": "{{base_url}}/files/{{file_id}}",
-					"host": [
-						"{{base_url}}"
-					],
-					"path": [
-						"files",
-						"{{file_id}}"
-					]
-				},
-				"description": "Удаление файла по его ID. Выполняет мягкое удаление (soft delete)"
-			},
-			"response": []
-		},
-		{
-			"name": "Генерация временной ссылки",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "X-TVM-Ticket",
-						"value": "{{tvm_ticket}}",
-						"type": "text"
-					}
-				],
-				"url": {
-					"raw": "{{base_url}}/files/{{file_id}}/temporary-url?expires_in=3600",
-					"host": [
-						"{{base_url}}"
-					],
-					"path": [
-						"files",
-						"{{file_id}}",
-						"temporary-url"
-					],
-					"query": [
-						{
-							"key": "expires_in",
-							"value": "3600",
-							"description": "Время жизни ссылки в секундах (по умолчанию 1 час)"
-						}
-					]
-				},
-				"description": "Генерация временной ссылки для доступа к файлу. Ссылка действительна указанное время в секундах"
-			},
-			"response": []
-		}
-	],
-	"variable": [
-		{
-			"key": "base_url",
-			"value": "http://localhost:8080",
-			"type": "string"
-		},
-		{
-			"key": "tvm_ticket",
-			"value": "your-tvm-ticket-here",
-			"type": "string"
-		},
-		{
-			"key": "file_id",
-			"value": "26296f14-3f08-4f79-b453-09ebc4eac98d",
-			"type": "default"
-		}
-	]
+  "info": {
+    "_postman_id": "8aa8f375-8e87-4f9b-a49b-e4a1f221b382",
+    "name": "FinFlow Files API - Integration Tests",
+    "description": "Интеграционные тесты для FinFlow Files API на основе актуальной спецификации OpenAPI",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "43146034"
+  },
+  "item": [
+    {
+      "name": "Загрузка файла",
+      "item": [
+        {
+          "name": "Загрузка одного файла - Успешная",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит информацию о загруженном файле', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData.data).to.have.property('object_id');",
+                  "    pm.expect(jsonData.data).to.have.property('link');",
+                  "    ",
+                  "    // Сохранение ID файла для последующих тестов",
+                  "    pm.environment.set('file_id', jsonData.data.object_id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-TVM-Ticket",
+                "value": "{{tvm_ticket}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "metadata",
+                  "value": "{\"description\": \"Тестовый файл\", \"tags\": [\"test\"]}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/files",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files"]
+            },
+            "description": "Загрузка нового файла. Поддерживаемые типы: изображения, PDF, DOC, DOCX, XLS, XLSX, TXT. Максимальный размер: 100MB."
+          },
+          "response": []
+        },
+        {
+          "name": "Загрузка файла - Без TVM тикета",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 401 или 403', function () {",
+                  "    pm.expect([401, 403]).to.include(pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/files",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files"]
+            },
+            "description": "Попытка загрузить файл без TVM тикета должна вернуть ошибку авторизации."
+          },
+          "response": []
+        },
+        {
+          "name": "Загрузка файла - Файл не передан",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит ошибку', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-TVM-Ticket",
+                "value": "{{tvm_ticket}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/files",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files"]
+            },
+            "description": "Попытка загрузить файл без передачи файла должна вернуть 400."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Получение файла",
+      "item": [
+        {
+          "name": "Получить файл по ID - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит ссылку на файл', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData.data).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-TVM-Ticket",
+                "value": "{{tvm_ticket}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/{{file_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", "{{file_id}}"]
+            },
+            "description": "Получение файла по его ID. Возвращает ссылку на файл."
+          },
+          "response": []
+        },
+        {
+          "name": "Получить файл - Не найден",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 500', function () {",
+                  "    pm.response.to.have.status(500);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит ошибку', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-TVM-Ticket",
+                "value": "{{tvm_ticket}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/00000000-0000-0000-0000-000000000000",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", "00000000-0000-0000-0000-000000000000"]
+            },
+            "description": "Попытка получить несуществующий файл должна вернуть ошибку."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Метаданные файла",
+      "item": [
+        {
+          "name": "Получить метаданные файла - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит метаданные', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData.data).to.have.property('file_id');",
+                  "    pm.expect(jsonData.data).to.have.property('filename');",
+                  "    pm.expect(jsonData.data).to.have.property('size');",
+                  "    pm.expect(jsonData.data).to.have.property('content_type');",
+                  "    pm.expect(jsonData.data).to.have.property('upload_date');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-TVM-Ticket",
+                "value": "{{tvm_ticket}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/{{file_id}}/metadata",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", "{{file_id}}", "metadata"]
+            },
+            "description": "Получение метаданных файла по его ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Получить метаданные - Файл не найден",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит ошибку', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-TVM-Ticket",
+                "value": "{{tvm_ticket}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/00000000-0000-0000-0000-000000000000/metadata",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", "00000000-0000-0000-0000-000000000000", "metadata"]
+            },
+            "description": "Попытка получить метаданные несуществующего файла должна вернуть 404."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Временная ссылка",
+      "item": [
+        {
+          "name": "Генерация временной ссылки - Успешная",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит временную ссылку', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData.data).to.have.property('url');",
+                  "    pm.expect(jsonData.data).to.have.property('expires_at');",
+                  "});",
+                  "",
+                  "pm.test('Время истечения в будущем', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const expiresAt = new Date(jsonData.data.expires_at);",
+                  "    const now = new Date();",
+                  "    pm.expect(expiresAt.getTime()).to.be.above(now.getTime());",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-TVM-Ticket",
+                "value": "{{tvm_ticket}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/{{file_id}}/temporary-url?expires_in=3600",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", "{{file_id}}", "temporary-url"],
+              "query": [
+                {
+                  "key": "expires_in",
+                  "value": "3600"
+                }
+              ]
+            },
+            "description": "Генерация временной ссылки для доступа к файлу. Ссылка действительна указанное время в секундах."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Удаление файла",
+      "item": [
+        {
+          "name": "Удалить файл - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит сообщение об успехе', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('status');",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData.message).to.include('deleted successfully');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-TVM-Ticket",
+                "value": "{{tvm_ticket}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/{{file_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", "{{file_id}}"]
+            },
+            "description": "Удаление файла по его ID."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Глобальные тесты для всех запросов",
+          "pm.test('Время ответа меньше 5 секунд', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test('Content-Type присутствует', function () {",
+          "    pm.expect(pm.response.headers.get('Content-Type')).to.exist;",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8082",
+      "type": "string"
+    }
+  ]
 }

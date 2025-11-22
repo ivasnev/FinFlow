@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "FinFlow ID Service",
-    "description": "FinFlow Identity Service API для управления пользователями и их профилями",
+    "name": "FinFlow ID Service - Integration Tests",
+    "description": "Интеграционные тесты для FinFlow ID Service API на основе актуальной спецификации OpenAPI",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "12345678"
   },
@@ -11,28 +11,95 @@
       "description": "Методы для работы с пользователями",
       "item": [
         {
-          "name": "Получение информации о пользователе",
+          "name": "Получение информации о пользователе - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит информацию о пользователе', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('email');",
+                  "    pm.expect(jsonData).to.have.property('nickname');",
+                  "    pm.expect(jsonData).to.have.property('created_at');",
+                  "    pm.expect(jsonData).to.have.property('updated_at');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v1/users/{{nickname}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "users",
-                "{{nickname}}"
-              ]
+              "raw": "{{base_url}}/users/{{nickname}}",
+              "host": ["{{base_url}}"],
+              "path": ["users", "{{nickname}}"]
             },
             "description": "Возвращает информацию о пользователе по его никнейму."
           },
           "response": []
         },
         {
-          "name": "Обновление профиля",
+          "name": "Получение информации о пользователе - Не найден",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит ошибку', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/nonexistent_user_12345",
+              "host": ["{{base_url}}"],
+              "path": ["users", "nonexistent_user_12345"]
+            },
+            "description": "Попытка получить информацию о несуществующем пользователе должна вернуть 404."
+          },
+          "response": []
+        },
+        {
+          "name": "Обновление профиля - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит обновленную информацию', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData).to.have.property('email');",
+                  "    pm.expect(jsonData).to.have.property('nickname');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -53,21 +120,50 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"email\": \"updated@example.com\",\n    \"phone\": \"+79876543210\",\n    \"name\": \"Updated Name\",\n    \"birthdate\": \"1990-01-01T00:00:00Z\",\n    \"password\": \"NewStrongPassword123\"\n}"
+              "raw": "{\n    \"email\": \"updated@example.com\",\n    \"phone\": \"+79876543210\",\n    \"name\": \"Updated Name\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/users/me",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "users",
-                "me"
-              ]
+              "raw": "{{base_url}}/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["users", "me"]
             },
             "description": "Обновляет информацию о текущем пользователе. Все поля являются опциональными."
+          },
+          "response": []
+        },
+        {
+          "name": "Обновление профиля - Без авторизации",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"updated@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Попытка обновления профиля без авторизации должна вернуть 401."
           },
           "response": []
         }
@@ -78,42 +174,58 @@
       "description": "Методы для работы с друзьями пользователей",
       "item": [
         {
-          "name": "Получение списка друзей",
+          "name": "Получение списка друзей - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит структуру пагинации', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('page');",
+                  "    pm.expect(jsonData).to.have.property('page_size');",
+                  "    pm.expect(jsonData).to.have.property('total');",
+                  "    pm.expect(jsonData).to.have.property('objects');",
+                  "    pm.expect(jsonData.objects).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Каждый друг содержит необходимые поля', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.objects.length > 0) {",
+                  "        const friend = jsonData.objects[0];",
+                  "        pm.expect(friend).to.have.property('user_id');",
+                  "        pm.expect(friend).to.have.property('name');",
+                  "        pm.expect(friend).to.have.property('status');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v1/users/{{nickname}}/friends?page=1&page_size=20&friend_name=&status=accepted",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "users",
-                "{{nickname}}",
-                "friends"
-              ],
+              "raw": "{{base_url}}/users/{{nickname}}/friends?page=1&page_size=20&status=accepted",
+              "host": ["{{base_url}}"],
+              "path": ["users", "{{nickname}}", "friends"],
               "query": [
                 {
                   "key": "page",
-                  "value": "1",
-                  "description": "Номер страницы (по умолчанию 1)"
+                  "value": "1"
                 },
                 {
                   "key": "page_size",
-                  "value": "20",
-                  "description": "Количество записей на странице (по умолчанию 20, максимум 100)"
-                },
-                {
-                  "key": "friend_name",
-                  "value": "",
-                  "description": "Фильтр по имени друга (ILIKE поиск)"
+                  "value": "20"
                 },
                 {
                   "key": "status",
-                  "value": "accepted",
-                  "description": "Фильтр по статусу дружбы (accepted, pending, rejected, blocked)"
+                  "value": "accepted"
                 }
               ]
             },
@@ -122,7 +234,26 @@
           "response": []
         },
         {
-          "name": "Отправка заявки в друзья",
+          "name": "Отправка заявки в друзья - Успешная",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит сообщение об успехе', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData.message).to.include('заявка в друзья');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -143,27 +274,73 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"friend_nickname\": \"name123\"\n}"
+              "raw": "{\n    \"friend_nickname\": \"friend123\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/users/me/friends",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "users",
-                "me",
-                "friends"
-              ]
+              "raw": "{{base_url}}/users/me/friends",
+              "host": ["{{base_url}}"],
+              "path": ["users", "me", "friends"]
             },
             "description": "Отправляет заявку в друзья указанному пользователю. Требуется авторизация."
           },
           "response": []
         },
         {
-          "name": "Действие с заявкой в друзья",
+          "name": "Отправка заявки в друзья - Без авторизации",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"friend_nickname\": \"friend123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/me/friends",
+              "host": ["{{base_url}}"],
+              "path": ["users", "me", "friends"]
+            },
+            "description": "Попытка отправить заявку без авторизации должна вернуть 401."
+          },
+          "response": []
+        },
+        {
+          "name": "Действие с заявкой в друзья - Принять",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит сообщение об успехе', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -184,28 +361,89 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"user_id\": 3,\n    \"action\": \"accept\"\n}"
+              "raw": "{\n    \"user_id\": 2,\n    \"action\": \"accept\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/v1/users/me/friends/action",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "users",
-                "me",
-                "friends",
-                "action"
-              ]
+              "raw": "{{base_url}}/users/me/friends/action",
+              "host": ["{{base_url}}"],
+              "path": ["users", "me", "friends", "action"]
             },
             "description": "Выполняет действие над заявкой в друзья. Доступные действия: accept (принять), reject (отклонить), block (заблокировать). Требуется авторизация."
           },
           "response": []
         },
         {
-          "name": "Удаление из друзей",
+          "name": "Действие с заявкой - Невалидное действие",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит ошибку', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"user_id\": 2,\n    \"action\": \"invalid_action\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/me/friends/action",
+              "host": ["{{base_url}}"],
+              "path": ["users", "me", "friends", "action"]
+            },
+            "description": "Попытка выполнить невалидное действие должна вернуть 400."
+          },
+          "response": []
+        },
+        {
+          "name": "Удаление из друзей - Успешное",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит сообщение об успехе', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('message');",
+                  "    pm.expect(jsonData.message).to.include('друг успешно удален');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -220,25 +458,37 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v1/users/me/friends/2",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "users",
-                "me",
-                "friends",
-                "2"
-              ]
+              "raw": "{{base_url}}/users/me/friends/2",
+              "host": ["{{base_url}}"],
+              "path": ["users", "me", "friends", "2"]
             },
             "description": "Удаляет пользователя из списка друзей. Требуется авторизация."
           },
           "response": []
         },
         {
-          "name": "Получение заявок в друзья",
+          "name": "Получение заявок в друзья - Входящие",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит структуру пагинации', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('page');",
+                  "    pm.expect(jsonData).to.have.property('page_size');",
+                  "    pm.expect(jsonData).to.have.property('total');",
+                  "    pm.expect(jsonData).to.have.property('objects');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -253,36 +503,66 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/v1/users/me/friend-requests?incoming=true&page=1&page_size=20",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "users",
-                "me",
-                "friend-requests"
-              ],
+              "raw": "{{base_url}}/users/me/friend-requests?incoming=true&page=1&page_size=20",
+              "host": ["{{base_url}}"],
+              "path": ["users", "me", "friend-requests"],
               "query": [
                 {
                   "key": "incoming",
-                  "value": "true",
-                  "description": "Тип заявок: true - входящие, false - исходящие"
+                  "value": "true"
                 },
                 {
                   "key": "page",
-                  "value": "1",
-                  "description": "Номер страницы (по умолчанию 1)"
+                  "value": "1"
                 },
                 {
                   "key": "page_size",
-                  "value": "20",
-                  "description": "Количество записей на странице (по умолчанию 20, максимум 100)"
+                  "value": "20"
                 }
               ]
             },
             "description": "Возвращает список входящих или исходящих заявок в друзья с поддержкой пагинации. Требуется авторизация."
+          },
+          "response": []
+        },
+        {
+          "name": "Получение заявок в друзья - Без авторизации",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Статус код 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/me/friend-requests?incoming=true&page=1&page_size=20",
+              "host": ["{{base_url}}"],
+              "path": ["users", "me", "friend-requests"],
+              "query": [
+                {
+                  "key": "incoming",
+                  "value": "true"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Попытка получить заявки без авторизации должна вернуть 401."
           },
           "response": []
         }
@@ -294,9 +574,7 @@
       "listen": "prerequest",
       "script": {
         "type": "text/javascript",
-        "exec": [
-          ""
-        ]
+        "exec": [""]
       }
     },
     {
@@ -304,13 +582,14 @@
       "script": {
         "type": "text/javascript",
         "exec": [
-          "// Автоматическое сохранение данных из ответа",
-          "if (pm.response.code === 200 || pm.response.code === 201) {",
-          "    const jsonData = pm.response.json();",
-          "    if (jsonData && jsonData.nickname) {",
-          "        pm.environment.set('nickname', jsonData.nickname);",
-          "    }",
-          "}"
+          "// Глобальные тесты для всех запросов",
+          "pm.test('Время ответа меньше 5 секунд', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test('Content-Type присутствует', function () {",
+          "    pm.expect(pm.response.headers.get('Content-Type')).to.exist;",
+          "});"
         ]
       }
     }
@@ -318,8 +597,8 @@
   "variable": [
     {
       "key": "base_url",
-      "value": "http://localhost:8083",
+      "value": "http://localhost:8083/api/v1",
       "type": "string"
     }
   ]
-} 
+}
