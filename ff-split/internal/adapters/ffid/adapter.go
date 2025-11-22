@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/ivasnev/FinFlow/ff-id/pkg/api"
+	"github.com/ivasnev/FinFlow/ff-split/internal/adapters"
 )
 
 // Adapter - адаптер для работы с ff-id сервисом через сгенерированный клиент
@@ -26,9 +27,9 @@ func NewAdapter(baseURL string, httpClient *http.Client) (*Adapter, error) {
 }
 
 // GetUsersByIDs получает информацию о пользователях по их ID
-func (a *Adapter) GetUsersByIDs(ctx context.Context, userIDs []int64) ([]UserDTO, error) {
+func (a *Adapter) GetUsersByIDs(ctx context.Context, userIDs []int64) ([]adapters.UserDTO, error) {
 	if len(userIDs) == 0 {
-		return []UserDTO{}, nil
+		return []adapters.UserDTO{}, nil
 	}
 
 	params := api.GetUsersByIdsParams{
@@ -52,11 +53,11 @@ func (a *Adapter) GetUsersByIDs(ctx context.Context, userIDs []int64) ([]UserDTO
 	}
 
 	if resp.JSON200 == nil {
-		return []UserDTO{}, nil
+		return []adapters.UserDTO{}, nil
 	}
 
 	// Конвертация из API типов в адаптерные типы
-	users := make([]UserDTO, 0, len(*resp.JSON200))
+	users := make([]adapters.UserDTO, 0, len(*resp.JSON200))
 	for _, apiUser := range *resp.JSON200 {
 		users = append(users, convertUserDTO(&apiUser))
 	}
@@ -65,7 +66,7 @@ func (a *Adapter) GetUsersByIDs(ctx context.Context, userIDs []int64) ([]UserDTO
 }
 
 // GetUserByID получает информацию о пользователе по его ID
-func (a *Adapter) GetUserByID(ctx context.Context, userID int64) (*UserDTO, error) {
+func (a *Adapter) GetUserByID(ctx context.Context, userID int64) (*adapters.UserDTO, error) {
 	users, err := a.GetUsersByIDs(ctx, []int64{userID})
 	if err != nil {
 		return nil, err
@@ -79,14 +80,14 @@ func (a *Adapter) GetUserByID(ctx context.Context, userID int64) (*UserDTO, erro
 }
 
 // convertUserDTO конвертирует API UserDTO в адаптерный UserDTO
-func convertUserDTO(apiUser *api.UserDTO) UserDTO {
+func convertUserDTO(apiUser *api.UserDTO) adapters.UserDTO {
 	var avatarID *string
 	if apiUser.AvatarId != nil {
 		avatarStr := apiUser.AvatarId.String()
 		avatarID = &avatarStr
 	}
 
-	return UserDTO{
+	return adapters.UserDTO{
 		ID:        apiUser.Id,
 		Email:     string(apiUser.Email),
 		Nickname:  apiUser.Nickname,

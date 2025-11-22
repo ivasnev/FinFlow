@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ivasnev/FinFlow/ff-split/internal/adapters/ffid"
+	"github.com/ivasnev/FinFlow/ff-split/internal/adapters"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/slices"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
@@ -17,13 +17,13 @@ import (
 type UserService struct {
 	db             *gorm.DB
 	userRepository repository.User
-	idAdapter      *ffid.Adapter
+	idAdapter      adapters.IDAdapter
 }
 
 // NewUserService создает новый сервис пользователей
 func NewUserService(
 	userRepository repository.User,
-	idAdapter *ffid.Adapter,
+	idAdapter adapters.IDAdapter,
 ) *UserService {
 	return &UserService{
 		userRepository: userRepository,

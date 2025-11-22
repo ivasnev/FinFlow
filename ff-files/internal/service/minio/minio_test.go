@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 	"github.com/ivasnev/FinFlow/ff-files/internal/service"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMinioService_CreateOne(t *testing.T) {
@@ -158,14 +158,14 @@ func TestMinioService_NewMinioService(t *testing.T) {
 		minioService := NewMinioService()
 
 		assert.NotNil(t, minioService)
-		
+
 		// Проверяем, что сервис реализует интерфейс MinIO
 		var _ service.MinIO = minioService
 
 		impl, ok := minioService.(*minioServiceImpl)
 		assert.True(t, ok)
 		assert.NotNil(t, impl)
-		assert.Nil(t, impl.mc) // Клиент еще не инициализирован
+		assert.Nil(t, impl.mc)  // Клиент еще не инициализирован
 		assert.Nil(t, impl.cfg) // Конфигурация еще не установлена
 	})
 }
@@ -201,4 +201,3 @@ func TestMinioService_ErrorHandling(t *testing.T) {
 		assert.Contains(t, err.Error(), "не найден")
 	})
 }
-

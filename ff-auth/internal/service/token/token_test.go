@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/models"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/repository/mock"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestED25519TokenManager_LoadOrGenerateKeys(t *testing.T) {
@@ -232,10 +232,10 @@ func TestED25519TokenManager_ValidateToken(t *testing.T) {
 		tokenBytes, _ := base64.StdEncoding.DecodeString(token)
 		var tokenStruct service.Token
 		json.Unmarshal(tokenBytes, &tokenStruct)
-		
+
 		// Изменяем подпись
 		tokenStruct.Sig[0] ^= 0xFF
-		
+
 		// Кодируем обратно
 		corruptedTokenBytes, _ := json.Marshal(tokenStruct)
 		corruptedToken := base64.StdEncoding.EncodeToString(corruptedTokenBytes)
@@ -296,6 +296,217 @@ func TestED25519TokenManager_GenerateTokenPair(t *testing.T) {
 
 		// Проверяем, что refresh токен живет дольше access токена
 		assert.Greater(t, refreshPayload.Exp, accessPayload.Exp)
+	})
+}
+
+func TestED25519TokenManager_RegenerateKeys(t *testing.T) {
+	t.Run("успешная регенерация ключей без активного ключа в БД", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockRepo := mock.NewMockKeyPair(ctrl)
+
+		// Создаем менеджер с моком
+		manager := &ED25519TokenManager{
+			keyPairRepo:  mockRepo,
+			loadedFromDB: false,
+		}
+
+		// Генерируем тестовые ключи для начальной установки
+		publicKey, privateKey, err := generateTestKeys()
+		if err != nil {
+			t.Fatalf("Ошибка генерации тестовых ключей: %v", err)
+		}
+
+		manager.publicKey = publicKey
+		manager.privateKey = privateKey
+
+		// Когда loadedFromDB == false, GetActive не вызывается
+		mockRepo.EXPECT().
+			Create(context.Background(), gomock.Any()).
+			DoAndReturn(func(ctx context.Context, keyPair *models.KeyPair) error {
+				assert.True(t, keyPair.IsActive)
+				assert.NotEmpty(t, keyPair.PublicKey)
+				assert.NotEmpty(t, keyPair.PrivateKey)
+				return nil
+			}).
+			Times(1)
+
+		err = manager.RegenerateKeys()
+
+		assert.NoError(t, err)
+		assert.NotNil(t, manager.publicKey)
+		assert.NotNil(t, manager.privateKey)
+	})
+
+	t.Run("успешная регенерация ключей с деактивацией старого", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockRepo := mock.NewMockKeyPair(ctrl)
+
+		// Создаем менеджер с моком
+		manager := &ED25519TokenManager{
+			keyPairRepo:  mockRepo,
+			loadedFromDB: true,
+		}
+
+		// Генерируем тестовые ключи для начальной установки
+		publicKey, privateKey, err := generateTestKeys()
+		if err != nil {
+			t.Fatalf("Ошибка генерации тестовых ключей: %v", err)
+		}
+
+		manager.publicKey = publicKey
+		manager.privateKey = privateKey
+
+		oldKeyPair := &models.KeyPair{
+			ID:         1,
+			PublicKey:  "old-public-key",
+			PrivateKey: "old-private-key",
+			IsActive:   true,
+		}
+
+		mockRepo.EXPECT().
+			GetActive(context.Background()).
+			Return(oldKeyPair, nil).
+			Times(1)
+
+		mockRepo.EXPECT().
+			Update(context.Background(), gomock.Any()).
+			DoAndReturn(func(ctx context.Context, keyPair *models.KeyPair) error {
+				assert.False(t, keyPair.IsActive)
+				return nil
+			}).
+			Times(1)
+
+		mockRepo.EXPECT().
+			Create(context.Background(), gomock.Any()).
+			DoAndReturn(func(ctx context.Context, keyPair *models.KeyPair) error {
+				assert.True(t, keyPair.IsActive)
+				assert.NotEmpty(t, keyPair.PublicKey)
+				assert.NotEmpty(t, keyPair.PrivateKey)
+				return nil
+			}).
+			Times(1)
+
+		err = manager.RegenerateKeys()
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("ошибка получения активного ключа", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockRepo := mock.NewMockKeyPair(ctrl)
+
+		// Создаем менеджер с моком
+		manager := &ED25519TokenManager{
+			keyPairRepo:  mockRepo,
+			loadedFromDB: true,
+		}
+
+		// Генерируем тестовые ключи для начальной установки
+		publicKey, privateKey, err := generateTestKeys()
+		if err != nil {
+			t.Fatalf("Ошибка генерации тестовых ключей: %v", err)
+		}
+
+		manager.publicKey = publicKey
+		manager.privateKey = privateKey
+
+		expectedErr := errors.New("database error")
+		mockRepo.EXPECT().
+			GetActive(context.Background()).
+			Return(nil, expectedErr).
+			Times(1)
+
+		err = manager.RegenerateKeys()
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "ошибка при получении текущего активного ключа")
+	})
+
+	t.Run("ошибка деактивации старого ключа", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockRepo := mock.NewMockKeyPair(ctrl)
+
+		// Создаем менеджер с моком
+		manager := &ED25519TokenManager{
+			keyPairRepo:  mockRepo,
+			loadedFromDB: true,
+		}
+
+		// Генерируем тестовые ключи для начальной установки
+		publicKey, privateKey, err := generateTestKeys()
+		if err != nil {
+			t.Fatalf("Ошибка генерации тестовых ключей: %v", err)
+		}
+
+		manager.publicKey = publicKey
+		manager.privateKey = privateKey
+
+		oldKeyPair := &models.KeyPair{
+			ID:         1,
+			PublicKey:  "old-public-key",
+			PrivateKey: "old-private-key",
+			IsActive:   true,
+		}
+
+		expectedErr := errors.New("update error")
+
+		mockRepo.EXPECT().
+			GetActive(context.Background()).
+			Return(oldKeyPair, nil).
+			Times(1)
+
+		mockRepo.EXPECT().
+			Update(context.Background(), gomock.Any()).
+			Return(expectedErr).
+			Times(1)
+
+		err = manager.RegenerateKeys()
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "ошибка при деактивации текущего ключа")
+	})
+
+	t.Run("ошибка создания нового ключа", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockRepo := mock.NewMockKeyPair(ctrl)
+
+		// Создаем менеджер с моком
+		manager := &ED25519TokenManager{
+			keyPairRepo:  mockRepo,
+			loadedFromDB: false,
+		}
+
+		// Генерируем тестовые ключи для начальной установки
+		publicKey, privateKey, err := generateTestKeys()
+		if err != nil {
+			t.Fatalf("Ошибка генерации тестовых ключей: %v", err)
+		}
+
+		manager.publicKey = publicKey
+		manager.privateKey = privateKey
+
+		expectedErr := errors.New("create error")
+
+		// Когда loadedFromDB == false, GetActive не вызывается
+		mockRepo.EXPECT().
+			Create(context.Background(), gomock.Any()).
+			Return(expectedErr).
+			Times(1)
+
+		err = manager.RegenerateKeys()
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "ошибка при сохранении ключей в БД")
 	})
 }
 
