@@ -21,6 +21,11 @@ func (o *Optimizer) Optimize(debts []optimizers.Transfer) ([]optimizers.Transfer
 		return nil, nil
 	}
 
+	debts, err := optimizers.CollapseTransfers(debts)
+	if err != nil {
+		return nil, err
+	}
+
 	balances, err := optimizers.Balances(debts)
 	if err != nil {
 		return nil, err

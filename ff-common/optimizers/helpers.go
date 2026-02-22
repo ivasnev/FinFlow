@@ -1,6 +1,7 @@
 package optimizers
 
 import (
+	"errors"
 	"sort"
 )
 
@@ -55,4 +56,36 @@ func TransferMatrix(transfers []Transfer) map[string]map[string]int {
 		matrix[tr.From][tr.To] += tr.Amount
 	}
 	return matrix
+}
+
+// CollapseTransfers схлопывает долговые обязательства
+func CollapseTransfers(transfers []Transfer) ([]Transfer, error) {
+	net := make(map[string]map[string]int)
+	for _, tr := range transfers {
+		if tr.Amount <= 0 {
+			return nil, errors.New("negative transfer amount")
+		}
+		if net[tr.From] == nil {
+			net[tr.From] = make(map[string]int)
+		}
+		if net[tr.To] == nil {
+			net[tr.To] = make(map[string]int)
+		}
+		net[tr.From][tr.To] += tr.Amount
+		net[tr.To][tr.From] -= tr.Amount
+	}
+
+	var out []Transfer
+	for from, toMap := range net {
+		for to, amount := range toMap {
+			if from == to {
+				continue
+			}
+			if amount <= 0 {
+				continue
+			}
+			out = append(out, Transfer{From: from, To: to, Amount: amount})
+		}
+	}
+	return out, nil
 }
