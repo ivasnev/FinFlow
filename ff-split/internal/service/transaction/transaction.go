@@ -7,10 +7,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/ivasnev/FinFlow/ff-common/optimizers"
+	"github.com/ivasnev/FinFlow/ff-common/optimizers/dinic"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
-	"github.com/ivasnev/FinFlow/ff-split/internal/service/debs_optimizer"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service/debt_calculator"
 	"gorm.io/gorm"
 )
@@ -427,56 +428,46 @@ func (s *TransactionService) OptimizeDebts(ctx context.Context, eventID int64) (
 		return nil, err
 	}
 
-	// Формируем структуру для оптимизатора
-	debtMap := make(map[string]map[string]int)
+	// Собираем переводы для оптимизатора (From — должник, To — кредитор)
+	transfers := make([]optimizers.Transfer, 0, len(debts))
 	for _, debt := range debts {
-		fromUserID := strconv.FormatInt(debt.FromUserID, 10)
-		toUserID := strconv.FormatInt(debt.ToUserID, 10)
-
-		if _, exists := debtMap[toUserID]; !exists {
-			debtMap[toUserID] = make(map[string]int)
-		}
-
-		// Округляем до целых для алгоритма оптимизации
-		amount := int(math.Round(debt.Amount))
-		debtMap[toUserID][fromUserID] += amount
+		transfers = append(transfers, optimizers.Transfer{
+			From:   strconv.FormatInt(debt.FromUserID, 10),
+			To:     strconv.FormatInt(debt.ToUserID, 10),
+			Amount: int(math.Round(debt.Amount)),
+		})
 	}
 
-	// Оптимизируем долги
-	optimizedDebts := debs_optimizer.SimplifyDebts(debtMap)
+	optimized, err := dinic.New().Optimize(transfers)
+	if err != nil {
+		return nil, err
+	}
 
-	// Преобразуем результат в модель и DTO
-	result := make([]service.OptimizedDebtDTO, 0)
-	modelsToSave := make([]models.OptimizedDebt, 0)
+	result := make([]service.OptimizedDebtDTO, 0, len(optimized))
+	modelsToSave := make([]models.OptimizedDebt, 0, len(optimized))
 
-	for creditor, debtors := range optimizedDebts {
-		for debtor, amount := range debtors {
-			if amount <= 0 {
-				continue
-			}
-
-			creditorID, _ := strconv.ParseInt(creditor, 10, 64)
-			debtorID, _ := strconv.ParseInt(debtor, 10, 64)
-
-			// Создаем модель для сохранения
-			optimizedDebt := models.OptimizedDebt{
-				EventID:    eventID,
-				FromUserID: debtorID,
-				ToUserID:   creditorID,
-				Amount:     float64(amount),
-				CreatedAt:  time.Now(),
-				UpdatedAt:  time.Now(),
-			}
-			modelsToSave = append(modelsToSave, optimizedDebt)
-
-			// Создаем DTO для ответа
-			result = append(result, service.OptimizedDebtDTO{
-				FromUserID: debtorID,
-				ToUserID:   creditorID,
-				Amount:     float64(amount),
-				EventID:    eventID,
-			})
+	for _, t := range optimized {
+		if t.Amount <= 0 {
+			continue
 		}
+
+		fromID, _ := strconv.ParseInt(t.From, 10, 64)
+		toID, _ := strconv.ParseInt(t.To, 10, 64)
+
+		modelsToSave = append(modelsToSave, models.OptimizedDebt{
+			EventID:    eventID,
+			FromUserID: fromID,
+			ToUserID:   toID,
+			Amount:     float64(t.Amount),
+			CreatedAt:  time.Now(),
+			UpdatedAt:  time.Now(),
+		})
+		result = append(result, service.OptimizedDebtDTO{
+			FromUserID: fromID,
+			ToUserID:   toID,
+			Amount:     float64(t.Amount),
+			EventID:    eventID,
+		})
 	}
 
 	// Сохраняем оптимизированные долги в базе

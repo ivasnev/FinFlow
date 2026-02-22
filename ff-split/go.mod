@@ -5,9 +5,11 @@ go 1.24.1
 require (
 	github.com/getkin/kin-openapi v0.132.0
 	github.com/gin-gonic/gin v1.11.0
+	github.com/go-chi/chi/v5 v5.2.3
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
 	github.com/ivasnev/FinFlow/ff-auth v0.0.0-20250504201029-2ca23769db6b
+	github.com/ivasnev/FinFlow/ff-common v0.0.0
 	github.com/ivasnev/FinFlow/ff-id v0.0.0-20251017195907-10b567d553d4
 	github.com/ivasnev/FinFlow/ff-tvm v0.0.0-20251017195907-10b567d553d4
 	github.com/jackc/pgconn v1.14.3
@@ -50,7 +52,6 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.10 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
-	github.com/go-chi/chi/v5 v5.2.3 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -129,6 +130,8 @@ require (
 )
 
 replace github.com/ivasnev/FinFlow/ff-auth => ../ff-auth
+
+replace github.com/ivasnev/FinFlow/ff-common => ../ff-common
 
 replace github.com/ivasnev/FinFlow/ff-id => ../ff-id
 
