@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/ivasnev/FinFlow/ff-common/optimizers"
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/dinic"
@@ -45,32 +46,45 @@ func RandomTransfers(nodes, transactions int, seed int64, maxAmount int) []optim
 }
 
 type benchmarkMetrics struct {
-	reductions  int
-	valid       int
-	sumLenRaw   int64
-	sumLenInput int64
-	iterations  int
+	reductions       int   // среди валидных: число случаев, где len(result) < len(input)
+	valid            int   // count of valid results (Validate(...).Valid == true)
+	collapseOK       int   // раз удалось получить input после collapse (len>0, err==nil)
+	optimizeOK       int   // раз Optimize вернул без ошибки
+	sumLenRaw        int64
+	sumLenInput      int64
+	sumInputLenValid int64 // сумма len(input) по валидным итерациям (для reduction_len_pct)
+	sumSaved         int64 // сумма (len(input)-len(result)) по валидным; может быть < 0
+	sumCollapseNs    int64 // суммарное время collapse по всем b.N итерациям
+	sumOptimizeNs    int64 // суммарное время optimize по всем вызовам (collapseOK раз)
 }
 
 func runOptimizerBenchmark(b *testing.B, opt optimizers.Optimizer, v *validator.Validator, nodes, trans int, seed int64) benchmarkMetrics {
 	var m benchmarkMetrics
 	for i := 0; i < b.N; i++ {
 		raw := RandomTransfers(nodes, trans, seed+int64(i), 500)
+		startCollapse := time.Now()
 		input, err := optimizers.CollapseTransfers(raw)
+		m.sumCollapseNs += time.Since(startCollapse).Nanoseconds()
 		if err != nil || len(input) == 0 {
 			continue
 		}
+		m.collapseOK++
 		m.sumLenRaw += int64(len(raw))
 		m.sumLenInput += int64(len(input))
-		m.iterations++
 
+		startOptimize := time.Now()
 		result, err := opt.Optimize(input)
+		m.sumOptimizeNs += time.Since(startOptimize).Nanoseconds()
 		if err != nil {
 			continue
 		}
+		m.optimizeOK++
 		report := v.Validate(input, result)
 		if report.Valid {
 			m.valid++
+			m.sumInputLenValid += int64(len(input))
+			saved := int64(len(input) - len(result)) // честно: может быть < 0 (ухудшение)
+			m.sumSaved += saved
 			if len(result) < len(input) {
 				m.reductions++
 			}
@@ -80,14 +94,39 @@ func runOptimizerBenchmark(b *testing.B, opt optimizers.Optimizer, v *validator.
 }
 
 func reportBenchmarkMetrics(b *testing.B, m benchmarkMetrics) {
-	if m.iterations > 0 {
-		b.ReportMetric(float64(m.sumLenInput)/float64(m.iterations), "input_after_collapse")
+	var inputAfter float64
+	var collapsePct float64
+	if m.collapseOK > 0 {
+		inputAfter = float64(m.sumLenInput) / float64(m.collapseOK)
 		if m.sumLenRaw > 0 {
-			b.ReportMetric((1-float64(m.sumLenInput)/float64(m.sumLenRaw))*100, "collapse_pct")
+			collapsePct = (1 - float64(m.sumLenInput)/float64(m.sumLenRaw)) * 100
 		}
 	}
-	b.ReportMetric(float64(m.reductions)/float64(b.N)*100, "reduction_pct")
-	b.ReportMetric(float64(m.valid)/float64(b.N)*100, "valid_pct")
+	b.ReportMetric(inputAfter, "input_after_collapse")
+	b.ReportMetric(collapsePct, "collapse_pct")
+	// collapse меряем на всех b.N итерациях; optimize — только при успешном collapse (collapseOK раз)
+	collapseNs := float64(m.sumCollapseNs) / float64(b.N)
+	optimizeNs := float64(0)
+	if m.collapseOK > 0 {
+		optimizeNs = float64(m.sumOptimizeNs) / float64(m.collapseOK)
+	}
+	b.ReportMetric(collapseNs, "collapse_ns_per_op")
+	b.ReportMetric(optimizeNs, "optimize_ns_per_op")
+	reduceSuccess := float64(0)
+	if m.valid > 0 {
+		reduceSuccess = float64(m.reductions) / float64(m.valid) * 100
+	}
+	b.ReportMetric(reduceSuccess, "reduce_success_pct")
+	reductionLen := float64(0)
+	if m.sumInputLenValid > 0 {
+		reductionLen = float64(m.sumSaved) / float64(m.sumInputLenValid) * 100
+	}
+	b.ReportMetric(reductionLen, "reduction_len_pct")
+	validPct := float64(0)
+	if m.optimizeOK > 0 {
+		validPct = float64(m.valid) / float64(m.optimizeOK) * 100
+	}
+	b.ReportMetric(validPct, "valid_pct")
 }
 
 func BenchmarkRandom_Greedy(b *testing.B) {
@@ -117,6 +156,9 @@ func BenchmarkRandom_EdmondsKarp(b *testing.B) {
 	reportBenchmarkMetrics(b, m)
 }
 
+// nodesForSweep — набор узлов для sweep-бенчмарка.
+var nodesForSweep = []int{5, 10, 25, 50, 100, 200}
+
 // transValuesForSweep возвращает слайс размеров транзакций для sweep-бенчмарка:
 // 10..100 с шагом 10, затем 1000..10000 с шагом 1000.
 func transValuesForSweep() []int {
@@ -132,11 +174,8 @@ func transValuesForSweep() []int {
 
 func runSweepBenchmark(b *testing.B, opt optimizers.Optimizer, v *validator.Validator, seed int64) {
 	transValues := transValuesForSweep()
-	for nodes := 5; nodes <= 200; nodes += 15 {
+	for _, nodes := range nodesForSweep {
 		for _, trans := range transValues {
-			if trans > nodes*(nodes-1) {
-				continue
-			}
 			nodes, trans := nodes, trans
 			name := fmt.Sprintf("nodes=%d_trans=%d", nodes, trans)
 			b.Run(name, func(b *testing.B) {
