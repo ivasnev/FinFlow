@@ -3,8 +3,8 @@ package dinic
 import (
 	"testing"
 
-	"github.com/ivasnev/FinFlow/ff-common/optimizers/testutil"
-	"github.com/ivasnev/FinFlow/ff-common/optimizers/validator"
+	"github.com/ivasnev/FinFlow/ff-common/optimizers/tests/testutil"
+	"github.com/ivasnev/FinFlow/ff-common/optimizers/utils/validator"
 )
 
 func TestDinicDirectSuccess(t *testing.T) {

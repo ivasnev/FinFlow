@@ -3,9 +3,12 @@ package edmonds_karp
 import (
 	"testing"
 
-	"github.com/ivasnev/FinFlow/ff-common/optimizers/testutil"
-	"github.com/ivasnev/FinFlow/ff-common/optimizers/validator"
+	"github.com/ivasnev/FinFlow/ff-common/optimizers"
+	"github.com/ivasnev/FinFlow/ff-common/optimizers/tests/testutil"
+	"github.com/ivasnev/FinFlow/ff-common/optimizers/utils/validator"
 )
+
+var _ optimizers.Optimizer = (*Optimizer)(nil)
 
 func TestEdmondsKarpDirectSuccess(t *testing.T) {
 	opt := New()

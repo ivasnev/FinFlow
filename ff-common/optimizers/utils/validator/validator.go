@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ivasnev/FinFlow/ff-common/optimizers"
+	"github.com/ivasnev/FinFlow/ff-common/optimizers/utils"
 )
 
 const (
@@ -108,13 +109,13 @@ func (v *Validator) Validate(original, optimized []optimizers.Transfer) Report {
 
 // validateBalances проверяет, что балансы всех участников одинаковы до и после оптимизации.
 func (v *Validator) validateBalances(original, optimized []optimizers.Transfer, addViolation func(string, string)) {
-	origBalances, err := optimizers.Balances(original)
+	origBalances, err := utils.Balances(original)
 	if err != nil {
 		addViolation(CriterionBalances, fmt.Sprintf("ошибка вычисления балансов original: %v", err))
 		return
 	}
 
-	optBalances, err := optimizers.Balances(optimized)
+	optBalances, err := utils.Balances(optimized)
 	if err != nil {
 		addViolation(CriterionBalances, fmt.Sprintf("ошибка вычисления балансов optimized: %v", err))
 		return
@@ -142,8 +143,8 @@ func (v *Validator) validateBalances(original, optimized []optimizers.Transfer, 
 
 // validateNoNewDebts проверяет, что не создаются новые долговые связи.
 func (v *Validator) validateNoNewDebts(original, optimized []optimizers.Transfer, addViolation func(string, string)) {
-	origMatrix := optimizers.TransferMatrix(original)
-	optMatrix := optimizers.TransferMatrix(optimized)
+	origMatrix := utils.TransferMatrix(original)
+	optMatrix := utils.TransferMatrix(optimized)
 
 	for from, toMap := range optMatrix {
 		for to, amount := range toMap {

@@ -8,8 +8,8 @@ import (
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/dinic"
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/edmonds_karp"
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/greedy"
-	"github.com/ivasnev/FinFlow/ff-common/optimizers/testutil"
-	"github.com/ivasnev/FinFlow/ff-common/optimizers/validator"
+	"github.com/ivasnev/FinFlow/ff-common/optimizers/tests/testutil"
+	"github.com/ivasnev/FinFlow/ff-common/optimizers/utils/validator"
 )
 
 func assertOptimizerValid(t *testing.T, debts []optimizers.Transfer, opt optimizers.Optimizer, v *validator.Validator) {

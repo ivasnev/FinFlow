@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ivasnev/FinFlow/ff-common/optimizers"
+	"github.com/ivasnev/FinFlow/ff-common/optimizers/utils"
 )
 
 // Optimizer реализует жадный алгоритм оптимизации долгов.
@@ -21,17 +22,17 @@ func (o *Optimizer) Optimize(debts []optimizers.Transfer) ([]optimizers.Transfer
 		return nil, nil
 	}
 
-	debts, err := optimizers.CollapseTransfers(debts)
+	debts, err := utils.CollapseTransfers(debts)
 	if err != nil {
 		return nil, err
 	}
 
-	balances, err := optimizers.Balances(debts)
+	balances, err := utils.Balances(debts)
 	if err != nil {
 		return nil, err
 	}
 
-	allowed := optimizers.TransferMatrix(debts)
+	allowed := utils.TransferMatrix(debts)
 	remaining := make(map[string]int, len(balances))
 	for k, v := range balances {
 		remaining[k] = v
@@ -45,7 +46,7 @@ func (o *Optimizer) Optimize(debts []optimizers.Transfer) ([]optimizers.Transfer
 		}
 	}
 
-	users := optimizers.Users(debts)
+	users := utils.Users(debts)
 	var transfers []optimizers.Transfer
 
 	for {

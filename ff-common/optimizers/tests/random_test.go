@@ -10,7 +10,8 @@ import (
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/dinic"
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/edmonds_karp"
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/greedy"
-	"github.com/ivasnev/FinFlow/ff-common/optimizers/validator"
+	"github.com/ivasnev/FinFlow/ff-common/optimizers/utils"
+	"github.com/ivasnev/FinFlow/ff-common/optimizers/utils/validator"
 )
 
 // RandomTransfers генерирует случайный набор переводов: n узлов (имена "0".."n-1"),
@@ -63,7 +64,7 @@ func runOptimizerBenchmark(b *testing.B, opt optimizers.Optimizer, v *validator.
 	for i := 0; i < b.N; i++ {
 		raw := RandomTransfers(nodes, trans, seed+int64(i), 500)
 		startCollapse := time.Now()
-		input, err := optimizers.CollapseTransfers(raw)
+		input, err := utils.CollapseTransfers(raw)
 		m.sumCollapseNs += time.Since(startCollapse).Nanoseconds()
 		if err != nil || len(input) == 0 {
 			continue
@@ -218,7 +219,7 @@ func TestRandomTransfers(t *testing.T) {
 
 func TestRandomTransfers_CollapseThenOptimize(t *testing.T) {
 	raw := RandomTransfers(8, 30, 42, 200)
-	input, err := optimizers.CollapseTransfers(raw)
+	input, err := utils.CollapseTransfers(raw)
 	if err != nil {
 		t.Fatalf("collapse: %v", err)
 	}
