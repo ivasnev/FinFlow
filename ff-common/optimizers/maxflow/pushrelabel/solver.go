@@ -46,13 +46,14 @@ func (Solver) GetMaxFlow(g *maxflow.Graph, source, sink int) int {
 
 	maxIter := maxIterMultiplier * n * n * (n + 1) // O(n³), защита от бесконечного цикла
 	iter := 0
+	current := make([]int, 0, n) // переиспользуемый буфер, чтобы не аллоцировать на каждой итерации
 	for {
 		if iter >= maxIter {
 			panic(fmt.Sprintf("pushrelabel: превышен лимит итераций %d (n=%d); возможна ошибка в графе или в алгоритме", maxIter, n))
 		}
 		iter++
 
-		current := findMaxHeightVertices(excess, height, source, sink)
+		current = findMaxHeightVerticesReuse(current, excess, height, source, sink)
 		if len(current) == 0 {
 			break
 		}
@@ -90,8 +91,9 @@ func (Solver) GetMaxFlow(g *maxflow.Graph, source, sink int) int {
 	return excess[sink]
 }
 
-func findMaxHeightVertices(excess, height []int, source, sink int) []int {
-	var out []int
+// findMaxHeightVerticesReuse заполняет buf вершинами с максимальной высотой и положительным excess; buf переиспользуется.
+func findMaxHeightVerticesReuse(buf []int, excess, height []int, source, sink int) []int {
+	buf = buf[:0]
 	maxH := -1
 	for i := range excess {
 		if i == source || i == sink || excess[i] <= 0 {
@@ -100,13 +102,13 @@ func findMaxHeightVertices(excess, height []int, source, sink int) []int {
 		h := height[i]
 		if h > maxH {
 			maxH = h
-			out = out[:0]
+			buf = buf[:0]
 		}
 		if h == maxH {
-			out = append(out, i)
+			buf = append(buf, i)
 		}
 	}
-	return out
+	return buf
 }
 
 func relabel(g *maxflow.Graph, u int, height []int, inf int) {
