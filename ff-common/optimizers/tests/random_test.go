@@ -10,6 +10,11 @@ import (
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/dinic"
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/edmonds_karp"
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/greedy"
+	"github.com/ivasnev/FinFlow/ff-common/optimizers/interactive_maxflow"
+	mfd "github.com/ivasnev/FinFlow/ff-common/optimizers/maxflow/dinic"
+	mfek "github.com/ivasnev/FinFlow/ff-common/optimizers/maxflow/edmondskarp"
+	mfpr "github.com/ivasnev/FinFlow/ff-common/optimizers/maxflow/pushrelabel"
+	optpr "github.com/ivasnev/FinFlow/ff-common/optimizers/pushrelabel"
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/utils"
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/utils/validator"
 )
@@ -157,6 +162,42 @@ func BenchmarkRandom_EdmondsKarp(b *testing.B) {
 	reportBenchmarkMetrics(b, m)
 }
 
+func BenchmarkRandom_PushRelabel(b *testing.B) {
+	opt := optpr.New()
+	v := validator.NewValidator(validator.WithAllChecks())
+	const nodes, trans = 20, 4000
+	seed := int64(12345)
+	m := runOptimizerBenchmark(b, opt, v, nodes, trans, seed)
+	reportBenchmarkMetrics(b, m)
+}
+
+func BenchmarkRandom_InteractiveMaxflow_Dinic(b *testing.B) {
+	opt := interactive_maxflow.New(mfd.Solver{})
+	v := validator.NewValidator(validator.WithAllChecks())
+	const nodes, trans = 20, 4000
+	seed := int64(12345)
+	m := runOptimizerBenchmark(b, opt, v, nodes, trans, seed)
+	reportBenchmarkMetrics(b, m)
+}
+
+func BenchmarkRandom_InteractiveMaxflow_EdmondsKarp(b *testing.B) {
+	opt := interactive_maxflow.New(mfek.Solver{})
+	v := validator.NewValidator(validator.WithAllChecks())
+	const nodes, trans = 20, 4000
+	seed := int64(12345)
+	m := runOptimizerBenchmark(b, opt, v, nodes, trans, seed)
+	reportBenchmarkMetrics(b, m)
+}
+
+func BenchmarkRandom_InteractiveMaxflow_PushRelabel(b *testing.B) {
+	opt := interactive_maxflow.New(mfpr.Solver{})
+	v := validator.NewValidator(validator.WithAllChecks())
+	const nodes, trans = 20, 4000
+	seed := int64(12345)
+	m := runOptimizerBenchmark(b, opt, v, nodes, trans, seed)
+	reportBenchmarkMetrics(b, m)
+}
+
 // nodesForSweep — набор узлов для sweep-бенчмарка.
 var nodesForSweep = []int{5, 10, 25, 50, 100, 200}
 
@@ -201,6 +242,30 @@ func BenchmarkRandom_Sweep_Dinic(b *testing.B) {
 
 func BenchmarkRandom_Sweep_EdmondsKarp(b *testing.B) {
 	opt := edmonds_karp.New()
+	v := validator.NewValidator(validator.WithAllChecks())
+	runSweepBenchmark(b, opt, v, 12345)
+}
+
+func BenchmarkRandom_Sweep_PushRelabel(b *testing.B) {
+	opt := optpr.New()
+	v := validator.NewValidator(validator.WithAllChecks())
+	runSweepBenchmark(b, opt, v, 12345)
+}
+
+func BenchmarkRandom_Sweep_InteractiveMaxflow_Dinic(b *testing.B) {
+	opt := interactive_maxflow.New(mfd.Solver{})
+	v := validator.NewValidator(validator.WithAllChecks())
+	runSweepBenchmark(b, opt, v, 12345)
+}
+
+func BenchmarkRandom_Sweep_InteractiveMaxflow_EdmondsKarp(b *testing.B) {
+	opt := interactive_maxflow.New(mfek.Solver{})
+	v := validator.NewValidator(validator.WithAllChecks())
+	runSweepBenchmark(b, opt, v, 12345)
+}
+
+func BenchmarkRandom_Sweep_InteractiveMaxflow_PushRelabel(b *testing.B) {
+	opt := interactive_maxflow.New(mfpr.Solver{})
 	v := validator.NewValidator(validator.WithAllChecks())
 	runSweepBenchmark(b, opt, v, 12345)
 }
