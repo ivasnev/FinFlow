@@ -8,6 +8,10 @@ import (
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/dinic"
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/edmonds_karp"
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/greedy"
+	"github.com/ivasnev/FinFlow/ff-common/optimizers/interactive_maxflow"
+	mfd "github.com/ivasnev/FinFlow/ff-common/optimizers/maxflow/dinic"
+	mfpr "github.com/ivasnev/FinFlow/ff-common/optimizers/maxflow/pushrelabel"
+	optpr "github.com/ivasnev/FinFlow/ff-common/optimizers/pushrelabel"
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/tests/testutil"
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/utils/validator"
 )
@@ -55,6 +59,48 @@ func TestDinicOptimizer(t *testing.T) {
 
 func TestEdmondsKarpOptimizer(t *testing.T) {
 	opt := edmonds_karp.New()
+	v := validator.NewValidator(validator.WithAllChecks())
+	t.Run("direct_simple", func(t *testing.T) {
+		assertOptimizerValid(t, testutil.DebtsDirectSimple(), opt, v)
+	})
+	t.Run("needs_intermediate", func(t *testing.T) {
+		assertOptimizerValid(t, testutil.DebtsNeedsIntermediate(), opt, v)
+	})
+	t.Run("complex_graph", func(t *testing.T) {
+		assertOptimizerValid(t, testutil.DebtsComplexGraph(), opt, v)
+	})
+}
+
+func TestInteractiveMaxflowOptimizer(t *testing.T) {
+	opt := interactive_maxflow.New(mfd.Solver{})
+	v := validator.NewValidator(validator.WithAllChecks())
+	t.Run("direct_simple", func(t *testing.T) {
+		assertOptimizerValid(t, testutil.DebtsDirectSimple(), opt, v)
+	})
+	t.Run("needs_intermediate", func(t *testing.T) {
+		assertOptimizerValid(t, testutil.DebtsNeedsIntermediate(), opt, v)
+	})
+	t.Run("complex_graph", func(t *testing.T) {
+		assertOptimizerValid(t, testutil.DebtsComplexGraph(), opt, v)
+	})
+}
+
+func TestInteractiveMaxflowOptimizer_PushRelabel(t *testing.T) {
+	opt := interactive_maxflow.New(mfpr.Solver{})
+	v := validator.NewValidator(validator.WithAllChecks())
+	t.Run("direct_simple", func(t *testing.T) {
+		assertOptimizerValid(t, testutil.DebtsDirectSimple(), opt, v)
+	})
+	t.Run("needs_intermediate", func(t *testing.T) {
+		assertOptimizerValid(t, testutil.DebtsNeedsIntermediate(), opt, v)
+	})
+	t.Run("complex_graph", func(t *testing.T) {
+		assertOptimizerValid(t, testutil.DebtsComplexGraph(), opt, v)
+	})
+}
+
+func TestPushRelabelOptimizer(t *testing.T) {
+	opt := optpr.New()
 	v := validator.NewValidator(validator.WithAllChecks())
 	t.Run("direct_simple", func(t *testing.T) {
 		assertOptimizerValid(t, testutil.DebtsDirectSimple(), opt, v)

@@ -24,11 +24,13 @@ func NewGraph(n int) *Graph {
 
 // AddEdge добавляет ориентированное ребро (from, to) с пропускной способностью cap
 // и обратное ребро с нулевой пропускной способностью.
-func (g *Graph) AddEdge(from, to, cap int) {
+func (g *Graph) AddEdge(from, to, cap int) int {
 	fwd := &Edge{To: to, Rev: len(g.Adj[to]), Cap: cap}
 	rev := &Edge{To: from, Rev: len(g.Adj[from]), Cap: 0}
+	idx := len(g.Adj[from])
 	g.Adj[from] = append(g.Adj[from], fwd)
 	g.Adj[to] = append(g.Adj[to], rev)
+	return idx
 }
 
 // NumNodes возвращает число вершин.
