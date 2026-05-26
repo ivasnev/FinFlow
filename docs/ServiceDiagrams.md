@@ -5,7 +5,7 @@
 ```mermaid
 graph TB
     subgraph "Клиентский уровень"
-        MobileApp[Мобильное приложение]
+        MobileApp[Веб сервис/мобильное приложение]
     end
 
     subgraph "Инфраструктура"
