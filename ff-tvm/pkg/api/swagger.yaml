@@ -55,6 +55,8 @@ paths:
       summary: Создание нового сервиса
       description: Создает новый сервис и возвращает его идентификатор и ключи ED25519
       operationId: createService
+      security:
+        - AdminAuth: []
       requestBody:
         required: true
         content:
@@ -64,6 +66,8 @@ paths:
             example:
               name: "test-service"
       responses:
+        '401':
+          description: Требуется токен администратора
         '201':
           description: Сервис успешно создан
           content:
@@ -186,6 +190,8 @@ paths:
       summary: Предоставление доступа
       description: Предоставляет право доступа от одного сервиса к другому
       operationId: grantAccess
+      security:
+        - AdminAuth: []
       requestBody:
         required: true
         content:
@@ -196,6 +202,8 @@ paths:
               from: 1
               to: 2
       responses:
+        '401':
+          description: Требуется токен администратора
         '200':
           description: Доступ успешно предоставлен
           content:
@@ -226,6 +234,8 @@ paths:
       summary: Отзыв доступа
       description: Отзывает право доступа от одного сервиса к другому
       operationId: revokeAccess
+      security:
+        - AdminAuth: []
       requestBody:
         required: true
         content:
@@ -236,6 +246,8 @@ paths:
               from: 1
               to: 2
       responses:
+        '401':
+          description: Требуется токен администратора
         '200':
           description: Доступ успешно отозван
           content:
@@ -306,6 +318,11 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
 components:
+  securitySchemes:
+    AdminAuth:
+      type: http
+      scheme: bearer
+      description: Отдельный токен администратора TVM (TVM_ADMIN_TOKEN).
   schemas:
     CreateServiceRequest:
       type: object

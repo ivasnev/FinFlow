@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -174,10 +176,26 @@ func (h *Handlers) RevokeAccess(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "access revoked"})
 }
 
-func (h *Handlers) RegisterRoutes(r *gin.Engine) {
+// RegisterRoutes регистрирует API и защищает изменения сервисов отдельным токеном администратора.
+func (h *Handlers) RegisterRoutes(r *gin.Engine, adminToken string) {
 	r.POST("/ticket", h.CreateTicket)
 	r.GET("/service/:id/key", h.GetServicePublicKey)
-	r.POST("/service", h.CreateService)
-	r.POST("/access/grant", h.GrantAccess)
-	r.POST("/access/revoke", h.RevokeAccess)
+	admin := r.Group("", requireAdmin(adminToken))
+	admin.POST("/service", h.CreateService)
+	admin.POST("/access/grant", h.GrantAccess)
+	admin.POST("/access/revoke", h.RevokeAccess)
+}
+
+// requireAdmin закрывает доступ при отсутствии настройки или неверном токене.
+func requireAdmin(token string) gin.HandlerFunc {
+	expected := sha256.Sum256([]byte("Bearer " + token))
+	return func(c *gin.Context) {
+		provided := sha256.Sum256([]byte(c.GetHeader("Authorization")))
+		if token == "" || subtle.ConstantTimeCompare(expected[:], provided[:]) != 1 {
+			c.Header("WWW-Authenticate", "Bearer")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "admin authentication required"})
+			return
+		}
+		c.Next()
+	}
 }

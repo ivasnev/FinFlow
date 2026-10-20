@@ -6,6 +6,7 @@ services:
     ports:
       - "8081:8081"
     environment:
+      - TVM_ADMIN_TOKEN=${TVM_ADMIN_TOKEN:-}
       - DATABASE_URL=postgres://postgres:postgres@host.docker.internal:5432/ff_tvm?sslmode=disable
       - PORT=8081
       - ENVIRONMENT=development

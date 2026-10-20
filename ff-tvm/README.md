@@ -296,6 +296,7 @@ cp config/config.yaml config/config.yaml.local
 Основные параметры конфигурации:
 - `server.port` - порт сервиса (по умолчанию 8081)
 - `database.url` - строка подключения к PostgreSQL
+- `admin_token` / `TVM_ADMIN_TOKEN` - отдельный секрет администратора для регистрации сервисов и изменения доступа. Без него эти операции возвращают 401. Переменная окружения имеет приоритет, включая пустое значение. Передавайте токен только по HTTPS либо в доверенной локальной сети.
 - `dev.enabled` - режим разработки (для упрощенной генерации тикетов)
 - `migrations.path` - путь к миграциям
 
@@ -408,6 +409,7 @@ migrate -path internal/repository/migrations \
 
 ```bash
 curl -X POST http://localhost:8081/service \
+  -H "Authorization: Bearer ${TVM_ADMIN_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{"name": "ff-split"}'
 ```
@@ -427,6 +429,7 @@ curl -X POST http://localhost:8081/service \
 ```bash
 # Предоставить доступ от ff-split (ID=1) к ff-files (ID=2)
 curl -X POST http://localhost:8081/access/grant \
+  -H "Authorization: Bearer ${TVM_ADMIN_TOKEN}" \
   -H "Content-Type: application/json" \
   -d '{"from": 1, "to": 2}'
 ```

@@ -1,5 +1,6 @@
 ### Создание сервиса
 POST http://localhost:8080/service
+Authorization: Bearer {{$processEnv TVM_ADMIN_TOKEN}}
 Content-Type: application/json
 
 {
@@ -11,6 +12,7 @@ GET http://localhost:8080/service/1/key
 
 ### Предоставление доступа
 POST http://localhost:8080/access/grant
+Authorization: Bearer {{$processEnv TVM_ADMIN_TOKEN}}
 Content-Type: application/json
 
 {
@@ -20,6 +22,7 @@ Content-Type: application/json
 
 ### Отзыв доступа
 POST http://localhost:8080/access/revoke
+Authorization: Bearer {{$processEnv TVM_ADMIN_TOKEN}}
 Content-Type: application/json
 
 {

@@ -68,7 +68,7 @@ func main() {
 	// Настройка роутера
 	r := gin.Default()
 
-	ticketHandlers.RegisterRoutes(r)
+	ticketHandlers.RegisterRoutes(r, cfg.AdminToken)
 	if cfg.Dev.Enabled {
 		devHandlers.RegisterRoutes(r)
 	}

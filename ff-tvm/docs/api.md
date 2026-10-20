@@ -6,6 +6,8 @@ TVM (Ticket Vending Machine) - это сервис для управления �
 
 ## Аутентификация
 
+Для `POST /service`, `POST /access/grant` и `POST /access/revoke` обязателен `Authorization: Bearer <TVM_ADMIN_TOKEN>`. Задайте отдельный токен через переменную `TVM_ADMIN_TOKEN` или `admin_token` в YAML. Без настройки административный доступ закрыт (401).
+
 Все запросы к API должны содержать заголовок `Content-Type: application/json`.
 
 Для аутентификации между сервисами используется заголовок `X-FF-Service-Ticket` в формате:

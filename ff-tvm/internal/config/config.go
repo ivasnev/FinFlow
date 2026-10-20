@@ -9,7 +9,8 @@ import (
 )
 
 type Config struct {
-	Server struct {
+	AdminToken string `yaml:"admin_token"`
+	Server     struct {
 		Port string `yaml:"port" env:"SERVER_PORT" env-default:"8080"`
 	} `yaml:"server"`
 
@@ -61,6 +62,9 @@ func loadFromYAML(cfg *Config) error {
 }
 
 func loadFromEnv(cfg *Config) error {
+	if token, ok := os.LookupEnv("TVM_ADMIN_TOKEN"); ok {
+		cfg.AdminToken = token
+	}
 	// Здесь можно добавить логику загрузки из переменных окружения
 	// Например, используя библиотеку envconfig или подобную
 	// Для простоты оставим базовую реализацию
