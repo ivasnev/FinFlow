@@ -8,20 +8,24 @@ import (
 
 	"github.com/ivasnev/FinFlow/ff-auth/internal/repository"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/service/password"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // UserService реализует интерфейс для работы с пользователями
 type UserService struct {
-	userRepository repository.User
+	userRepository    repository.User
+	passwordMinLength int
 }
 
 // NewUserService создает новый сервис пользователей
 func NewUserService(
 	userRepository repository.User,
+	passwordMinLength int,
 ) *UserService {
 	return &UserService{
-		userRepository: userRepository,
+		userRepository:    userRepository,
+		passwordMinLength: passwordMinLength,
 	}
 }
 
@@ -90,6 +94,12 @@ func (s *UserService) GetUserByNickname(ctx context.Context, nickname string) (*
 
 // UpdateUser обновляет данные пользователя
 func (s *UserService) UpdateUser(ctx context.Context, userID int64, req service.UserUpdateData) (*service.UserData, error) {
+	if req.Password != nil {
+		if err := password.Validate(*req.Password, s.passwordMinLength); err != nil {
+			return nil, err
+		}
+	}
+
 	// Получаем пользователя по ID
 	user, err := s.userRepository.GetByID(ctx, userID)
 	if err != nil {

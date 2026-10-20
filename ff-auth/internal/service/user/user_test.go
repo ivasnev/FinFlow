@@ -18,7 +18,7 @@ func TestUserService_GetUserByID(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockRepo := mock.NewMockUser(ctrl)
-	userService := NewUserService(mockRepo)
+	userService := NewUserService(mockRepo, 0)
 
 	ctx := context.Background()
 	userID := int64(1)
@@ -103,7 +103,7 @@ func TestUserService_GetUserByNickname(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockRepo := mock.NewMockUser(ctrl)
-	userService := NewUserService(mockRepo)
+	userService := NewUserService(mockRepo, 0)
 
 	ctx := context.Background()
 	nickname := "testuser"
@@ -158,7 +158,7 @@ func TestUserService_UpdateUser(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockRepo := mock.NewMockUser(ctrl)
-	userService := NewUserService(mockRepo)
+	userService := NewUserService(mockRepo, 0)
 
 	ctx := context.Background()
 	userID := int64(1)
@@ -339,7 +339,7 @@ func TestUserService_DeleteUser(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockRepo := mock.NewMockUser(ctrl)
-	userService := NewUserService(mockRepo)
+	userService := NewUserService(mockRepo, 0)
 
 	ctx := context.Background()
 	userID := int64(1)

@@ -2,10 +2,12 @@ package handler
 
 import (
 	"encoding/base64"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/service/password"
 	"github.com/ivasnev/FinFlow/ff-auth/pkg/api"
 	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -148,7 +150,11 @@ func (h *ServerHandler) Register(c *gin.Context) {
 
 	response, err := h.authService.Register(c.Request.Context(), registerParams)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: err.Error()})
+		status := http.StatusInternalServerError
+		if errors.Is(err, password.ErrInvalid) {
+			status = http.StatusBadRequest
+		}
+		c.JSON(status, api.ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -285,7 +291,11 @@ func (h *ServerHandler) UpdateUser(c *gin.Context) {
 
 	updatedUser, err := h.userService.UpdateUser(c.Request.Context(), userData.UserID, updateData)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: err.Error()})
+		status := http.StatusInternalServerError
+		if errors.Is(err, password.ErrInvalid) {
+			status = http.StatusBadRequest
+		}
+		c.JSON(status, api.ErrorResponse{Error: err.Error()})
 		return
 	}
 

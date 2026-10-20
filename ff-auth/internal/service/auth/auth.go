@@ -14,6 +14,7 @@ import (
 	"github.com/ivasnev/FinFlow/ff-auth/internal/models"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/repository"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/service/password"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -54,6 +55,10 @@ func NewAuthService(
 
 // Register регистрирует нового пользователя
 func (s *AuthService) Register(ctx context.Context, params service.RegisterParams) (*service.AccessDataParams, error) {
+	if err := password.Validate(params.Password, s.config.Auth.PasswordMinLength); err != nil {
+		return nil, err
+	}
+
 	// Проверяем, существует ли пользователь с таким email
 	existingUser, err := s.userRepository.GetByEmail(ctx, params.Email)
 	if err == nil && existingUser != nil {

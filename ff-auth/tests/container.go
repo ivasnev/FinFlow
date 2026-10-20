@@ -62,7 +62,7 @@ func createTestContainer(t *testing.T, cfg *config.Config, router *gin.Engine, d
 		c.TokenManager,
 		c.IDClient,
 	)
-	c.UserService = userService.NewUserService(c.UserRepository)
+	c.UserService = userService.NewUserService(c.UserRepository, c.Config.Auth.PasswordMinLength)
 	c.SessionService = sessionService.NewSessionService(c.SessionRepository)
 	c.LoginHistoryService = loginHistoryService.NewLoginHistoryService(c.LoginHistoryRepository)
 
