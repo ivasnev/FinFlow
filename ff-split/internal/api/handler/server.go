@@ -6,6 +6,7 @@ import (
 
 // ServerHandler реализует сгенерированный интерфейс api.ServerInterface
 type ServerHandler struct {
+	archiveService     service.Archive
 	invitationService  service.Invitation
 	historyService     service.History
 	settlementService  service.Settlement
@@ -52,3 +53,6 @@ func (s *ServerHandler) SetHistoryService(history service.History) { s.historySe
 func (s *ServerHandler) SetInvitationService(invitations service.Invitation) {
 	s.invitationService = invitations
 }
+
+// SetArchiveService подключает обратимое удаление события.
+func (s *ServerHandler) SetArchiveService(archive service.Archive) { s.archiveService = archive }

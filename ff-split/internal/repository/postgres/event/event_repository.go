@@ -30,7 +30,7 @@ func NewEventRepository(db *gorm.DB) *EventRepository {
 // GetAll возвращает все мероприятия
 func (r *EventRepository) GetAll(ctx context.Context) ([]models.Event, error) {
 	var dbEvents []Event
-	err := r.db.WithContext(ctx).Find(&dbEvents).Error
+	err := r.db.WithContext(ctx).Select("events.*,event_purge_at(events.deleted_at) AS purge_at").Where("deleted_at IS NULL").Find(&dbEvents).Error
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (r *EventRepository) GetAll(ctx context.Context) ([]models.Event, error) {
 // GetByID возвращает мероприятие по ID
 func (r *EventRepository) GetByID(ctx context.Context, id int64) (*models.Event, error) {
 	var dbEvent Event
-	err := r.db.WithContext(ctx).First(&dbEvent, id).Error
+	err := db.GetTx(ctx, r.db).WithContext(ctx).Select("events.*,event_purge_at(deleted_at) AS purge_at").First(&dbEvent, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil // возвращаем nil, nil если мероприятие не найдено
@@ -89,9 +89,9 @@ func (r *EventRepository) Update(ctx context.Context, id int64, event *models.Ev
 // GetByUserID возвращает мероприятия пользователя
 func (r *EventRepository) GetByUserID(ctx context.Context, userID int64) ([]models.Event, error) {
 	var dbEvents []Event
-	err := r.db.WithContext(ctx).
+	err := r.db.WithContext(ctx).Select("events.*,event_purge_at(events.deleted_at) AS purge_at").
 		Joins("JOIN user_event ON events.id = user_event.event_id").
-		Where("user_event.user_id = ?", userID).
+		Where("user_event.user_id = ? AND events.deleted_at IS NULL", userID).
 		Find(&dbEvents).Error
 	if err != nil {
 		return nil, err

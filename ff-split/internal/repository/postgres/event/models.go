@@ -1,13 +1,17 @@
 package event
 
+import "time"
+
 // Event представляет модель мероприятия в БД
 type Event struct {
-	ID          int64  `gorm:"column:id;primaryKey;autoIncrement"`
-	Name        string `gorm:"column:name;not null"`
-	Description string `gorm:"column:description"`
-	CategoryID  *int   `gorm:"column:category_id"`
-	ImageID     string `gorm:"column:image_id"`
-	Status      string `gorm:"column:status;default:active"`
+	DeletedAt   *time.Time `gorm:"column:deleted_at"`
+	PurgeAt     *time.Time `gorm:"column:purge_at;->;-:migration"`
+	ID          int64      `gorm:"column:id;primaryKey;autoIncrement"`
+	Name        string     `gorm:"column:name;not null"`
+	Description string     `gorm:"column:description"`
+	CategoryID  *int       `gorm:"column:category_id"`
+	ImageID     string     `gorm:"column:image_id"`
+	Status      string     `gorm:"column:status;default:active"`
 }
 
 // TableName задает имя таблицы для модели Event

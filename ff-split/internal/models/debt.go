@@ -4,6 +4,7 @@ import "time"
 
 // DebtOptimizationState отличает актуальный, устаревший и ещё не рассчитанный результат.
 type DebtOptimizationState struct {
+	DeletedAt             *time.Time
 	DebtRevision          int64
 	OptimizedDebtRevision *int64
 }

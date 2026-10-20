@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 )
@@ -27,6 +28,8 @@ type EventMembersDTO struct {
 
 // EventResponse представляет DTO для ответа с данными мероприятия
 type EventResponse struct {
+	DeletedAt   *time.Time
+	PurgeAt     *time.Time
 	ID          int64    `json:"id"`
 	Name        string   `json:"name"`
 	Description string   `json:"description,omitempty"`

@@ -36,6 +36,9 @@ func HTTPErrorHandler(c *gin.Context, err error) {
 	var logicError *LogicError
 
 	switch {
+	case errors.Is(err, ErrEventArchived):
+		errorResponse = NewErrorResponse(c.Request, "event_archived", err.Error())
+		code = http.StatusConflict
 	case errors.Is(err, ErrInvitationUnavailable):
 		errorResponse = NewErrorResponse(c.Request, "invitation_unavailable", err.Error())
 		code = http.StatusGone

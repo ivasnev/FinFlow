@@ -8,8 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
 	"github.com/ivasnev/FinFlow/ff-split/internal/api/handler"
+	"github.com/ivasnev/FinFlow/ff-split/internal/common/actor"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/config"
 	"github.com/ivasnev/FinFlow/ff-split/internal/container"
+	archiverepo "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/archive"
+	archiveservice "github.com/ivasnev/FinFlow/ff-split/internal/service/archive"
 	"github.com/ivasnev/FinFlow/ff-split/pkg/api"
 	"github.com/ivasnev/FinFlow/ff-split/tests/mockserver"
 	testTime "github.com/ivasnev/FinFlow/ff-split/tests/utils/time"
@@ -89,6 +92,8 @@ func (s *BaseSuite) SetupSuite() {
 		nil,
 	)
 
+	s.Container.ServerHandler.SetArchiveService(archiveservice.NewService(archiverepo.NewRepository(s.DBContainer.DB)))
+
 	// 10. Тестовые данные авторизации имеют тот же формат, что и штатный middleware.
 	testAuthMiddleware := func(c *gin.Context) {
 		roles := []string{"user"}
@@ -96,6 +101,7 @@ func (s *BaseSuite) SetupSuite() {
 			roles = append(roles, "admin")
 		}
 		c.Set(string(auth.UserContextKey()), auth.UserData{UserID: TestUserID1, Roles: roles, IsAdmin: s.AdminActor})
+		c.Request = c.Request.WithContext(actor.WithID(c.Request.Context(), TestUserID1))
 		c.Next()
 	}
 

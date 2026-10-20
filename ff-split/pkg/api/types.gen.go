@@ -178,7 +178,8 @@ type EventResponse struct {
 	Balance *float64 `json:"balance,omitempty"`
 
 	// CategoryId ID категории
-	CategoryId *int `json:"category_id,omitempty"`
+	CategoryId *int       `json:"category_id,omitempty"`
+	DeletedAt  *time.Time `json:"deleted_at,omitempty"`
 
 	// Description Описание мероприятия
 	Description *string `json:"description,omitempty"`
@@ -190,7 +191,8 @@ type EventResponse struct {
 	Name *string `json:"name,omitempty"`
 
 	// PhotoId UUID фото
-	PhotoId *string `json:"photo_id,omitempty"`
+	PhotoId *string    `json:"photo_id,omitempty"`
+	PurgeAt *time.Time `json:"purge_at,omitempty"`
 }
 
 // HistoryEntry defines model for HistoryEntry.

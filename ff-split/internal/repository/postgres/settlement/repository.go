@@ -27,12 +27,8 @@ func (r *Repository) InEvent(ctx context.Context, eventID int64, fn func(context
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var id int64
-		if err := tx.Raw("SELECT id FROM events WHERE id = ? FOR UPDATE", eventID).Scan(&id).Error; err != nil {
+		if err := history.LockEvent(tx, eventID); err != nil {
 			return err
-		}
-		if id == 0 {
-			return gorm.ErrRecordNotFound
 		}
 		return fn(context.WithValue(ctx, txcontext.TxContextKey{}, tx))
 	})

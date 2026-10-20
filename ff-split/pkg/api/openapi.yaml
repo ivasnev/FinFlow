@@ -47,6 +47,30 @@ security:
   - BearerAuth: []
 
 paths:
+  /api/v1/event/archive:
+    get:
+      operationId: getArchivedEvents
+      tags: [events]
+      summary: Архив доступных пользователю событий
+      responses:
+        '200':
+          description: Сохранённые события
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EventListResponse'}
+  /api/v1/event/{id_event}/restore:
+    post:
+      operationId: restoreEvent
+      tags: [events]
+      summary: Восстановить событие из архива
+      parameters:
+        - {name: id_event, in: path, required: true, schema: {type: integer, format: int64}}
+      responses:
+        '200':
+          description: Событие восстановлено
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SuccessResponse'}
   /api/v1/event/{id_event}/invitations:
     get:
       operationId: listInvitations
@@ -1964,6 +1988,8 @@ components:
     EventResponse:
       type: object
       properties:
+        deleted_at: {type: string, format: date-time}
+        purge_at: {type: string, format: date-time}
         id:
           type: integer
           format: int64

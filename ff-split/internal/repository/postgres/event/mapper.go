@@ -11,7 +11,8 @@ func extract(dbEvent *Event) *models.Event {
 	}
 
 	return &models.Event{
-		ID:          dbEvent.ID,
+		ID:        dbEvent.ID,
+		DeletedAt: dbEvent.DeletedAt, PurgeAt: dbEvent.PurgeAt,
 		Name:        dbEvent.Name,
 		Description: dbEvent.Description,
 		CategoryID:  dbEvent.CategoryID,

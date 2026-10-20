@@ -183,3 +183,10 @@ CREATE TABLE event_invitations (
  revoked_at TIMESTAMPTZ
 );
 CREATE INDEX event_invitations_active ON event_invitations(event_id,created_by,expires_at) WHERE revoked_at IS NULL;
+
+ALTER TABLE events ADD COLUMN deleted_at TIMESTAMPTZ;
+CREATE INDEX events_archive ON events(deleted_at,id) WHERE deleted_at IS NOT NULL;
+CREATE FUNCTION event_purge_at(archived TIMESTAMPTZ) RETURNS TIMESTAMPTZ
+ LANGUAGE SQL IMMUTABLE STRICT PARALLEL SAFE AS $$
+ SELECT ((archived AT TIME ZONE 'Europe/Moscow') + INTERVAL '6 months') AT TIME ZONE 'Europe/Moscow';
+$$;

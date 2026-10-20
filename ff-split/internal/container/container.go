@@ -20,6 +20,7 @@ import (
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
 	access_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/access"
 	activity_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/activity"
+	archive_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/archive"
 	category_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/category"
 	event_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/event"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/history"
@@ -32,6 +33,7 @@ import (
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 	access_service "github.com/ivasnev/FinFlow/ff-split/internal/service/access"
 	activity_service "github.com/ivasnev/FinFlow/ff-split/internal/service/activity"
+	archive_service "github.com/ivasnev/FinFlow/ff-split/internal/service/archive"
 	category_service "github.com/ivasnev/FinFlow/ff-split/internal/service/category"
 	event_service "github.com/ivasnev/FinFlow/ff-split/internal/service/event"
 	icon_service "github.com/ivasnev/FinFlow/ff-split/internal/service/icon"
@@ -238,6 +240,7 @@ func (c *Container) initDB() error {
 func (c *Container) RegisterRoutes() {
 	c.ServerHandler.SetSettlementService(c.SettlementService)
 	c.ServerHandler.SetHistoryService(history.NewRepository(c.DB))
+	c.ServerHandler.SetArchiveService(archive_service.NewService(archive_repository.NewRepository(c.DB)))
 	c.ServerHandler.SetInvitationService(invitation_service.NewService(invitation_repository.NewRepository(c.DB), c.UserService))
 	// Добавляем CORS middleware глобально для всех маршрутов
 	c.Router.Use(middleware.CORSMiddleware())
@@ -247,6 +250,7 @@ func (c *Container) RegisterRoutes() {
 
 	// Middleware для авторизации
 	authMiddleware := auth.AuthMiddleware(c.AuthClient)
+	archiveAccess := middleware.ArchiveAccess(c.DB)
 	eventAccess := middleware.EventAccess(access_service.NewService(access_repository.NewRepository(c.DB)))
 
 	// Регистрируем маршруты с помощью сгенерированного кода
@@ -260,6 +264,9 @@ func (c *Container) RegisterRoutes() {
 						c.Request = c.Request.WithContext(actor.WithID(c.Request.Context(), user.UserID))
 					}
 					eventAccess(c)
+					if !c.IsAborted() {
+						archiveAccess(c)
+					}
 				}
 			},
 		},

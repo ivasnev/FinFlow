@@ -1,7 +1,11 @@
 package models
 
+import "time"
+
 // Event представляет модель мероприятия
 type Event struct {
+	DeletedAt   *time.Time
+	PurgeAt     *time.Time
 	ID          int64
 	Name        string
 	Description string

@@ -27,6 +27,17 @@ func (s *TransactionService) optimizedModels(ctx context.Context, eventID int64)
 	if err != nil {
 		return nil, err
 	}
+	if observed.DeletedAt != nil {
+		ledger, err := callerRepo.GetDebtsByEventID(eventID)
+		if err != nil {
+			return nil, err
+		}
+		result := []models.OptimizedDebt{}
+		for _, edge := range models.NetDebts(ledger) {
+			result = append(result, models.OptimizedDebt{EventID: eventID, FromUserID: edge.FromUserID, ToUserID: edge.ToUserID, Amount: edge.Amount})
+		}
+		return result, nil
+	}
 	if observed.OptimizedDebtRevision != nil && *observed.OptimizedDebtRevision == observed.DebtRevision {
 		return callerRepo.GetOptimizedDebtsByEventIDWithUsers(eventID)
 	}

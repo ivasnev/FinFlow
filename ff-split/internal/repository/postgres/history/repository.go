@@ -9,8 +9,10 @@ import (
 	"strings"
 
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/actor"
+	"github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"gorm.io/gorm"
+	"time"
 )
 
 // Repository читает журнал, доступ к которому ограничен участием в мероприятии.
@@ -138,15 +140,29 @@ func Payment(tx *gorm.DB, row *models.Settlement) (map[string]string, error) {
 
 // LockEvent задаёт единый порядок блокировок: мероприятие, затем его изменяемая сущность.
 func LockEvent(tx *gorm.DB, eventID int64) error {
-	if _, ok := actor.ID(tx.Statement.Context); !ok {
+	if tx.Dialector.Name() != "postgres" {
 		return nil
 	}
-	return tx.Exec("SELECT id FROM events WHERE id=? FOR UPDATE", eventID).Error
+	var row struct {
+		ID        int64
+		DeletedAt *time.Time
+	}
+	result := tx.Raw("SELECT id,deleted_at FROM events WHERE id=? FOR UPDATE", eventID).Scan(&row)
+	if result.Error != nil {
+		return result.Error
+	}
+	if row.ID == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	if row.DeletedAt != nil {
+		return errors.ErrEventArchived
+	}
+	return nil
 }
 
 // LockExpense удерживает снимок расхода и долей до записи изменения и его истории.
 func LockExpense(tx *gorm.DB, id int) error {
-	if _, ok := actor.ID(tx.Statement.Context); !ok {
+	if tx.Dialector.Name() != "postgres" {
 		return nil
 	}
 	var eventID int64

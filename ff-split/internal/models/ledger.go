@@ -7,8 +7,14 @@ import (
 
 // OutstandingDebts сохраняет исходную разбивку без возвратов, иначе строит остатки по чистым балансам.
 // Линейное сведение с сортировкой ID закрывает также циклы после возврата непрямому кредитору.
-func OutstandingDebts(debts []Debt) []Debt {
-	hasSettlement := false
+func OutstandingDebts(debts []Debt) []Debt { return netDebts(debts, false) }
+
+// NetDebts сводит неизменяемый архивный ledger без запуска оптимизатора и записи кэша.
+func NetDebts(debts []Debt) []Debt { return netDebts(debts, true) }
+
+// netDebts строит остатки в копейках, сохраняя прежнюю разбивку при необходимости.
+func netDebts(debts []Debt, force bool) []Debt {
+	hasSettlement := force
 	balances := map[int64]int64{}
 	for _, debt := range debts {
 		hasSettlement = hasSettlement || debt.Settlement

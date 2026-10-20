@@ -48,7 +48,8 @@ func (s *ServerHandler) GetEvents(c *gin.Context) {
 	apiEvents := make([]api.EventResponse, 0, len(serviceEvents))
 	for _, event := range serviceEvents {
 		apiEvent := api.EventResponse{
-			Id:          &event.ID,
+			Id:        &event.ID,
+			DeletedAt: event.DeletedAt, PurgeAt: event.PurgeAt,
 			Name:        &event.Name,
 			Description: &event.Description,
 			CategoryId:  event.CategoryID,
@@ -116,7 +117,8 @@ func (s *ServerHandler) GetEventByID(c *gin.Context, idEvent int64) {
 	balance := balances
 
 	c.JSON(http.StatusOK, api.EventResponse{
-		Id:          &event.ID,
+		Id:        &event.ID,
+		DeletedAt: event.DeletedAt, PurgeAt: event.PurgeAt,
 		Name:        &event.Name,
 		Description: &event.Description,
 		CategoryId:  event.CategoryID,
@@ -259,7 +261,7 @@ func (s *ServerHandler) UpdateEvent(c *gin.Context, idEvent int64) {
 func (s *ServerHandler) DeleteEvent(c *gin.Context, idEvent int64) {
 	ctx := c.Request.Context()
 
-	if err := s.eventService.DeleteEvent(ctx, idEvent); err != nil {
+	if err := s.archiveService.Archive(ctx, idEvent); err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при удалении мероприятия: %w", err))
 		return
 	}

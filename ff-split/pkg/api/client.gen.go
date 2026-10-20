@@ -104,6 +104,9 @@ type ClientInterface interface {
 
 	CreateEvent(ctx context.Context, body CreateEventJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetArchivedEvents request
+	GetArchivedEvents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeleteEvent request
 	DeleteEvent(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -154,6 +157,9 @@ type ClientInterface interface {
 
 	// OptimizeDebts request
 	OptimizeDebts(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RestoreEvent request
+	RestoreEvent(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSettlements request
 	ListSettlements(ctx context.Context, idEvent int64, params *ListSettlementsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -336,6 +342,18 @@ func (c *Client) CreateEventWithBody(ctx context.Context, contentType string, bo
 
 func (c *Client) CreateEvent(ctx context.Context, body CreateEventJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateEventRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetArchivedEvents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetArchivedEventsRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -552,6 +570,18 @@ func (c *Client) GetOptimizedDebtsByEventID(ctx context.Context, idEvent int64, 
 
 func (c *Client) OptimizeDebts(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewOptimizeDebtsRequest(c.Server, idEvent)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RestoreEvent(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRestoreEventRequest(c.Server, idEvent)
 	if err != nil {
 		return nil, err
 	}
@@ -1302,6 +1332,33 @@ func NewCreateEventRequestWithBody(server string, contentType string, body io.Re
 	return req, nil
 }
 
+// NewGetArchivedEventsRequest generates requests for GetArchivedEvents
+func NewGetArchivedEventsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/event/archive")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewDeleteEventRequest generates requests for DeleteEvent
 func NewDeleteEventRequest(server string, idEvent int64) (*http.Request, error) {
 	var err error
@@ -1884,6 +1941,40 @@ func NewOptimizeDebtsRequest(server string, idEvent int64) (*http.Request, error
 	}
 
 	operationPath := fmt.Sprintf("/api/v1/event/%s/optimized-debts", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRestoreEventRequest generates requests for RestoreEvent
+func NewRestoreEventRequest(server string, idEvent int64) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_event", runtime.ParamLocationPath, idEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/event/%s/restore", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -3399,6 +3490,9 @@ type ClientWithResponsesInterface interface {
 
 	CreateEventWithResponse(ctx context.Context, body CreateEventJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEventResponse, error)
 
+	// GetArchivedEventsWithResponse request
+	GetArchivedEventsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetArchivedEventsResponse, error)
+
 	// DeleteEventWithResponse request
 	DeleteEventWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*DeleteEventResponse, error)
 
@@ -3449,6 +3543,9 @@ type ClientWithResponsesInterface interface {
 
 	// OptimizeDebtsWithResponse request
 	OptimizeDebtsWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*OptimizeDebtsResponse, error)
+
+	// RestoreEventWithResponse request
+	RestoreEventWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*RestoreEventResponse, error)
 
 	// ListSettlementsWithResponse request
 	ListSettlementsWithResponse(ctx context.Context, idEvent int64, params *ListSettlementsParams, reqEditors ...RequestEditorFn) (*ListSettlementsResponse, error)
@@ -3669,6 +3766,28 @@ func (r CreateEventResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r CreateEventResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetArchivedEventsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *EventListResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetArchivedEventsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetArchivedEventsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -4023,6 +4142,28 @@ func (r OptimizeDebtsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r OptimizeDebtsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RestoreEventResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SuccessResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RestoreEventResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RestoreEventResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -4880,6 +5021,15 @@ func (c *ClientWithResponses) CreateEventWithResponse(ctx context.Context, body 
 	return ParseCreateEventResponse(rsp)
 }
 
+// GetArchivedEventsWithResponse request returning *GetArchivedEventsResponse
+func (c *ClientWithResponses) GetArchivedEventsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetArchivedEventsResponse, error) {
+	rsp, err := c.GetArchivedEvents(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetArchivedEventsResponse(rsp)
+}
+
 // DeleteEventWithResponse request returning *DeleteEventResponse
 func (c *ClientWithResponses) DeleteEventWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*DeleteEventResponse, error) {
 	rsp, err := c.DeleteEvent(ctx, idEvent, reqEditors...)
@@ -5037,6 +5187,15 @@ func (c *ClientWithResponses) OptimizeDebtsWithResponse(ctx context.Context, idE
 		return nil, err
 	}
 	return ParseOptimizeDebtsResponse(rsp)
+}
+
+// RestoreEventWithResponse request returning *RestoreEventResponse
+func (c *ClientWithResponses) RestoreEventWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*RestoreEventResponse, error) {
+	rsp, err := c.RestoreEvent(ctx, idEvent, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRestoreEventResponse(rsp)
 }
 
 // ListSettlementsWithResponse request returning *ListSettlementsResponse
@@ -5603,6 +5762,32 @@ func ParseCreateEventResponse(rsp *http.Response) (*CreateEventResponse, error) 
 	return response, nil
 }
 
+// ParseGetArchivedEventsResponse parses an HTTP response from a GetArchivedEventsWithResponse call
+func ParseGetArchivedEventsResponse(rsp *http.Response) (*GetArchivedEventsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetArchivedEventsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EventListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseDeleteEventResponse parses an HTTP response from a DeleteEventWithResponse call
 func ParseDeleteEventResponse(rsp *http.Response) (*DeleteEventResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -6155,6 +6340,32 @@ func ParseOptimizeDebtsResponse(rsp *http.Response) (*OptimizeDebtsResponse, err
 			return nil, err
 		}
 		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRestoreEventResponse parses an HTTP response from a RestoreEventWithResponse call
+func ParseRestoreEventResponse(rsp *http.Response) (*RestoreEventResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RestoreEventResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SuccessResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	}
 

@@ -260,6 +260,9 @@ func (s *EventSuite) TestDeleteEvent_Success() {
 	category := s.createTestEventCategory(TestCategoryID1, "Путешествие", icon.ID)
 	event := s.createTestEvent(TestEventID1, TestEventName1, "Описание", &category.ID)
 
+	user := s.createTestUser(TestUserID1, TestUserID1, TestNickname1, TestName1)
+	s.Require().NoError(s.GetDB().Exec("INSERT INTO user_event(user_id,event_id) VALUES(?,?)", user.ID, event.ID).Error)
+
 	// Act - действие
 	resp, err := s.APIClient.DeleteEventWithResponse(s.Ctx, event.ID)
 
@@ -268,11 +271,11 @@ func (s *EventSuite) TestDeleteEvent_Success() {
 	s.Require().Equal(200, resp.StatusCode(), "должен быть статус 200")
 	s.Require().NotNil(resp.JSON200, "должен быть возвращен объект успеха")
 
-	// Проверяем, что мероприятие удалено из БД
+	// Проверяем, что событие сохранено с отметкой архива, а не физически удалено.
 	var count int64
-	err = s.GetDB().Table("events").Where("id = ?", event.ID).Count(&count).Error
+	err = s.GetDB().Table("events").Where("id = ? AND deleted_at IS NOT NULL", event.ID).Count(&count).Error
 	s.NoError(err)
-	s.Equal(int64(0), count, "мероприятие должно быть удалено из БД")
+	s.Equal(int64(1), count, "мероприятие должно остаться в архиве")
 }
 
 // TestDeleteEvent_NotFound тестирует удаление несуществующего мероприятия

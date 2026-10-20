@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
+	"github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/history"
 	"gorm.io/gorm"
 )
 
@@ -43,56 +44,59 @@ func (r *ActivityRepository) GetByID(ctx context.Context, id int) (*models.Activ
 	return extract(&dbActivity), nil
 }
 
-// Create создает новую активность
+// Create сохраняет активность только в доступном для изменения событии.
 func (r *ActivityRepository) Create(ctx context.Context, activity *models.Activity) (*models.Activity, error) {
-	dbActivity := load(activity)
-	err := r.db.WithContext(ctx).Create(dbActivity).Error
-	if err != nil {
-		return nil, err
-	}
-	return extract(dbActivity), nil
-}
-
-// Update обновляет активность
-func (r *ActivityRepository) Update(ctx context.Context, id int, activity *models.Activity) (*models.Activity, error) {
-	// Проверяем существование активности
-	var existingActivity Activity
-	err := r.db.WithContext(ctx).First(&existingActivity, id).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil // возвращаем nil, nil если активность не найдена
+	row := load(activity)
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if row.EventID != nil {
+			if err := history.LockEvent(tx, *row.EventID); err != nil {
+				return err
+			}
 		}
-		return nil, err
-	}
-
-	// Обновляем только указанные поля
-	dbActivity := load(activity)
-	dbActivity.ID = id // Важно установить ID для правильного обновления
-	err = r.db.WithContext(ctx).Model(&Activity{}).Where("id = ?", id).Updates(dbActivity).Error
+		return tx.Create(row).Error
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	// Получаем обновленную активность
-	var updatedActivity Activity
-	err = r.db.WithContext(ctx).First(&updatedActivity, id).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return extract(&updatedActivity), nil
+	return extract(row), nil
 }
 
-// Delete удаляет активность
+// mutate блокирует сохранённый parent и запрещает перенос активности между событиями.
+func (r *ActivityRepository) mutate(ctx context.Context, id int, activity *models.Activity) (*models.Activity, error) {
+	var result *models.Activity
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var row Activity
+		if err := tx.First(&row, id).Error; err != nil {
+			return err
+		}
+		if row.EventID != nil {
+			if err := history.LockEvent(tx, *row.EventID); err != nil {
+				return err
+			}
+		}
+		if activity == nil {
+			return tx.Delete(&Activity{}, id).Error
+		}
+		update := load(activity)
+		if err := tx.Model(&Activity{}).Where("id=?", id).Select("description", "icon_id", "user_id").Updates(update).Error; err != nil {
+			return err
+		}
+		if err := tx.First(&row, id).Error; err != nil {
+			return err
+		}
+		result = extract(&row)
+		return nil
+	})
+	return result, err
+}
+
+// Update меняет поля активности, сохраняя её исходное событие.
+func (r *ActivityRepository) Update(ctx context.Context, id int, activity *models.Activity) (*models.Activity, error) {
+	return r.mutate(ctx, id, activity)
+}
+
+// Delete удаляет активность только после проверки сохранённого события под блокировкой.
 func (r *ActivityRepository) Delete(ctx context.Context, id int) error {
-	result := r.db.WithContext(ctx).Delete(&Activity{}, id)
-	if result.Error != nil {
-		return result.Error
-	}
-
-	if result.RowsAffected == 0 {
-		return errors.New("активность не найдена")
-	}
-
-	return nil
+	_, err := r.mutate(ctx, id, nil)
+	return err
 }

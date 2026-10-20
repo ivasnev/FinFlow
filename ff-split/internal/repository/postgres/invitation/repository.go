@@ -28,12 +28,8 @@ func (r *Repository) InEvent(ctx context.Context, id int64, fn func(context.Cont
 	defer cancel()
 	return txcontext.WithTx(ctx, r.db, func(ctx context.Context) error {
 		tx := r.conn(ctx)
-		var found int64
-		if err := tx.Raw("SELECT id FROM events WHERE id=? FOR UPDATE", id).Scan(&found).Error; err != nil {
+		if err := history.LockEvent(tx, id); err != nil {
 			return err
-		}
-		if found == 0 {
-			return gorm.ErrRecordNotFound
 		}
 		return fn(ctx)
 	})
@@ -72,7 +68,7 @@ func (r *Repository) Get(ctx context.Context, eventID, id int64) (*models.Invita
 // Lookup проверяет срок по часам PostgreSQL при каждом использовании.
 func (r *Repository) Lookup(ctx context.Context, hash string) (*models.Invitation, error) {
 	var row models.Invitation
-	err := r.conn(ctx).Where("token_hash=? AND revoked_at IS NULL AND expires_at>clock_timestamp() AND EXISTS (SELECT 1 FROM user_event ue JOIN users u ON u.id=ue.user_id WHERE ue.event_id=event_invitations.event_id AND u.user_id=event_invitations.created_by AND NOT u.is_dummy)", hash).Take(&row).Error
+	err := r.conn(ctx).Where("token_hash=? AND revoked_at IS NULL AND expires_at>clock_timestamp() AND EXISTS (SELECT 1 FROM events e WHERE e.id=event_invitations.event_id AND e.deleted_at IS NULL) AND EXISTS (SELECT 1 FROM user_event ue JOIN users u ON u.id=ue.user_id WHERE ue.event_id=event_invitations.event_id AND u.user_id=event_invitations.created_by AND NOT u.is_dummy)", hash).Take(&row).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, errors.ErrInvitationUnavailable
 	}

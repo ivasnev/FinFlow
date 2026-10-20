@@ -26,6 +26,9 @@ type ServerInterface interface {
 	// Создать мероприятие
 	// (POST /api/v1/event)
 	CreateEvent(c *gin.Context)
+	// Архив доступных пользователю событий
+	// (GET /api/v1/event/archive)
+	GetArchivedEvents(c *gin.Context)
 	// Удалить мероприятие
 	// (DELETE /api/v1/event/{id_event})
 	DeleteEvent(c *gin.Context, idEvent int64)
@@ -71,6 +74,9 @@ type ServerInterface interface {
 	// Оптимизировать долги
 	// (POST /api/v1/event/{id_event}/optimized-debts)
 	OptimizeDebts(c *gin.Context, idEvent int64)
+	// Восстановить событие из архива
+	// (POST /api/v1/event/{id_event}/restore)
+	RestoreEvent(c *gin.Context, idEvent int64)
 	// История подтверждённых возвратов
 	// (GET /api/v1/event/{id_event}/settlements)
 	ListSettlements(c *gin.Context, idEvent int64, params ListSettlementsParams)
@@ -291,6 +297,21 @@ func (siw *ServerInterfaceWrapper) CreateEvent(c *gin.Context) {
 	}
 
 	siw.Handler.CreateEvent(c)
+}
+
+// GetArchivedEvents operation middleware
+func (siw *ServerInterfaceWrapper) GetArchivedEvents(c *gin.Context) {
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetArchivedEvents(c)
 }
 
 // DeleteEvent operation middleware
@@ -728,6 +749,32 @@ func (siw *ServerInterfaceWrapper) OptimizeDebts(c *gin.Context) {
 	}
 
 	siw.Handler.OptimizeDebts(c, idEvent)
+}
+
+// RestoreEvent operation middleware
+func (siw *ServerInterfaceWrapper) RestoreEvent(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id_event" -------------
+	var idEvent int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_event", c.Param("id_event"), &idEvent, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_event: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.RestoreEvent(c, idEvent)
 }
 
 // ListSettlements operation middleware
@@ -1725,6 +1772,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/api/v1/category/:id", wrapper.GetCategoryByID)
 	router.GET(options.BaseURL+"/api/v1/event", wrapper.GetEvents)
 	router.POST(options.BaseURL+"/api/v1/event", wrapper.CreateEvent)
+	router.GET(options.BaseURL+"/api/v1/event/archive", wrapper.GetArchivedEvents)
 	router.DELETE(options.BaseURL+"/api/v1/event/:id_event", wrapper.DeleteEvent)
 	router.GET(options.BaseURL+"/api/v1/event/:id_event", wrapper.GetEventByID)
 	router.PUT(options.BaseURL+"/api/v1/event/:id_event", wrapper.UpdateEvent)
@@ -1740,6 +1788,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.DELETE(options.BaseURL+"/api/v1/event/:id_event/invitations/:id_invitation", wrapper.RevokeInvitation)
 	router.GET(options.BaseURL+"/api/v1/event/:id_event/optimized-debts", wrapper.GetOptimizedDebtsByEventID)
 	router.POST(options.BaseURL+"/api/v1/event/:id_event/optimized-debts", wrapper.OptimizeDebts)
+	router.POST(options.BaseURL+"/api/v1/event/:id_event/restore", wrapper.RestoreEvent)
 	router.GET(options.BaseURL+"/api/v1/event/:id_event/settlements", wrapper.ListSettlements)
 	router.POST(options.BaseURL+"/api/v1/event/:id_event/settlements", wrapper.ReceiveSettlement)
 	router.DELETE(options.BaseURL+"/api/v1/event/:id_event/settlements/:id_settlement", wrapper.CancelSettlement)

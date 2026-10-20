@@ -40,7 +40,7 @@ func (r *TransactionRepository) InvalidateOptimization(eventID int64) error {
 // GetOptimizationState учитывает также корректный пустой результат оптимизации.
 func (r *TransactionRepository) GetOptimizationState(eventID int64) (*models.DebtOptimizationState, error) {
 	var state models.DebtOptimizationState
-	if err := r.db.Table("events").Select("debt_revision, optimized_debt_revision").Where("id = ?", eventID).Take(&state).Error; err != nil {
+	if err := r.db.Table("events").Select("debt_revision, optimized_debt_revision, deleted_at").Where("id = ?", eventID).Take(&state).Error; err != nil {
 		return nil, err
 	}
 	return &state, nil
@@ -304,7 +304,7 @@ func (r *TransactionRepository) GetOptimizedDebtsByUserIDWithUsers(eventID, user
 func (r *TransactionRepository) SaveOptimizedDebts(eventID int64, revision int64, debts []models.OptimizedDebt) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// Сравнение и публикация версии происходят атомарно с заменой записей кэша.
-		updated := tx.Table("events").Where("id = ? AND debt_revision = ?", eventID, revision).UpdateColumn("optimized_debt_revision", revision)
+		updated := tx.Table("events").Where("id = ? AND debt_revision = ? AND deleted_at IS NULL", eventID, revision).UpdateColumn("optimized_debt_revision", revision)
 		if updated.Error != nil {
 			return updated.Error
 		}
