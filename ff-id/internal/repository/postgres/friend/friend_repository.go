@@ -15,6 +15,7 @@ const (
 	FriendStatusPending  = "pending"
 	FriendStatusAccepted = "accepted"
 	FriendStatusBlocked  = "blocked"
+	FriendStatusRejected = "rejected"
 )
 
 // FriendRepository реализует интерфейс repository.Friend для работы с друзьями в PostgreSQL через GORM
@@ -29,7 +30,7 @@ func NewFriendRepository(db *gorm.DB) repository.Friend {
 	}
 }
 
-// AddFriend добавляет пользователя в друзья (создает заявку)
+// AddFriend создаёт заявку или атомарно возобновляет отклонённую, обновляя время отправки.
 func (r *FriendRepository) AddFriend(ctx context.Context, userID, friendID int64) error {
 	friend := &UserFriend{
 		UserID:   userID,
@@ -37,8 +38,18 @@ func (r *FriendRepository) AddFriend(ctx context.Context, userID, friendID int64
 		Status:   FriendStatusPending,
 	}
 
-	result := r.db.WithContext(ctx).Create(friend)
-	return result.Error
+	result := r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "user_id"}, {Name: "friend_id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"status", "created_at"}),
+		Where:     clause.Where{Exprs: []clause.Expression{clause.Eq{Column: clause.Column{Table: "user_friends", Name: "status"}, Value: FriendStatusRejected}}},
+	}).Create(friend)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("friend request already exists or is blocked")
+	}
+	return nil
 }
 
 // UpdateFriendStatus обновляет статус дружбы
@@ -95,7 +106,7 @@ func (r *FriendRepository) CreateMutualFriendship(ctx context.Context, userID, f
 		result = tx.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "user_id"}, {Name: "friend_id"}},
 			DoUpdates: clause.AssignmentColumns([]string{"status"}),
-			Where:     clause.Where{Exprs: []clause.Expression{clause.Expr{SQL: "user_friends.status IN ?", Vars: []interface{}{[]string{FriendStatusPending, FriendStatusAccepted, "rejected"}}}}},
+			Where:     clause.Where{Exprs: []clause.Expression{clause.Expr{SQL: "user_friends.status IN ?", Vars: []interface{}{[]string{FriendStatusPending, FriendStatusAccepted, FriendStatusRejected}}}}},
 		}).Create(mutualFriend)
 		if result.Error != nil {
 			return result.Error

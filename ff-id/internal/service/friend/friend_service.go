@@ -68,6 +68,8 @@ func (s *FriendService) AddFriend(ctx context.Context, userID int64, req service
 			return fmt.Errorf("заявка в друзья пользователю %s уже отправлена", friendName)
 		} else if relation.Status == service.FriendStatusBlocked {
 			return fmt.Errorf("пользователь %s заблокирован", friendName)
+		} else if relation.Status != service.FriendStatusRejected {
+			return errors.New("неизвестный статус отношения дружбы")
 		}
 	}
 
@@ -77,7 +79,7 @@ func (s *FriendService) AddFriend(ctx context.Context, userID int64, req service
 		return errors.New("невозможно отправить заявку этому пользователю")
 	}
 
-	// Добавляем заявку в друзья
+	// Создаём заявку либо возобновляем rejected → pending с проверкой текущего статуса в репозитории.
 	return s.friendRepo.AddFriend(ctx, userID, friendUser.ID)
 }
 
