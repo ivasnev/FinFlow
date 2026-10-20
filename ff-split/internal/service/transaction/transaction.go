@@ -363,18 +363,10 @@ func (s *TransactionService) GetDebtsByEventID(ctx context.Context, eventID int6
 				TransactionID: debt.TransactionID,
 			}
 			if debt.FromUser != nil {
-				debtDTO.FromUser = &service.DebtsUserResponse{
-					ID:    debt.FromUser.ID,
-					Name:  getUserName(debt.FromUser),
-					Photo: debt.FromUser.PhotoUUIDCashed,
-				}
+				debtDTO.FromUser = debtUserResponse(debt.FromUserID, debt.FromUser)
 			}
 			if debt.ToUser != nil {
-				debtDTO.ToUser = &service.DebtsUserResponse{
-					ID:    debt.ToUser.ID,
-					Name:  getUserName(debt.ToUser),
-					Photo: debt.ToUser.PhotoUUIDCashed,
-				}
+				debtDTO.ToUser = debtUserResponse(debt.ToUserID, debt.ToUser)
 			}
 			debts = append(debts, debtDTO)
 		}
@@ -398,6 +390,7 @@ func (s *TransactionService) GetDebtsByEventID(ctx context.Context, eventID int6
 	return debts, nil
 }
 
+// GetDebtsByEventIDFromUser возвращает исходящие долги и доступные сведения о кредиторе.
 func (s *TransactionService) GetDebtsByEventIDFromUser(eventID int64, userID int64) ([]service.DebtDTO, error) {
 	debtsFromUser, err := s.repo.GetDebtsByEventIDFromUser(eventID, userID)
 	if err != nil {
@@ -412,16 +405,13 @@ func (s *TransactionService) GetDebtsByEventIDFromUser(eventID int64, userID int
 			Amount:        -debt.Amount,
 			TransactionID: debt.TransactionID,
 
-			Requestor: &service.DebtsUserResponse{
-				ID:    debt.ToUser.ID,
-				Name:  getUserName(debt.ToUser),
-				Photo: debt.ToUser.PhotoUUIDCashed,
-			},
+			Requestor: debtUserResponse(debt.ToUserID, debt.ToUser),
 		})
 	}
 	return result, nil
 }
 
+// GetDebtsByEventIDToUser возвращает входящие долги и доступные сведения о должнике.
 func (s *TransactionService) GetDebtsByEventIDToUser(eventID int64, userID int64) ([]service.DebtDTO, error) {
 	debtsToUser, err := s.repo.GetDebtsByEventIDToUser(eventID, userID)
 	if err != nil {
@@ -436,16 +426,23 @@ func (s *TransactionService) GetDebtsByEventIDToUser(eventID int64, userID int64
 			Amount:        debt.Amount,
 			TransactionID: debt.TransactionID,
 
-			Requestor: &service.DebtsUserResponse{
-				ID:    debt.FromUser.ID,
-				Name:  getUserName(debt.FromUser),
-				Photo: debt.FromUser.PhotoUUIDCashed,
-			},
+			Requestor: debtUserResponse(debt.FromUserID, debt.FromUser),
 		})
 	}
 	return result, nil
 }
 
+// debtUserResponse использует сохранённый ID, даже если репозиторий не загрузил профиль.
+func debtUserResponse(userID int64, user *models.User) *service.DebtsUserResponse {
+	response := &service.DebtsUserResponse{ID: userID, Name: "Incognito"}
+	if user != nil {
+		response.Name = getUserName(user)
+		response.Photo = user.PhotoUUIDCashed
+	}
+	return response
+}
+
+// getUserName выбирает доступное имя загруженного профиля.
 func getUserName(user *models.User) string {
 	if user.NameCashed != "" {
 		return user.NameCashed
@@ -593,11 +590,7 @@ func (s *TransactionService) GetOptimizedDebtsByEventIDFromUser(ctx context.Cont
 				Amount:     -debt.Amount,
 				EventID:    debt.EventID,
 
-				Requestor: &service.DebtsUserResponse{
-					ID:    debt.ToUser.ID,
-					Name:  getUserName(debt.ToUser),
-					Photo: debt.ToUser.PhotoUUIDCashed,
-				},
+				Requestor: debtUserResponse(debt.ToUserID, debt.ToUser),
 			})
 		}
 	}
@@ -621,11 +614,7 @@ func (s *TransactionService) GetOptimizedDebtsByEventIDToUser(ctx context.Contex
 				Amount:     debt.Amount,
 				EventID:    debt.EventID,
 
-				Requestor: &service.DebtsUserResponse{
-					ID:    debt.FromUser.ID,
-					Name:  getUserName(debt.FromUser),
-					Photo: debt.FromUser.PhotoUUIDCashed,
-				},
+				Requestor: debtUserResponse(debt.FromUserID, debt.FromUser),
 			})
 		}
 	}
