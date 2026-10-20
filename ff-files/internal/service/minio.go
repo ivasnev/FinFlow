@@ -44,7 +44,7 @@ type MinIO interface {
 	CreateOne(file FileData) (*FileUploadResult, error)
 
 	// CreateMany создает несколько объектов в бакете MinIO
-	CreateMany(files map[string]FileData) ([]*FileUploadResult, error)
+	CreateMany(files []FileData) ([]*FileUploadResult, error)
 
 	// GetOne получает один объект из бакета MinIO
 	GetOne(objectID string) (string, error)

@@ -113,79 +113,43 @@ func (m *minioServiceImpl) CreateOne(file service.FileData) (*service.FileUpload
 }
 
 // CreateMany создает несколько объектов в хранилище MinIO
-func (m *minioServiceImpl) CreateMany(data map[string]service.FileData) ([]*service.FileUploadResult, error) {
-	objects := make([]*service.FileUploadResult, 0, len(data))
-
+func (m *minioServiceImpl) CreateMany(data []service.FileData) ([]*service.FileUploadResult, error) {
+	objects := make([]*service.FileUploadResult, len(data))
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	urlCh := make(chan string, len(data))
 	errCh := make(chan error, 1)
-
 	var wg sync.WaitGroup
-
-	// Запуск горутин для создания каждого объекта
-	for objectID, file := range data {
+	for index, file := range data {
+		objectID := uuid.NewString()
 		wg.Add(1)
-		go func(objectID string, file service.FileData) {
+		go func(index int, objectID string, file service.FileData) {
 			defer wg.Done()
-
-			// Определение ContentType на основе содержимого файла
-			contentType := http.DetectContentType(file.Data)
-
 			_, err := m.mc.PutObject(ctx, m.cfg.BucketName, objectID, bytes.NewReader(file.Data), int64(len(file.Data)), minio.PutObjectOptions{
-				ContentType: contentType,
+				ContentType: http.DetectContentType(file.Data),
 			})
+			if err == nil {
+				var link *url.URL
+				link, err = m.mc.PresignedGetObject(ctx, m.cfg.BucketName, objectID, time.Hour*time.Duration(m.cfg.FileTimeExpiration), nil)
+				if err == nil {
+					objects[index] = &service.FileUploadResult{ObjectID: objectID, Link: link.String()}
+				}
+			}
 			if err != nil {
 				select {
 				case errCh <- err:
 					cancel()
 				default:
 				}
-				return
 			}
-
-			// Получение URL для загруженного объекта
-			url, err := m.mc.PresignedGetObject(ctx, m.cfg.BucketName, objectID, time.Hour*time.Duration(m.cfg.FileTimeExpiration), nil)
-			if err != nil {
-				select {
-				case errCh <- err:
-					cancel()
-				default:
-				}
-				return
-			}
-
-			select {
-			case urlCh <- url.String():
-			case <-ctx.Done():
-				return
-			}
-		}(objectID, file)
+		}(index, objectID, file)
 	}
-
-	// Ожидание завершения всех горутин и закрытие каналов
-	go func() {
-		wg.Wait()
-		close(urlCh)
-		close(errCh)
-	}()
-
-	// Сбор URL-адресов из канала
-	for url := range urlCh {
-		object := &service.FileUploadResult{
-			ObjectID: uuid.New().String(),
-			Link:     url,
-		}
-		objects = append(objects, object)
+	wg.Wait()
+	select {
+	case err := <-errCh:
+		return nil, fmt.Errorf("ошибка при создании объектов: %w", err)
+	default:
+		return objects, nil
 	}
-
-	// Проверка наличия ошибок
-	if err := <-errCh; err != nil {
-		return nil, fmt.Errorf("ошибка при создании объектов: %v", err)
-	}
-
-	return objects, nil
 }
 
 // GetOne получает один объект из бакета Minio по его идентификатору

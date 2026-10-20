@@ -116,7 +116,7 @@ func (h *ServerHandler) UploadFiles(c *gin.Context) {
 	}
 
 	// Подготавливаем данные для загрузки
-	fileDataMap := make(map[string]service.FileData)
+	fileData := make([]service.FileData, 0, len(files))
 	for _, file := range files {
 		// Открываем файл
 		f, err := file.Open()
@@ -139,15 +139,15 @@ func (h *ServerHandler) UploadFiles(c *gin.Context) {
 			return
 		}
 
-		// Добавляем в карту
-		fileDataMap[file.Filename] = service.FileData{
+		// Добавляем файл в пакет
+		fileData = append(fileData, service.FileData{
 			FileName: file.Filename,
 			Data:     fileBytes,
-		}
+		})
 	}
 
 	// Загружаем файлы
-	results, err := h.minioService.CreateMany(fileDataMap)
+	results, err := h.minioService.CreateMany(fileData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{
 			Error: "Unable to save files",
