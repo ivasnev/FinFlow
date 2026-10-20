@@ -124,15 +124,20 @@ func (mr *MockEventMockRecorder) GetByUserID(ctx, userID interface{}) *gomock.Ca
 }
 
 // Update mocks base method.
-func (m *MockEvent) Update(ctx context.Context, id int64, event *models.Event) error {
+func (m *MockEvent) Update(ctx context.Context, id int64, event *models.Event, columns ...string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, id, event)
+	varargs := []interface{}{ctx, id, event}
+	for _, a := range columns {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Update", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockEventMockRecorder) Update(ctx, id, event interface{}) *gomock.Call {
+func (mr *MockEventMockRecorder) Update(ctx, id, event interface{}, columns ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockEvent)(nil).Update), ctx, id, event)
+	varargs := append([]interface{}{ctx, id, event}, columns...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockEvent)(nil).Update), varargs...)
 }

@@ -159,10 +159,10 @@ type EventMembersDTO struct {
 
 // EventRequest defines model for EventRequest.
 type EventRequest struct {
-	// CategoryId ID категории
+	// CategoryId ID категории. При обновлении отсутствие поля сохраняет категорию, null снимает её.
 	CategoryId *int `json:"category_id,omitempty"`
 
-	// Description Описание мероприятия
+	// Description Описание мероприятия. При обновлении отсутствие поля сохраняет значение; пустая строка или null очищают его.
 	Description *string          `json:"description,omitempty"`
 	Members     *EventMembersDTO `json:"members,omitempty"`
 

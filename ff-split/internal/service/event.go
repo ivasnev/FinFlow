@@ -12,6 +12,11 @@ type EventRequest struct {
 	Description string          `json:"description"`
 	CategoryID  *int            `json:"category_id,omitempty"`
 	Members     EventMembersDTO `json:"members"`
+
+	// DescriptionSet отличает пропуск поля от явно переданного пустого или null-описания при обновлении.
+	DescriptionSet bool `json:"-"`
+	// CategoryIDSet отличает пропуск поля от явного снятия категории через null.
+	CategoryIDSet bool `json:"-"`
 }
 
 // EventMembersDTO представляет DTO для передачи данных о членах мероприятия

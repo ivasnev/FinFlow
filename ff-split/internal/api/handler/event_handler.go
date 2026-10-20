@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"slices"
@@ -199,7 +200,12 @@ func (s *ServerHandler) UpdateEvent(c *gin.Context, idEvent int64) {
 
 	// Получаем данные запроса
 	var apiRequest api.EventRequest
-	if err := c.ShouldBindJSON(&apiRequest); err != nil {
+	var provided map[string]json.RawMessage
+	err := c.ShouldBindBodyWithJSON(&apiRequest)
+	if err == nil {
+		err = c.ShouldBindBodyWithJSON(&provided)
+	}
+	if err != nil || apiRequest.Name == "" {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{
 			Id: c.GetHeader("X-Request-ID"),
 			Error: api.ErrorResponseDetail{
@@ -215,6 +221,8 @@ func (s *ServerHandler) UpdateEvent(c *gin.Context, idEvent int64) {
 		Name:       apiRequest.Name,
 		CategoryID: apiRequest.CategoryId,
 	}
+	_, dtoRequest.DescriptionSet = provided["description"]
+	_, dtoRequest.CategoryIDSet = provided["category_id"]
 
 	if apiRequest.Description != nil {
 		dtoRequest.Description = *apiRequest.Description

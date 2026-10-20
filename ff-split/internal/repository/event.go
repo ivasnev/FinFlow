@@ -13,6 +13,6 @@ type Event interface {
 	GetByUserID(ctx context.Context, userID int64) ([]models.Event, error)
 	CalculateUserBalances(ctx context.Context, userID int64, eventIDs []int64) (map[int64]float64, error)
 	Create(ctx context.Context, event *models.Event) error
-	Update(ctx context.Context, id int64, event *models.Event) error
+	Update(ctx context.Context, id int64, event *models.Event, columns ...string) error
 	Delete(ctx context.Context, id int64) error
 }

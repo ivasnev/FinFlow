@@ -138,7 +138,7 @@ paths:
       tags:
         - events
       summary: Обновить мероприятие
-      description: Обновляет информацию о мероприятии
+      description: Обновляет имя и переданные поля мероприятия. Пропущенные описание и категория сохраняются. Пустое или null-описание очищает его; null-категория снимает категорию.
       operationId: updateEvent
       parameters:
         - name: id_event
@@ -1668,10 +1668,14 @@ components:
           description: Название мероприятия
         description:
           type: string
-          description: Описание мероприятия
+          nullable: true
+          x-omitempty: true
+          description: Описание мероприятия. При обновлении отсутствие поля сохраняет значение; пустая строка или null очищают его.
         category_id:
           type: integer
-          description: ID категории
+          nullable: true
+          x-omitempty: true
+          description: ID категории. При обновлении отсутствие поля сохраняет категорию, null снимает её.
         members:
           $ref: '#/components/schemas/EventMembersDTO'
 

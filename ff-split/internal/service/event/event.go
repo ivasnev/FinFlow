@@ -188,8 +188,15 @@ func (s *EventService) UpdateEvent(ctx context.Context, id int64, request *servi
 		CategoryID:  request.CategoryID,
 	}
 
+	columns := []string{"name"}
+	if request.DescriptionSet || request.Description != "" {
+		columns = append(columns, "description")
+	}
+	if request.CategoryIDSet || request.CategoryID != nil {
+		columns = append(columns, "category_id")
+	}
 	err := db.WithTx(ctx, s.db, func(ctx context.Context) error {
-		err := s.repo.Update(ctx, id, event)
+		err := s.repo.Update(ctx, id, event, columns...)
 		if err != nil {
 			return fmt.Errorf("Ошибка при обновлении мероприятия: %w", err)
 		}

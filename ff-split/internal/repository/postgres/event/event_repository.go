@@ -10,6 +10,7 @@ import (
 	customErrors "github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // Используем модели БД и мапперы для преобразования
@@ -60,25 +61,28 @@ func (r *EventRepository) Create(ctx context.Context, event *models.Event) error
 	return nil
 }
 
-// Update обновляет мероприятие
-func (r *EventRepository) Update(ctx context.Context, id int64, event *models.Event) error {
-	conn := db.GetTx(ctx, r.db)
-
-	// Проверка существования записи
-	var exists bool
-	if err := conn.Model(&Event{}).Select("count(*) > 0").Where("id = ?", id).Find(&exists).Error; err != nil {
-		return fmt.Errorf("ошибка при проверке существования мероприятия: %w", err)
+// Update сохраняет выбранные поля, включая нулевые значения, и возвращает фактически записанную строку в event.
+// Без списка колонок заменяет редактируемые имя, описание и категорию; фото и статус сохраняются.
+func (r *EventRepository) Update(ctx context.Context, id int64, event *models.Event, columns ...string) error {
+	if len(columns) == 0 {
+		columns = []string{"name", "description", "category_id"}
 	}
-	if !exists {
-		return gorm.ErrRecordNotFound
+	for _, column := range columns {
+		if column != "name" && column != "description" && column != "category_id" {
+			return fmt.Errorf("недопустимое поле мероприятия: %s", column)
+		}
 	}
-
 	dbEvent := load(event)
 	dbEvent.ID = id
-	if err := conn.Model(&Event{}).Where("id = ?", id).Updates(dbEvent).Error; err != nil {
-		return fmt.Errorf("ошибка при обновлении мероприятия: %w", err)
+	result := db.GetTx(ctx, r.db).WithContext(ctx).Model(dbEvent).Where("id = ?", id).
+		Clauses(clause.Returning{}).Select(columns).Updates(dbEvent)
+	if result.Error != nil {
+		return fmt.Errorf("ошибка при обновлении мероприятия: %w", result.Error)
 	}
-
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	*event = *extract(dbEvent)
 	return nil
 }
 
