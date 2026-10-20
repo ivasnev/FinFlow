@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/big"
 	"sort"
+	"strconv"
 
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
@@ -55,7 +56,7 @@ type PercentStrategy struct{}
 
 // Calculate рассчитывает доли и долги по процентам
 func (s *PercentStrategy) Calculate(req *service.TransactionRequest, eventID int64) ([]Share, []Debt, error) {
-	totalCents, err := validateRequest(req)
+	totalCents, err := validateRequest(req, PercentType)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -94,7 +95,7 @@ type AmountStrategy struct{}
 
 // Calculate рассчитывает доли и долги по фиксированным суммам
 func (s *AmountStrategy) Calculate(req *service.TransactionRequest, eventID int64) ([]Share, []Debt, error) {
-	totalCents, err := validateRequest(req)
+	totalCents, err := validateRequest(req, AmountType)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -137,7 +138,7 @@ type UnitsStrategy struct{}
 
 // Calculate рассчитывает доли и долги по единицам долей
 func (s *UnitsStrategy) Calculate(req *service.TransactionRequest, eventID int64) ([]Share, []Debt, error) {
-	totalCents, err := validateRequest(req)
+	totalCents, err := validateRequest(req, UnitsType)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -213,7 +214,7 @@ func (s *UnitsStrategy) Calculate(req *service.TransactionRequest, eventID int64
 }
 
 // validateRequest проверяет денежную сумму и допустимость весов до расчета.
-func validateRequest(req *service.TransactionRequest) (int64, error) {
+func validateRequest(req *service.TransactionRequest, calculationType string) (int64, error) {
 	if req == nil {
 		return 0, errors.NewValidationError("transaction", "запрос отсутствует")
 	}
@@ -228,6 +229,31 @@ func validateRequest(req *service.TransactionRequest) (int64, error) {
 		if math.IsNaN(value) || math.IsInf(value, 0) || value < 0 {
 			return 0, errors.NewValidationError("portion", "доли должны быть конечными и неотрицательными")
 		}
+	}
+	if req.FromUser <= 0 || len(req.Users) == 0 {
+		return 0, errors.NewValidationError("users", "плательщик и участники должны быть указаны")
+	}
+	users := make(map[int64]struct{}, len(req.Users))
+	for _, id := range req.Users {
+		if _, exists := users[id]; id <= 0 || exists {
+			return 0, errors.NewValidationError("users", "ID участников должны быть положительными и уникальными")
+		}
+		users[id] = struct{}{}
+	}
+	for key := range req.Portion {
+		if calculationType == UnitsType && key == "-1" {
+			continue
+		}
+		id, err := parseUserID(key)
+		if err != nil {
+			return 0, err
+		}
+		if _, exists := users[id]; !exists {
+			return 0, errors.NewValidationError("portion", "доля указана для пользователя вне списка users")
+		}
+	}
+	if calculationType != UnitsType && len(req.Portion) != len(users) {
+		return 0, errors.NewValidationError("portion", "доли должны быть указаны для всех участников расхода")
 	}
 	return cents, nil
 }
@@ -275,10 +301,9 @@ func allocateCents(totalCents int64, shares []Share) []Share {
 
 // parseUserID преобразует строковый ID пользователя в int64
 func parseUserID(userIDStr string) (int64, error) {
-	var userID int64
-	_, err := fmt.Sscanf(userIDStr, "%d", &userID)
-	if err != nil {
-		return 0, fmt.Errorf("неверный формат ID пользователя: %s", userIDStr)
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil || userID <= 0 || strconv.FormatInt(userID, 10) != userIDStr {
+		return 0, errors.NewValidationError("portion", "ключ должен быть положительным целым ID пользователя без префиксов и суффиксов")
 	}
 	return userID, nil
 }

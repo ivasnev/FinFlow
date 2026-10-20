@@ -89,7 +89,7 @@ func TestRoundingConservesMoney(t *testing.T) {
 // TestFixedAmountsRequireExactCents исключает скрытое округление и расхождение на копейку.
 func TestFixedAmountsRequireExactCents(t *testing.T) {
 	for _, portion := range []map[string]float64{{"1": .333, "2": .667}, {"1": .50, "2": .49}, {"1": .50, "2": .51}} {
-		if _, _, err := (&AmountStrategy{}).Calculate(&service.TransactionRequest{Amount: 1, Portion: portion}, 1); err == nil {
+		if _, _, err := (&AmountStrategy{}).Calculate(&service.TransactionRequest{Amount: 1, FromUser: 1, Users: []int64{1, 2}, Portion: portion}, 1); err == nil {
 			t.Fatalf("accepted %+v", portion)
 		}
 	}

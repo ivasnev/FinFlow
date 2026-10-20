@@ -131,6 +131,10 @@ func (s *TransactionService) CreateTransaction(ctx context.Context, eventID int6
 			return err
 		}
 
+		if err := s.validateParticipants(ctx, eventID, req); err != nil {
+			return err
+		}
+
 		// Проверяем, что плательщик существует
 		payer, err := s.userService.GetUserByInternalUserID(ctx, req.FromUser)
 		if err != nil {
@@ -226,6 +230,9 @@ func (s *TransactionService) UpdateTransaction(ctx context.Context, id int, req 
 		if err != nil {
 			return err
 		}
+		if err := s.validateParticipants(ctx, *transaction.EventID, req); err != nil {
+			return err
+		}
 
 		// Проверяем, что плательщик существует
 		payer, err := s.userService.GetUserByInternalUserID(ctx, req.FromUser)
@@ -304,6 +311,27 @@ func (s *TransactionService) UpdateTransaction(ctx context.Context, id int, req 
 	}
 
 	return result, nil
+}
+
+// validateParticipants проверяет внутренние ID плательщика и потребителей расхода по составу мероприятия.
+func (s *TransactionService) validateParticipants(ctx context.Context, eventID int64, req *service.TransactionRequest) error {
+	users, err := s.userService.GetUsersByEventID(ctx, eventID)
+	if err != nil {
+		return err
+	}
+	members := make(map[int64]struct{}, len(users))
+	for _, user := range users {
+		members[user.ID] = struct{}{}
+	}
+	if _, exists := members[req.FromUser]; !exists {
+		return commonerrors.NewValidationError("from_user", "плательщик должен участвовать в мероприятии")
+	}
+	for _, id := range req.Users {
+		if _, exists := members[id]; !exists {
+			return commonerrors.NewValidationError("users", "все участники расхода должны участвовать в мероприятии")
+		}
+	}
+	return nil
 }
 
 // DeleteTransaction удаляет транзакцию
