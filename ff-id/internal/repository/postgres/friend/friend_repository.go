@@ -8,6 +8,7 @@ import (
 	"github.com/ivasnev/FinFlow/ff-id/internal/models"
 	"github.com/ivasnev/FinFlow/ff-id/internal/repository"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -54,30 +55,54 @@ func (r *FriendRepository) UpdateFriendStatus(ctx context.Context, userID, frien
 	return result.Error
 }
 
-// CreateMutualFriendship создает взаимную дружбу (при принятии заявки)
+// CreateMutualFriendship атомарно принимает обычные и встречные заявки, сохраняя блокировки.
 func (r *FriendRepository) CreateMutualFriendship(ctx context.Context, userID, friendID int64) error {
-	// Используем транзакцию для атомарного обновления статуса и создания взаимной связи
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Обновляем статус исходной заявки
-		result := tx.Model(&UserFriend{}).
-			Where("user_id = ? AND friend_id = ?", friendID, userID).
-			Update("status", FriendStatusAccepted)
-
-		if result.RowsAffected == 0 {
-			return errors.New("friend request not found")
-		}
-
-		// Создаем обратную связь
-		mutualFriend := &UserFriend{
-			UserID:   userID,
-			FriendID: friendID,
-			Status:   FriendStatusAccepted,
-		}
-
-		if err := tx.Create(mutualFriend).Error; err != nil {
+		// Одинаковый порядок блокировки строк предотвращает взаимную блокировку встречных принятий.
+		var relations []UserFriend
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("(user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)", userID, friendID, friendID, userID).
+			Order("user_id ASC").Order("friend_id ASC").Find(&relations).Error; err != nil {
 			return err
 		}
-
+		var incoming, outgoing string
+		for _, relation := range relations {
+			if relation.UserID == friendID {
+				incoming = relation.Status
+			} else {
+				outgoing = relation.Status
+			}
+		}
+		if incoming == FriendStatusBlocked || outgoing == FriendStatusBlocked {
+			return errors.New("friend relationship is blocked")
+		}
+		if incoming == FriendStatusAccepted && outgoing == FriendStatusAccepted {
+			return nil
+		}
+		if incoming != FriendStatusPending {
+			return errors.New("pending friend request not found")
+		}
+		result := tx.Model(&UserFriend{}).
+			Where("user_id = ? AND friend_id = ? AND status = ?", friendID, userID, FriendStatusPending).
+			Update("status", FriendStatusAccepted)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return errors.New("pending friend request not found")
+		}
+		mutualFriend := &UserFriend{UserID: userID, FriendID: friendID, Status: FriendStatusAccepted}
+		result = tx.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "user_id"}, {Name: "friend_id"}},
+			DoUpdates: clause.AssignmentColumns([]string{"status"}),
+			Where:     clause.Where{Exprs: []clause.Expression{clause.Expr{SQL: "user_friends.status IN ?", Vars: []interface{}{[]string{FriendStatusPending, FriendStatusAccepted, "rejected"}}}}},
+		}).Create(mutualFriend)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return errors.New("friend relationship cannot be accepted")
+		}
 		return nil
 	})
 }
