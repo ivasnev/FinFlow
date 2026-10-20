@@ -1,10 +1,12 @@
 package transaction
 
 import (
+	"context"
 	"errors"
 
 	"gorm.io/gorm"
 
+	domainerrors "github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
 )
@@ -22,6 +24,39 @@ func NewTransactionRepository(db *gorm.DB) *TransactionRepository {
 // WithTx привязывает новый экземпляр к транзакции, не меняя общий репозиторий.
 func (r *TransactionRepository) WithTx(tx *gorm.DB) repository.Transaction {
 	return NewTransactionRepository(tx)
+}
+
+// WithContext создаёт экземпляр с отменяемыми запросами без изменения общего репозитория.
+func (r *TransactionRepository) WithContext(ctx context.Context) repository.Transaction {
+	return NewTransactionRepository(r.db.WithContext(ctx))
+}
+
+// InvalidateOptimization дёшево помечает результат устаревшим в транзакции изменения расхода.
+func (r *TransactionRepository) InvalidateOptimization(eventID int64) error {
+	return r.db.Table("events").Where("id = ?", eventID).UpdateColumn("debt_revision", gorm.Expr("debt_revision + 1")).Error
+}
+
+// GetOptimizationState учитывает также корректный пустой результат оптимизации.
+func (r *TransactionRepository) GetOptimizationState(eventID int64) (*models.DebtOptimizationState, error) {
+	var state models.DebtOptimizationState
+	if err := r.db.Table("events").Select("debt_revision, optimized_debt_revision").Where("id = ?", eventID).Take(&state).Error; err != nil {
+		return nil, err
+	}
+	return &state, nil
+}
+
+// RunOptimization удерживает замок только между вычислениями одного мероприятия, не блокируя запись расходов.
+func (r *TransactionRepository) RunOptimization(ctx context.Context, eventID int64, fn func(repository.Transaction) error) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var locked bool
+		if err := tx.Raw("SELECT pg_try_advisory_xact_lock(?)", eventID).Scan(&locked).Error; err != nil {
+			return err
+		}
+		if !locked {
+			return domainerrors.ErrOptimizationBusy
+		}
+		return fn(r.WithTx(tx))
+	})
 }
 
 // GetTransactionsByEventID возвращает список транзакций мероприятия
@@ -72,6 +107,10 @@ func (r *TransactionRepository) UpdateTransaction(tx *models.Transaction) error 
 func (r *TransactionRepository) DeleteTransaction(id int) error {
 	// Выполняем операции в транзакции
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		var expense Transaction
+		if err := tx.First(&expense, id).Error; err != nil {
+			return err
+		}
 		// Удаляем связанные долги
 		if err := tx.Where("transaction_id = ?", id).Delete(&Debt{}).Error; err != nil {
 			return err
@@ -89,6 +128,11 @@ func (r *TransactionRepository) DeleteTransaction(id int) error {
 		}
 		if result.RowsAffected == 0 {
 			return errors.New("транзакция не найдена")
+		}
+		if expense.EventID != nil {
+			if err := r.WithTx(tx).InvalidateOptimization(*expense.EventID); err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -224,8 +268,16 @@ func (r *TransactionRepository) GetOptimizedDebtsByUserIDWithUsers(eventID, user
 }
 
 // SaveOptimizedDebts сохраняет оптимизированные долги для мероприятия (удаляет старые и сохраняет новые)
-func (r *TransactionRepository) SaveOptimizedDebts(eventID int64, debts []models.OptimizedDebt) error {
+func (r *TransactionRepository) SaveOptimizedDebts(eventID int64, revision int64, debts []models.OptimizedDebt) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Сравнение и публикация версии происходят атомарно с заменой записей кэша.
+		updated := tx.Table("events").Where("id = ? AND debt_revision = ?", eventID, revision).UpdateColumn("optimized_debt_revision", revision)
+		if updated.Error != nil {
+			return updated.Error
+		}
+		if updated.RowsAffected != 1 {
+			return domainerrors.ErrDebtRevisionChanged
+		}
 		// Удаляем старые оптимизированные долги
 		if err := tx.Where("event_id = ?", eventID).Delete(&OptimizedDebt{}).Error; err != nil {
 			return err

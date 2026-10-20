@@ -99,6 +99,8 @@ type Transaction interface {
 	OptimizeDebts(ctx context.Context, eventID int64) ([]OptimizedDebtDTO, error)
 	GetOptimizedDebtsByEventID(ctx context.Context, eventID int64, userID *int64) ([]OptimizedDebtDTO, error)
 	GetOptimizedDebtsByUserID(ctx context.Context, eventID, userID int64) ([]OptimizedDebtDTO, error)
-	GetOptimizedDebtsByEventIDFromUser(eventID int64, userID int64) ([]OptimizedDebtDTO, error)
-	GetOptimizedDebtsByEventIDToUser(eventID int64, userID int64) ([]OptimizedDebtDTO, error)
+	// GetOptimizedDebtsByEventIDFromUser возвращает актуальные исходящие долги.
+	GetOptimizedDebtsByEventIDFromUser(ctx context.Context, eventID int64, userID int64) ([]OptimizedDebtDTO, error)
+	// GetOptimizedDebtsByEventIDToUser возвращает актуальные входящие долги.
+	GetOptimizedDebtsByEventIDToUser(ctx context.Context, eventID int64, userID int64) ([]OptimizedDebtDTO, error)
 }

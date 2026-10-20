@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"gorm.io/gorm"
 )
@@ -9,6 +10,14 @@ import (
 type Transaction interface {
 	// WithTx возвращает независимый репозиторий на соединении переданной SQL-транзакции.
 	WithTx(tx *gorm.DB) Transaction
+	// WithContext привязывает запросы экземпляра к сроку общей операции.
+	WithContext(ctx context.Context) Transaction
+	// InvalidateOptimization меняет только версию долгов, без расчёта и удаления кэша.
+	InvalidateOptimization(eventID int64) error
+	// GetOptimizationState возвращает версии исходных и оптимизированных долгов.
+	GetOptimizationState(eventID int64) (*models.DebtOptimizationState, error)
+	// RunOptimization выполняет callback на одной транзакции с неблокирующим межпроцессным замком мероприятия.
+	RunOptimization(ctx context.Context, eventID int64, fn func(Transaction) error) error
 	// Получение транзакций
 	GetTransactionsByEventID(eventID int64) ([]models.Transaction, error)
 	GetTransactionByID(id int) (*models.Transaction, error)
@@ -36,6 +45,6 @@ type Transaction interface {
 	GetOptimizedDebtsByEventIDWithUsers(eventID int64) ([]models.OptimizedDebt, error)
 	GetOptimizedDebtsByUserID(eventID, userID int64) ([]models.OptimizedDebt, error)
 	GetOptimizedDebtsByUserIDWithUsers(eventID, userID int64) ([]models.OptimizedDebt, error)
-	SaveOptimizedDebts(eventID int64, debts []models.OptimizedDebt) error
+	SaveOptimizedDebts(eventID int64, revision int64, debts []models.OptimizedDebt) error
 	DeleteOptimizedDebtsByEventID(eventID int64) error
 }

@@ -2,6 +2,12 @@ package models
 
 import "time"
 
+// DebtOptimizationState отличает актуальный, устаревший и ещё не рассчитанный результат.
+type DebtOptimizationState struct {
+	DebtRevision          int64
+	OptimizedDebtRevision *int64
+}
+
 // Debt представляет долг одного пользователя другому
 type Debt struct {
 	ID            int

@@ -556,6 +556,22 @@ paths:
             type: integer
             format: int64
       responses:
+        '409':
+          description: Расходы изменились во время расчёта; повторите запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Вычисление уже выполняется или заняты вычислительные слоты; повторите после Retry-After
+          headers:
+            Retry-After:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '200':
           description: Список оптимизированных долгов
           content:
@@ -583,6 +599,22 @@ paths:
             type: integer
             format: int64
       responses:
+        '409':
+          description: Расходы изменились во время расчёта; повторите запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Вычисление уже выполняется или заняты вычислительные слоты; повторите после Retry-After
+          headers:
+            Retry-After:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '200':
           description: Долги оптимизированы
           content:
@@ -617,6 +649,22 @@ paths:
             type: integer
             format: int64
       responses:
+        '409':
+          description: Расходы изменились во время расчёта; повторите запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Вычисление уже выполняется или заняты вычислительные слоты; повторите после Retry-After
+          headers:
+            Retry-After:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '200':
           description: Список оптимизированных долгов
           content:

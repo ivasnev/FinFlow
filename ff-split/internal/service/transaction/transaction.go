@@ -3,6 +3,7 @@ package transaction
 import (
 	"context"
 	"fmt"
+	"golang.org/x/sync/singleflight"
 	"math"
 	"strconv"
 	"time"
@@ -22,6 +23,7 @@ type TransactionService struct {
 	repo         repository.Transaction
 	userService  service.User
 	eventService service.Event
+	optimization singleflight.Group
 }
 
 // NewTransactionService создает новый сервис для работы с транзакциями
@@ -186,6 +188,9 @@ func (s *TransactionService) CreateTransaction(ctx context.Context, eventID int6
 		}
 
 		result = resp
+		if err := repo.InvalidateOptimization(eventID); err != nil {
+			return err
+		}
 		return nil
 	})
 
@@ -284,6 +289,9 @@ func (s *TransactionService) UpdateTransaction(ctx context.Context, id int, req 
 		}
 
 		result = resp
+		if err := repo.InvalidateOptimization(eventID); err != nil {
+			return err
+		}
 		return nil
 	})
 
@@ -416,16 +424,22 @@ func getUserName(user *models.User) string {
 	}
 }
 
-// OptimizeDebts оптимизирует долги для мероприятия и сохраняет результат
+// OptimizeDebts возвращает актуальный результат, вычисляя его только для новой версии долгов.
 func (s *TransactionService) OptimizeDebts(ctx context.Context, eventID int64) ([]service.OptimizedDebtDTO, error) {
-	// Проверяем существование мероприятия
-	_, err := s.eventService.GetEventByID(ctx, eventID)
+	if _, err := s.eventService.GetEventByID(ctx, eventID); err != nil {
+		return nil, err
+	}
+	debts, err := s.optimizedModels(ctx, eventID)
 	if err != nil {
 		return nil, err
 	}
+	return mapOptimizedDebts(debts), nil
+}
 
+// computeOptimizedDebts рассчитывает и публикует результат только для неизменившейся версии.
+func (s *TransactionService) computeOptimizedDebts(ctx context.Context, repo repository.Transaction, eventID, revision int64) ([]models.OptimizedDebt, error) {
 	// Получаем все долги мероприятия
-	debts, err := s.repo.GetDebtsByEventID(eventID)
+	debts, err := repo.GetDebtsByEventID(eventID)
 	if err != nil {
 		return nil, err
 	}
@@ -434,6 +448,9 @@ func (s *TransactionService) OptimizeDebts(ctx context.Context, eventID int64) (
 	transfers := make([]optimizers.Transfer, 0, len(debts))
 	totalCents := 0
 	for _, debt := range debts {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		cents, err := debtCents(debt.Amount)
 		if err != nil {
 			return nil, err
@@ -449,12 +466,11 @@ func (s *TransactionService) OptimizeDebts(ctx context.Context, eventID int64) (
 		})
 	}
 
-	optimized, err := dinic.New().Optimize(transfers)
+	optimized, err := dinic.New().OptimizeContext(ctx, transfers)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]service.OptimizedDebtDTO, 0, len(optimized))
 	modelsToSave := make([]models.OptimizedDebt, 0, len(optimized))
 
 	for _, t := range optimized {
@@ -473,20 +489,14 @@ func (s *TransactionService) OptimizeDebts(ctx context.Context, eventID int64) (
 			CreatedAt:  time.Now(),
 			UpdatedAt:  time.Now(),
 		})
-		result = append(result, service.OptimizedDebtDTO{
-			FromUserID: fromID,
-			ToUserID:   toID,
-			Amount:     float64(t.Amount) / 100,
-			EventID:    eventID,
-		})
 	}
 
 	// Сохраняем оптимизированные долги в базе
-	if err := s.repo.SaveOptimizedDebts(eventID, modelsToSave); err != nil {
+	if err := repo.SaveOptimizedDebts(eventID, revision, modelsToSave); err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	return modelsToSave, nil
 }
 
 // debtCents переводит денежную сумму в целые копейки без потери дробной части.
@@ -509,53 +519,22 @@ func (s *TransactionService) GetOptimizedDebtsByEventID(ctx context.Context, eve
 
 	var debts []service.OptimizedDebtDTO
 	if userID == nil {
-		// Получаем все оптимизированные долги мероприятия
-		optimizedDebts, err := s.repo.GetOptimizedDebtsByEventIDWithUsers(eventID)
+		rows, err := s.optimizedModels(ctx, eventID)
 		if err != nil {
 			return nil, err
 		}
-
-		// Если оптимизированных долгов нет, вызываем оптимизацию
-		if len(optimizedDebts) == 0 {
-			return s.OptimizeDebts(ctx, eventID)
-		}
-
-		// Преобразуем в DTO
-		for _, debt := range optimizedDebts {
-			debtDTO := service.OptimizedDebtDTO{
-				ID:         debt.ID,
-				FromUserID: debt.FromUserID,
-				ToUserID:   debt.ToUserID,
-				Amount:     debt.Amount,
-				EventID:    debt.EventID,
-			}
-			if debt.FromUser != nil {
-				debtDTO.FromUser = &service.DebtsUserResponse{
-					ID:    debt.FromUser.ID,
-					Name:  getUserName(debt.FromUser),
-					Photo: debt.FromUser.PhotoUUIDCashed,
-				}
-			}
-			if debt.ToUser != nil {
-				debtDTO.ToUser = &service.DebtsUserResponse{
-					ID:    debt.ToUser.ID,
-					Name:  getUserName(debt.ToUser),
-					Photo: debt.ToUser.PhotoUUIDCashed,
-				}
-			}
-			debts = append(debts, debtDTO)
-		}
+		return mapOptimizedDebts(rows), nil
 	} else {
 		user, err := s.userService.GetUserByExternalUserID(ctx, *userID)
 		if err != nil {
 			return nil, fmt.Errorf("ошибка при получении пользователя: %w", err)
 		}
-		debtsToUser, err := s.GetOptimizedDebtsByEventIDToUser(eventID, user.ID)
+		debtsToUser, err := s.GetOptimizedDebtsByEventIDToUser(ctx, eventID, user.ID)
 		if err != nil {
 			return nil, fmt.Errorf("ошибка при получении оптимизированных долгов пользователю: %w", err)
 		}
 		debts = append(debts, debtsToUser...)
-		debtsFromUser, err := s.GetOptimizedDebtsByEventIDFromUser(eventID, user.ID)
+		debtsFromUser, err := s.GetOptimizedDebtsByEventIDFromUser(ctx, eventID, user.ID)
 		if err != nil {
 			return nil, fmt.Errorf("ошибка при получении оптимизированных долгов от пользователя: %w", err)
 		}
@@ -566,8 +545,8 @@ func (s *TransactionService) GetOptimizedDebtsByEventID(ctx context.Context, eve
 }
 
 // GetOptimizedDebtsByEventIDFromUser возвращает оптимизированные долги от пользователя в мероприятии
-func (s *TransactionService) GetOptimizedDebtsByEventIDFromUser(eventID int64, userID int64) ([]service.OptimizedDebtDTO, error) {
-	optimizedDebts, err := s.repo.GetOptimizedDebtsByUserIDWithUsers(eventID, userID)
+func (s *TransactionService) GetOptimizedDebtsByEventIDFromUser(ctx context.Context, eventID int64, userID int64) ([]service.OptimizedDebtDTO, error) {
+	optimizedDebts, err := s.optimizedModels(ctx, eventID)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при получении оптимизированных долгов от пользователя: %w", err)
 	}
@@ -594,8 +573,8 @@ func (s *TransactionService) GetOptimizedDebtsByEventIDFromUser(eventID int64, u
 }
 
 // GetOptimizedDebtsByEventIDToUser возвращает оптимизированные долги к пользователю в мероприятии
-func (s *TransactionService) GetOptimizedDebtsByEventIDToUser(eventID int64, userID int64) ([]service.OptimizedDebtDTO, error) {
-	optimizedDebts, err := s.repo.GetOptimizedDebtsByUserIDWithUsers(eventID, userID)
+func (s *TransactionService) GetOptimizedDebtsByEventIDToUser(ctx context.Context, eventID int64, userID int64) ([]service.OptimizedDebtDTO, error) {
+	optimizedDebts, err := s.optimizedModels(ctx, eventID)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при получении оптимизированных долгов к пользователю: %w", err)
 	}
@@ -635,57 +614,17 @@ func (s *TransactionService) GetOptimizedDebtsByUserID(ctx context.Context, even
 		return nil, err
 	}
 
-	// Получаем оптимизированные долги
-	optimizedDebts, err := s.repo.GetOptimizedDebtsByUserIDWithUsers(eventID, userID)
+	rows, err := s.optimizedModels(ctx, eventID)
 	if err != nil {
 		return nil, err
 	}
-
-	// Если оптимизированных долгов нет, вызываем оптимизацию и затем фильтруем
-	if len(optimizedDebts) == 0 {
-		allDebts, err := s.OptimizeDebts(ctx, eventID)
-		if err != nil {
-			return nil, err
+	selected := make([]models.OptimizedDebt, 0)
+	for _, debt := range rows {
+		if debt.FromUserID == userID || debt.ToUserID == userID {
+			selected = append(selected, debt)
 		}
-
-		// Фильтруем долги, связанные с пользователем
-		userDebts := make([]service.OptimizedDebtDTO, 0)
-		for _, debt := range allDebts {
-			if debt.FromUserID == userID || debt.ToUserID == userID {
-				userDebts = append(userDebts, debt)
-			}
-		}
-		return userDebts, nil
 	}
-
-	// Формируем ответ
-	result := make([]service.OptimizedDebtDTO, len(optimizedDebts))
-	for i, debt := range optimizedDebts {
-		debtDTO := service.OptimizedDebtDTO{
-			ID:         debt.ID,
-			FromUserID: debt.FromUserID,
-			ToUserID:   debt.ToUserID,
-			Amount:     debt.Amount,
-			EventID:    debt.EventID,
-		}
-		if debt.FromUser != nil {
-			debtDTO.FromUser = &service.DebtsUserResponse{
-				ID:    debt.FromUser.ID,
-				Name:  getUserName(debt.FromUser),
-				Photo: debt.FromUser.PhotoUUIDCashed,
-			}
-		}
-		if debt.ToUser != nil {
-			debtDTO.ToUser = &service.DebtsUserResponse{
-				ID:    debt.ToUser.ID,
-				Name:  getUserName(debt.ToUser),
-				Photo: debt.ToUser.PhotoUUIDCashed,
-			}
-		}
-		result[i] = debtDTO
-	}
-
-	return result, nil
+	return mapOptimizedDebts(selected), nil
 }
 
 // Вспомогательные методы

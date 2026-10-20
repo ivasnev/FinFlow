@@ -139,3 +139,6 @@ create index idx_optimized_debts_event_id on optimized_debts (event_id);
 create index idx_optimized_debts_from_user_id on optimized_debts (from_user_id);
 create index idx_optimized_debts_to_user_id on optimized_debts (to_user_id);
 
+
+ALTER TABLE events ADD COLUMN debt_revision BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE events ADD COLUMN optimized_debt_revision BIGINT;

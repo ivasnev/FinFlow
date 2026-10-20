@@ -25,6 +25,7 @@ func isDatabaseError(err error) bool {
 	return errors.As(err, &pgErr)
 }
 
+// HTTPErrorHandler переводит доменные ошибки в HTTP-ответы.
 func HTTPErrorHandler(c *gin.Context, err error) {
 	var errorResponse *ErrorResponse
 	var code int
@@ -35,6 +36,13 @@ func HTTPErrorHandler(c *gin.Context, err error) {
 	var logicError *LogicError
 
 	switch {
+	case errors.Is(err, ErrOptimizationBusy):
+		c.Header("Retry-After", "1")
+		errorResponse = NewErrorResponse(c.Request, "busy", err.Error())
+		code = http.StatusTooManyRequests
+	case errors.Is(err, ErrDebtRevisionChanged):
+		errorResponse = NewErrorResponse(c.Request, "conflict", err.Error())
+		code = http.StatusConflict
 	case errors.As(err, &validationError):
 		errorResponse = NewValidationErrorResponse(c.Request, validationError.Error())
 		code = http.StatusBadRequest

@@ -3196,6 +3196,8 @@ type GetOptimizedDebtsByEventIDResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *OptimizedDebtListResponse
+	JSON409      *ErrorResponse
+	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
 }
 
@@ -3219,6 +3221,8 @@ type OptimizeDebtsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *OptimizedDebtListResponse
+	JSON409      *ErrorResponse
+	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
 }
 
@@ -3600,6 +3604,8 @@ type GetOptimizedDebtsByUserIDResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *OptimizedDebtListResponse
+	JSON409      *ErrorResponse
+	JSON429      *ErrorResponse
 	JSON500      *ErrorResponse
 }
 
@@ -4909,6 +4915,20 @@ func ParseGetOptimizedDebtsByEventIDResponse(rsp *http.Response) (*GetOptimizedD
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -4941,6 +4961,20 @@ func ParseOptimizeDebtsResponse(rsp *http.Response) (*OptimizeDebtsResponse, err
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse
@@ -5560,6 +5594,20 @@ func ParseGetOptimizedDebtsByUserIDResponse(rsp *http.Response) (*GetOptimizedDe
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse

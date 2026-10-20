@@ -5,6 +5,7 @@
 package mock
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -194,6 +195,21 @@ func (mr *MockTransactionMockRecorder) GetDebtsByTransactionID(transactionID int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDebtsByTransactionID", reflect.TypeOf((*MockTransaction)(nil).GetDebtsByTransactionID), transactionID)
 }
 
+// GetOptimizationState mocks base method.
+func (m *MockTransaction) GetOptimizationState(eventID int64) (*models.DebtOptimizationState, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOptimizationState", eventID)
+	ret0, _ := ret[0].(*models.DebtOptimizationState)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOptimizationState indicates an expected call of GetOptimizationState.
+func (mr *MockTransactionMockRecorder) GetOptimizationState(eventID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOptimizationState", reflect.TypeOf((*MockTransaction)(nil).GetOptimizationState), eventID)
+}
+
 // GetOptimizedDebtsByEventID mocks base method.
 func (m *MockTransaction) GetOptimizedDebtsByEventID(eventID int64) ([]models.OptimizedDebt, error) {
 	m.ctrl.T.Helper()
@@ -299,18 +315,46 @@ func (mr *MockTransactionMockRecorder) GetTransactionsByEventID(eventID interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransactionsByEventID", reflect.TypeOf((*MockTransaction)(nil).GetTransactionsByEventID), eventID)
 }
 
-// SaveOptimizedDebts mocks base method.
-func (m *MockTransaction) SaveOptimizedDebts(eventID int64, debts []models.OptimizedDebt) error {
+// InvalidateOptimization mocks base method.
+func (m *MockTransaction) InvalidateOptimization(eventID int64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveOptimizedDebts", eventID, debts)
+	ret := m.ctrl.Call(m, "InvalidateOptimization", eventID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InvalidateOptimization indicates an expected call of InvalidateOptimization.
+func (mr *MockTransactionMockRecorder) InvalidateOptimization(eventID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InvalidateOptimization", reflect.TypeOf((*MockTransaction)(nil).InvalidateOptimization), eventID)
+}
+
+// RunOptimization mocks base method.
+func (m *MockTransaction) RunOptimization(ctx context.Context, eventID int64, fn func(repository.Transaction) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RunOptimization", ctx, eventID, fn)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RunOptimization indicates an expected call of RunOptimization.
+func (mr *MockTransactionMockRecorder) RunOptimization(ctx, eventID, fn interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunOptimization", reflect.TypeOf((*MockTransaction)(nil).RunOptimization), ctx, eventID, fn)
+}
+
+// SaveOptimizedDebts mocks base method.
+func (m *MockTransaction) SaveOptimizedDebts(eventID, revision int64, debts []models.OptimizedDebt) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SaveOptimizedDebts", eventID, revision, debts)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SaveOptimizedDebts indicates an expected call of SaveOptimizedDebts.
-func (mr *MockTransactionMockRecorder) SaveOptimizedDebts(eventID, debts interface{}) *gomock.Call {
+func (mr *MockTransactionMockRecorder) SaveOptimizedDebts(eventID, revision, debts interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveOptimizedDebts", reflect.TypeOf((*MockTransaction)(nil).SaveOptimizedDebts), eventID, debts)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveOptimizedDebts", reflect.TypeOf((*MockTransaction)(nil).SaveOptimizedDebts), eventID, revision, debts)
 }
 
 // UpdateTransaction mocks base method.
@@ -325,6 +369,20 @@ func (m *MockTransaction) UpdateTransaction(tx *models.Transaction) error {
 func (mr *MockTransactionMockRecorder) UpdateTransaction(tx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTransaction", reflect.TypeOf((*MockTransaction)(nil).UpdateTransaction), tx)
+}
+
+// WithContext mocks base method.
+func (m *MockTransaction) WithContext(ctx context.Context) repository.Transaction {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithContext", ctx)
+	ret0, _ := ret[0].(repository.Transaction)
+	return ret0
+}
+
+// WithContext indicates an expected call of WithContext.
+func (mr *MockTransactionMockRecorder) WithContext(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithContext", reflect.TypeOf((*MockTransaction)(nil).WithContext), ctx)
 }
 
 // WithTx mocks base method.

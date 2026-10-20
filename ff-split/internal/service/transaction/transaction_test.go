@@ -7,10 +7,11 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
+	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
 	repositoryMock "github.com/ivasnev/FinFlow/ff-split/internal/repository/mock"
 	serviceMock "github.com/ivasnev/FinFlow/ff-split/internal/service/mock"
+	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 )
 
@@ -424,6 +425,11 @@ func TestTransactionService_OptimizeDebts(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockTransactionRepo := repositoryMock.NewMockTransaction(ctrl)
+	mockTransactionRepo.EXPECT().WithContext(gomock.Any()).Return(mockTransactionRepo).AnyTimes()
+	mockTransactionRepo.EXPECT().GetOptimizationState(gomock.Any()).Return(&models.DebtOptimizationState{}, nil).AnyTimes()
+	mockTransactionRepo.EXPECT().RunOptimization(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, _ int64, fn func(repository.Transaction) error) error {
+		return fn(mockTransactionRepo)
+	}).AnyTimes()
 	mockUserService := serviceMock.NewMockUser(ctrl)
 	mockEventService := serviceMock.NewMockEvent(ctrl)
 	var db *gorm.DB
@@ -450,8 +456,8 @@ func TestTransactionService_OptimizeDebts(t *testing.T) {
 			Times(1)
 
 		mockTransactionRepo.EXPECT().
-			SaveOptimizedDebts(eventID, gomock.Any()).
-			DoAndReturn(func(eID int64, optimizedDebts []models.OptimizedDebt) error {
+			SaveOptimizedDebts(eventID, int64(0), gomock.Any()).
+			DoAndReturn(func(eID, revision int64, optimizedDebts []models.OptimizedDebt) error {
 				// Проверяем, что оптимизированные долги созданы
 				assert.Greater(t, len(optimizedDebts), 0)
 				return nil
@@ -507,6 +513,9 @@ func TestTransactionService_GetOptimizedDebtsByEventID(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockTransactionRepo := repositoryMock.NewMockTransaction(ctrl)
+	mockTransactionRepo.EXPECT().WithContext(gomock.Any()).Return(mockTransactionRepo).AnyTimes()
+	revision := int64(0)
+	mockTransactionRepo.EXPECT().GetOptimizationState(gomock.Any()).Return(&models.DebtOptimizationState{OptimizedDebtRevision: &revision}, nil).AnyTimes()
 	mockUserService := serviceMock.NewMockUser(ctrl)
 	mockEventService := serviceMock.NewMockEvent(ctrl)
 	var db *gorm.DB
@@ -546,15 +555,15 @@ func TestTransactionService_GetOptimizedDebtsByEventID(t *testing.T) {
 		internalUserID := int64(1)
 		toUserID := int64(200)
 		toUser := &models.User{ID: 1, UserID: &toUserID}
-		
+
 		optimizedDebtsFromUser := []models.OptimizedDebt{
 			{
-				ID:        1,
-				EventID:   eventID,
+				ID:         1,
+				EventID:    eventID,
 				FromUserID: internalUserID,
 				ToUserID:   toUserID,
-				Amount:    20.0,
-				ToUser:    toUser,
+				Amount:     20.0,
+				ToUser:     toUser,
 			},
 		}
 
@@ -569,7 +578,7 @@ func TestTransactionService_GetOptimizedDebtsByEventID(t *testing.T) {
 			Times(1)
 
 		mockTransactionRepo.EXPECT().
-			GetOptimizedDebtsByUserIDWithUsers(eventID, internalUserID).
+			GetOptimizedDebtsByEventIDWithUsers(eventID).
 			Return(optimizedDebtsFromUser, nil).
 			Times(2) // Вызывается дважды - для ToUser и FromUser
 
@@ -601,12 +610,16 @@ func TestTransactionService_GetOptimizedDebtsByEventIDFromUser(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockTransactionRepo := repositoryMock.NewMockTransaction(ctrl)
+	mockTransactionRepo.EXPECT().WithContext(gomock.Any()).Return(mockTransactionRepo).AnyTimes()
+	revision := int64(0)
+	mockTransactionRepo.EXPECT().GetOptimizationState(gomock.Any()).Return(&models.DebtOptimizationState{OptimizedDebtRevision: &revision}, nil).AnyTimes()
 	mockUserService := serviceMock.NewMockUser(ctrl)
 	mockEventService := serviceMock.NewMockEvent(ctrl)
 	var db *gorm.DB
 
 	transactionService := NewTransactionService(db, mockTransactionRepo, mockUserService, mockEventService)
 
+	ctx := context.Background()
 	eventID := int64(1)
 	userID := int64(100)
 
@@ -614,21 +627,21 @@ func TestTransactionService_GetOptimizedDebtsByEventIDFromUser(t *testing.T) {
 		toUserID := int64(200)
 		optimizedDebts := []models.OptimizedDebt{
 			{
-				ID:        1,
-				EventID:   eventID,
+				ID:         1,
+				EventID:    eventID,
 				FromUserID: userID,
 				ToUserID:   toUserID,
-				Amount:    20.0,
-				ToUser:    &models.User{ID: 1, UserID: &toUserID},
+				Amount:     20.0,
+				ToUser:     &models.User{ID: 1, UserID: &toUserID},
 			},
 		}
 
 		mockTransactionRepo.EXPECT().
-			GetOptimizedDebtsByUserIDWithUsers(eventID, userID).
+			GetOptimizedDebtsByEventIDWithUsers(eventID).
 			Return(optimizedDebts, nil).
 			Times(1)
 
-		result, err := transactionService.GetOptimizedDebtsByEventIDFromUser(eventID, userID)
+		result, err := transactionService.GetOptimizedDebtsByEventIDFromUser(ctx, eventID, userID)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, result)
@@ -640,11 +653,11 @@ func TestTransactionService_GetOptimizedDebtsByEventIDFromUser(t *testing.T) {
 		expectedErr := errors.New("database error")
 
 		mockTransactionRepo.EXPECT().
-			GetOptimizedDebtsByUserIDWithUsers(eventID, userID).
+			GetOptimizedDebtsByEventIDWithUsers(eventID).
 			Return(nil, expectedErr).
 			Times(1)
 
-		result, err := transactionService.GetOptimizedDebtsByEventIDFromUser(eventID, userID)
+		result, err := transactionService.GetOptimizedDebtsByEventIDFromUser(ctx, eventID, userID)
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
@@ -657,12 +670,16 @@ func TestTransactionService_GetOptimizedDebtsByEventIDToUser(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockTransactionRepo := repositoryMock.NewMockTransaction(ctrl)
+	mockTransactionRepo.EXPECT().WithContext(gomock.Any()).Return(mockTransactionRepo).AnyTimes()
+	revision := int64(0)
+	mockTransactionRepo.EXPECT().GetOptimizationState(gomock.Any()).Return(&models.DebtOptimizationState{OptimizedDebtRevision: &revision}, nil).AnyTimes()
 	mockUserService := serviceMock.NewMockUser(ctrl)
 	mockEventService := serviceMock.NewMockEvent(ctrl)
 	var db *gorm.DB
 
 	transactionService := NewTransactionService(db, mockTransactionRepo, mockUserService, mockEventService)
 
+	ctx := context.Background()
 	eventID := int64(1)
 	userID := int64(200)
 
@@ -670,21 +687,21 @@ func TestTransactionService_GetOptimizedDebtsByEventIDToUser(t *testing.T) {
 		fromUserID := int64(100)
 		optimizedDebts := []models.OptimizedDebt{
 			{
-				ID:        1,
-				EventID:   eventID,
+				ID:         1,
+				EventID:    eventID,
 				FromUserID: fromUserID,
 				ToUserID:   userID,
-				Amount:    20.0,
-				FromUser:  &models.User{ID: 1, UserID: &fromUserID},
+				Amount:     20.0,
+				FromUser:   &models.User{ID: 1, UserID: &fromUserID},
 			},
 		}
 
 		mockTransactionRepo.EXPECT().
-			GetOptimizedDebtsByUserIDWithUsers(eventID, userID).
+			GetOptimizedDebtsByEventIDWithUsers(eventID).
 			Return(optimizedDebts, nil).
 			Times(1)
 
-		result, err := transactionService.GetOptimizedDebtsByEventIDToUser(eventID, userID)
+		result, err := transactionService.GetOptimizedDebtsByEventIDToUser(ctx, eventID, userID)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, result)
@@ -696,11 +713,11 @@ func TestTransactionService_GetOptimizedDebtsByEventIDToUser(t *testing.T) {
 		expectedErr := errors.New("database error")
 
 		mockTransactionRepo.EXPECT().
-			GetOptimizedDebtsByUserIDWithUsers(eventID, userID).
+			GetOptimizedDebtsByEventIDWithUsers(eventID).
 			Return(nil, expectedErr).
 			Times(1)
 
-		result, err := transactionService.GetOptimizedDebtsByEventIDToUser(eventID, userID)
+		result, err := transactionService.GetOptimizedDebtsByEventIDToUser(ctx, eventID, userID)
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
@@ -713,6 +730,9 @@ func TestTransactionService_GetOptimizedDebtsByUserID(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockTransactionRepo := repositoryMock.NewMockTransaction(ctrl)
+	mockTransactionRepo.EXPECT().WithContext(gomock.Any()).Return(mockTransactionRepo).AnyTimes()
+	revision := int64(0)
+	mockTransactionRepo.EXPECT().GetOptimizationState(gomock.Any()).Return(&models.DebtOptimizationState{OptimizedDebtRevision: &revision}, nil).AnyTimes()
 	mockUserService := serviceMock.NewMockUser(ctrl)
 	mockEventService := serviceMock.NewMockEvent(ctrl)
 	var db *gorm.DB
@@ -740,7 +760,7 @@ func TestTransactionService_GetOptimizedDebtsByUserID(t *testing.T) {
 			Times(1)
 
 		mockTransactionRepo.EXPECT().
-			GetOptimizedDebtsByUserIDWithUsers(eventID, userID).
+			GetOptimizedDebtsByEventIDWithUsers(eventID).
 			Return(optimizedDebts, nil).
 			Times(1)
 
@@ -765,7 +785,7 @@ func TestTransactionService_GetOptimizedDebtsByUserID(t *testing.T) {
 			Times(1)
 
 		mockTransactionRepo.EXPECT().
-			GetOptimizedDebtsByUserIDWithUsers(eventID, userID).
+			GetOptimizedDebtsByEventIDWithUsers(eventID).
 			Return(nil, expectedErr).
 			Times(1)
 
@@ -776,4 +796,3 @@ func TestTransactionService_GetOptimizedDebtsByUserID(t *testing.T) {
 		assert.ErrorIs(t, err, expectedErr)
 	})
 }
-
