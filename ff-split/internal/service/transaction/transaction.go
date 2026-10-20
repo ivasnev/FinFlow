@@ -432,11 +432,20 @@ func (s *TransactionService) OptimizeDebts(ctx context.Context, eventID int64) (
 
 	// Собираем переводы для оптимизатора (From — должник, To — кредитор)
 	transfers := make([]optimizers.Transfer, 0, len(debts))
+	totalCents := 0
 	for _, debt := range debts {
+		cents, err := debtCents(debt.Amount)
+		if err != nil {
+			return nil, err
+		}
+		if cents > math.MaxInt-totalCents {
+			return nil, fmt.Errorf("total debt exceeds integer capacity")
+		}
+		totalCents += cents
 		transfers = append(transfers, optimizers.Transfer{
 			From:   strconv.FormatInt(debt.FromUserID, 10),
 			To:     strconv.FormatInt(debt.ToUserID, 10),
-			Amount: int(math.Round(debt.Amount)),
+			Amount: cents,
 		})
 	}
 
@@ -460,14 +469,14 @@ func (s *TransactionService) OptimizeDebts(ctx context.Context, eventID int64) (
 			EventID:    eventID,
 			FromUserID: fromID,
 			ToUserID:   toID,
-			Amount:     float64(t.Amount),
+			Amount:     float64(t.Amount) / 100,
 			CreatedAt:  time.Now(),
 			UpdatedAt:  time.Now(),
 		})
 		result = append(result, service.OptimizedDebtDTO{
 			FromUserID: fromID,
 			ToUserID:   toID,
-			Amount:     float64(t.Amount),
+			Amount:     float64(t.Amount) / 100,
 			EventID:    eventID,
 		})
 	}
@@ -478,6 +487,16 @@ func (s *TransactionService) OptimizeDebts(ctx context.Context, eventID int64) (
 	}
 
 	return result, nil
+}
+
+// debtCents переводит денежную сумму в целые копейки без потери дробной части.
+func debtCents(amount float64) (int, error) {
+	scaled := amount * 100
+	rounded := math.Round(scaled)
+	if math.IsNaN(scaled) || math.IsInf(scaled, 0) || rounded <= 0 || rounded >= float64(math.MaxInt) || math.Abs(scaled-rounded) > 0.0001 {
+		return 0, fmt.Errorf("debt amount must be positive whole cents within integer capacity")
+	}
+	return int(rounded), nil
 }
 
 // GetOptimizedDebtsByEventID возвращает оптимизированные долги по ID мероприятия
