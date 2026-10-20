@@ -168,7 +168,7 @@ func (m *ED25519TokenManager) GenerateToken(payload *service.TokenPayload) (stri
 	return tokenStr, nil
 }
 
-// ValidateToken проверяет валидность токена
+// ValidateToken проверяет подпись, срок и назначение access-токена.
 func (m *ED25519TokenManager) ValidateToken(tokenStr string) (*service.TokenPayload, error) {
 	// Декодируем из base64
 	tokenBytes, err := base64.StdEncoding.DecodeString(tokenStr)
@@ -196,9 +196,12 @@ func (m *ED25519TokenManager) ValidateToken(tokenStr string) (*service.TokenPayl
 	if err := json.Unmarshal(token.Payload, &payload); err != nil {
 		return nil, errors.New("invalid payload data")
 	}
+	if payload.Purpose != "access" {
+		return nil, errors.New("access token required")
+	}
 
 	// Проверяем срок действия токена
-	if payload.Exp < time.Now().Unix() {
+	if payload.Exp <= time.Now().Unix() {
 		return nil, errors.New("token expired")
 	}
 
@@ -212,10 +215,11 @@ func (m *ED25519TokenManager) GenerateTokenPair(userID int64, roles []string, ac
 	accessExpiresAt = now.Add(accessTTL).Unix()
 
 	accessPayload := &service.TokenPayload{
-		UserID: userID,
-		Roles:  roles,
-		Exp:    accessExpiresAt,
-		JTI:    uuid.New().String(), // Уникальный ID для access токена
+		Purpose: "access",
+		UserID:  userID,
+		Roles:   roles,
+		Exp:     accessExpiresAt,
+		JTI:     uuid.New().String(), // Уникальный ID для access токена
 	}
 
 	// Генерируем access токен
@@ -227,10 +231,11 @@ func (m *ED25519TokenManager) GenerateTokenPair(userID int64, roles []string, ac
 	// Создаем payload для refresh токена
 	refreshExpiresAt := now.Add(refreshTTL).Unix()
 	refreshPayload := &service.TokenPayload{
-		UserID: userID,
-		Roles:  roles,
-		Exp:    refreshExpiresAt,
-		JTI:    uuid.New().String(), // Уникальный ID для refresh токена
+		Purpose: "refresh",
+		UserID:  userID,
+		Roles:   roles,
+		Exp:     refreshExpiresAt,
+		JTI:     uuid.New().String(), // Уникальный ID для refresh токена
 	}
 
 	// Генерируем refresh токен

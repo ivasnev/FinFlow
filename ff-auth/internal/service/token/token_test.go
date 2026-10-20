@@ -115,9 +115,10 @@ func TestED25519TokenManager_GenerateToken(t *testing.T) {
 
 	t.Run("успешная генерация токена", func(t *testing.T) {
 		payload := &service.TokenPayload{
-			UserID: 1,
-			Roles:  []string{"user", "admin"},
-			Exp:    time.Now().Add(time.Hour).Unix(),
+			Purpose: "access",
+			UserID:  1,
+			Roles:   []string{"user", "admin"},
+			Exp:     time.Now().Add(time.Hour).Unix(),
 		}
 
 		token, err := manager.GenerateToken(payload)
@@ -135,9 +136,10 @@ func TestED25519TokenManager_GenerateToken(t *testing.T) {
 	t.Run("ошибка сериализации payload", func(t *testing.T) {
 		// Создаем невалидный payload (с циклической ссылкой)
 		invalidPayload := &service.TokenPayload{
-			UserID: 1,
-			Roles:  []string{"user"},
-			Exp:    time.Now().Add(time.Hour).Unix(),
+			Purpose: "access",
+			UserID:  1,
+			Roles:   []string{"user"},
+			Exp:     time.Now().Add(time.Hour).Unix(),
 		}
 
 		// Это должно работать нормально, так как TokenPayload не содержит циклических ссылок
@@ -170,9 +172,10 @@ func TestED25519TokenManager_ValidateToken(t *testing.T) {
 
 	t.Run("валидный токен", func(t *testing.T) {
 		payload := &service.TokenPayload{
-			UserID: 1,
-			Roles:  []string{"user", "admin"},
-			Exp:    time.Now().Add(time.Hour).Unix(),
+			Purpose: "access",
+			UserID:  1,
+			Roles:   []string{"user", "admin"},
+			Exp:     time.Now().Add(time.Hour).Unix(),
 		}
 
 		token, err := manager.GenerateToken(payload)
@@ -190,9 +193,10 @@ func TestED25519TokenManager_ValidateToken(t *testing.T) {
 
 	t.Run("истекший токен", func(t *testing.T) {
 		payload := &service.TokenPayload{
-			UserID: 1,
-			Roles:  []string{"user"},
-			Exp:    time.Now().Add(-time.Hour).Unix(), // Истекший токен
+			Purpose: "access",
+			UserID:  1,
+			Roles:   []string{"user"},
+			Exp:     time.Now().Add(-time.Hour).Unix(), // Истекший токен
 		}
 
 		token, err := manager.GenerateToken(payload)
@@ -220,9 +224,10 @@ func TestED25519TokenManager_ValidateToken(t *testing.T) {
 	t.Run("невалидная подпись токена", func(t *testing.T) {
 		// Создаем токен с неправильной подписью
 		payload := &service.TokenPayload{
-			UserID: 1,
-			Roles:  []string{"user"},
-			Exp:    time.Now().Add(time.Hour).Unix(),
+			Purpose: "access",
+			UserID:  1,
+			Roles:   []string{"user"},
+			Exp:     time.Now().Add(time.Hour).Unix(),
 		}
 
 		token, err := manager.GenerateToken(payload)
@@ -289,13 +294,10 @@ func TestED25519TokenManager_GenerateTokenPair(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, userID, accessPayload.UserID)
 
-		// Проверяем валидность refresh токена
+		// Refresh-токен не предоставляет доступ к API.
 		refreshPayload, err := manager.ValidateToken(refreshToken)
-		assert.NoError(t, err)
-		assert.Equal(t, userID, refreshPayload.UserID)
-
-		// Проверяем, что refresh токен живет дольше access токена
-		assert.Greater(t, refreshPayload.Exp, accessPayload.Exp)
+		assert.Error(t, err)
+		assert.Nil(t, refreshPayload)
 	})
 }
 

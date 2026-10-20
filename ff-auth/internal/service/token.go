@@ -7,10 +7,11 @@ import (
 
 // TokenPayload представляет содержимое токена
 type TokenPayload struct {
-	UserID int64    `json:"user_id"`
-	Roles  []string `json:"roles"`
-	Exp    int64    `json:"exp"`
-	JTI    string   `json:"jti,omitempty"` // JWT ID для уникальности токена
+	Purpose string   `json:"purpose"`
+	UserID  int64    `json:"user_id"`
+	Roles   []string `json:"roles"`
+	Exp     int64    `json:"exp"`
+	JTI     string   `json:"jti,omitempty"` // JWT ID для уникальности токена
 }
 
 // Token представляет структуру токена
@@ -29,7 +30,7 @@ type TokenManager interface {
 	GetPublicKey() ed25519.PublicKey
 	// GenerateToken создает новый токен
 	GenerateToken(payload *TokenPayload) (string, error)
-	// ValidateToken проверяет валидность токена
+	// ValidateToken проверяет подпись, срок и назначение access-токена.
 	ValidateToken(tokenStr string) (*TokenPayload, error)
 	// GenerateTokenPair генерирует пару токенов: access и refresh
 	GenerateTokenPair(userID int64, roles []string, accessTTL, refreshTTL time.Duration) (accessToken, refreshToken string, accessExpiresAt int64, err error)

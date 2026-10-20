@@ -209,8 +209,9 @@ func (a *TokenManagerAdapter) ValidateToken(tokenStr string) (*auth.TokenPayload
 
 	// Конвертируем service.TokenPayload в auth.TokenPayload
 	return &auth.TokenPayload{
-		UserID: payload.UserID,
-		Roles:  payload.Roles,
-		Exp:    payload.Exp,
+		Purpose: payload.Purpose,
+		UserID:  payload.UserID,
+		Roles:   payload.Roles,
+		Exp:     payload.Exp,
 	}, nil
 }

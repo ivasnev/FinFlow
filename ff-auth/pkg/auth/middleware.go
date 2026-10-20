@@ -13,9 +13,10 @@ type ValidateClient interface {
 
 // TokenPayload представляет содержимое токена
 type TokenPayload struct {
-	UserID int64    `json:"user_id"`
-	Roles  []string `json:"roles"`
-	Exp    int64    `json:"exp"`
+	Purpose string   `json:"purpose"`
+	UserID  int64    `json:"user_id"`
+	Roles   []string `json:"roles"`
+	Exp     int64    `json:"exp"`
 }
 
 // Token представляет структуру токена

@@ -240,4 +240,5 @@ make lint
 ### Запуск в режиме разработки (hot-reload)
 ```
 make dev
-``` 
+```
+Docker-образ: `docker build -f ff-split/Dockerfile -t ff-split .` из корня репозитория; используются локальные модули аутентификации.

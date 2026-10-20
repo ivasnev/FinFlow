@@ -40,6 +40,17 @@ func (s *LogoutSuite) TestLogout_Success() {
 	s.NoError(err)
 	s.Equal(201, registerResp.StatusCode())
 	s.NotNil(registerResp.JSON201)
+	if registerResp.JSON201 == nil {
+		s.T().FailNow()
+	}
+
+	// Refresh-токен не даёт доступ к защищённому API даже при живой сессии.
+	beforeLogout, err := s.APIClient.GetUserSessionsWithResponse(ctx, func(ctx context.Context, req *http.Request) error {
+		req.Header.Set("Authorization", "Bearer "+registerResp.JSON201.RefreshToken)
+		return nil
+	})
+	s.Require().NoError(err)
+	s.Equal(401, beforeLogout.StatusCode())
 
 	// Выполняем выход
 	logoutReq := api.LogoutJSONRequestBody{
@@ -52,6 +63,13 @@ func (s *LogoutSuite) TestLogout_Success() {
 
 	s.NoError(err, "выход должен пройти успешно")
 	s.Equal(200, logoutResp.StatusCode(), "должен быть статус 200")
+	// Удалённая сессия также не позволяет использовать refresh-токен как access.
+	afterLogout, err := s.APIClient.GetUserSessionsWithResponse(ctx, func(ctx context.Context, req *http.Request) error {
+		req.Header.Set("Authorization", "Bearer "+registerResp.JSON201.RefreshToken)
+		return nil
+	})
+	s.Require().NoError(err)
+	s.Equal(401, afterLogout.StatusCode())
 
 	// Проверяем, что токен больше не работает
 	refreshReq := api.RefreshTokenJSONRequestBody{
@@ -142,4 +160,3 @@ func (s *LogoutSuite) TestLogout_AlreadyLoggedOut() {
 	s.NotNil(logoutResp2.JSON500, "должен быть возвращен объект ошибки")
 	s.Contains(logoutResp2.JSON500.Error, "недействительный refresh-токен")
 }
-

@@ -78,7 +78,7 @@ func (c *Client) fetchPublicKey() (ed25519.PublicKey, error) {
 	return key, nil
 }
 
-// ValidateToken проверяет валидность токена
+// ValidateToken проверяет подпись, срок и назначение access-токена.
 func (c *Client) ValidateToken(tokenStr string) (*TokenPayload, error) {
 	// Получаем актуальный публичный ключ
 	publicKey, err := c.GetPublicKey()
@@ -109,9 +109,12 @@ func (c *Client) ValidateToken(tokenStr string) (*TokenPayload, error) {
 	if err := json.Unmarshal(token.Payload, &payload); err != nil {
 		return nil, errors.New("invalid payload data")
 	}
+	if payload.Purpose != "access" {
+		return nil, errors.New("access token required")
+	}
 
 	// Проверяем срок действия токена
-	if payload.Exp < time.Now().Unix() {
+	if payload.Exp <= time.Now().Unix() {
 		return nil, errors.New("token expired")
 	}
 

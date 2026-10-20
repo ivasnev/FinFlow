@@ -4,22 +4,16 @@ FROM golang:1.24-alpine AS builder
 # Устанавливаем git для скачивания Go модулей
 RUN apk add --no-cache git
 
-WORKDIR /app
-
-# Копируем файлы с зависимостями
-COPY go.mod go.sum ./
-
-RUN sed -i '/replace (/,/)/d' go.mod
-RUN sed -i '/replace .*=>/d' go.mod
-
-# Скачиваем зависимости
-RUN go mod download all
-
-# Копируем исходный код
-COPY internal/ ./internal
-COPY cmd/ ./cmd
-COPY pkg/ ./pkg
-COPY config/ ./config
+# Сборка из корня сохраняет локальную проверку назначения токенов.
+WORKDIR /src
+COPY ff-split/ ./ff-split/
+COPY ff-auth/ ./ff-auth/
+COPY ff-id/ ./ff-id/
+COPY ff-tvm/ ./ff-tvm/
+COPY ff-files/ ./ff-files/
+COPY ff-common/ ./ff-common/
+WORKDIR /src/ff-split
+RUN go mod download
 
 # Собираем приложение
 RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server ./cmd/app
@@ -32,7 +26,7 @@ WORKDIR /app
 # Копируем бинарный файл из этапа сборки
 COPY --from=builder /app/server .
 
-COPY config/ ./config
+COPY ff-split/config/ ./config
 
 # Открываем порт
 EXPOSE 8085
