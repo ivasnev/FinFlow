@@ -17,6 +17,7 @@ import (
 	"github.com/ivasnev/FinFlow/ff-split/internal/api/middleware"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/config"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
+	access_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/access"
 	activity_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/activity"
 	category_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/category"
 	event_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/event"
@@ -25,6 +26,7 @@ import (
 	transaction_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/transaction"
 	user_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/user"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
+	access_service "github.com/ivasnev/FinFlow/ff-split/internal/service/access"
 	activity_service "github.com/ivasnev/FinFlow/ff-split/internal/service/activity"
 	category_service "github.com/ivasnev/FinFlow/ff-split/internal/service/category"
 	event_service "github.com/ivasnev/FinFlow/ff-split/internal/service/event"
@@ -226,6 +228,7 @@ func (c *Container) RegisterRoutes() {
 
 	// Middleware для авторизации
 	authMiddleware := auth.AuthMiddleware(c.AuthClient)
+	eventAccess := middleware.EventAccess(access_service.NewService(access_repository.NewRepository(c.DB)))
 
 	// Регистрируем маршруты с помощью сгенерированного кода
 	api.RegisterHandlersWithOptions(c.Router, c.ServerHandler, api.GinServerOptions{
@@ -233,6 +236,9 @@ func (c *Container) RegisterRoutes() {
 		Middlewares: []api.MiddlewareFunc{
 			func(c *gin.Context) {
 				authMiddleware(c)
+				if !c.IsAborted() {
+					eventAccess(c)
+				}
 			},
 		},
 	})
