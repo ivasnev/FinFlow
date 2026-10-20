@@ -22,7 +22,8 @@ info:
     
     - Изображения: JPG, PNG, GIF, BMP, WEBP
     - Документы: PDF, DOC, DOCX, XLS, XLSX, TXT
-    - Максимальный размер файла: 100MB
+    - Максимальный суммарный размер файлов: 100 МиБ (104857600 байт)
+    - Максимум файлов: 10; тело запроса до 101 МиБ с учётом multipart-обрамления
   version: 1.0.0
   contact:
     name: FinFlow Team
@@ -43,7 +44,7 @@ paths:
       tags:
         - files
       summary: Загрузка одного файла
-      description: Загружает один файл в MinIO хранилище с возможностью добавления метаданных
+      description: Загружает один файл до 100 МиБ. Полное тело multipart-запроса ограничено 101 МиБ.
       operationId: uploadFile
       security:
         - TVMAuth: []
@@ -89,6 +90,12 @@ paths:
               example:
                 error: "No file is received"
                 code: 400
+        '413':
+          description: Превышен размер запроса, общий размер файлов или число файлов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Внутренняя ошибка сервера
           content:
@@ -101,7 +108,7 @@ paths:
       tags:
         - files
       summary: Загрузка нескольких файлов
-      description: Загружает несколько файлов одновременно в MinIO хранилище
+      description: Загружает до 10 файлов общим размером до 100 МиБ. Полное тело multipart-запроса ограничено 101 МиБ.
       operationId: uploadFiles
       security:
         - TVMAuth: []
@@ -119,6 +126,7 @@ paths:
                   items:
                     type: string
                     format: binary
+                  maxItems: 10
                   description: Массив файлов для загрузки
             encoding:
               files:
@@ -140,6 +148,12 @@ paths:
                     link: "http://localhost:9000/ff-files/37397e25-4g19-5g8a-c564-10fcd5fbd09e"
         '400':
           description: Некорректный запрос (файлы не переданы или неверная форма)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Превышен размер запроса, общий размер файлов или число файлов
           content:
             application/json:
               schema:

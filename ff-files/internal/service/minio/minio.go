@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -15,6 +16,7 @@ import (
 	"github.com/ivasnev/FinFlow/ff-files/internal/service"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"golang.org/x/sync/errgroup"
 )
 
 // minioServiceImpl реализация интерфейса MinIO
@@ -74,82 +76,79 @@ func (m *minioServiceImpl) InitMinio(cfg *config.MinIO) error {
 	return nil
 }
 
-// CreateOne создает один объект в бакете Minio
-func (m *minioServiceImpl) CreateOne(file service.FileData) (*service.FileUploadResult, error) {
-	// Генерация уникального идентификатора для нового объекта
-	objectID := uuid.New().String()
-
-	// Создание потока данных для загрузки в бакет Minio
-	reader := bytes.NewReader(file.Data)
-
-	// Определение ContentType на основе расширения файла
-	contentType := http.DetectContentType(file.Data)
-
-	// Параметры для загрузки объекта
-	opts := minio.PutObjectOptions{
-		ContentType: contentType,
-	}
-
-	// Загрузка данных в бакет Minio
-	_, err := m.mc.PutObject(context.Background(), m.cfg.BucketName, objectID, reader, int64(len(file.Data)), opts)
+// CreateOne сохраняет один файл, учитывая отмену запроса и ограничение размера.
+func (m *minioServiceImpl) CreateOne(ctx context.Context, file service.FileData) (*service.FileUploadResult, error) {
+	files, err := prepareUploads([]service.FileData{file})
 	if err != nil {
-		return nil, fmt.Errorf("ошибка при создании объекта %s: %v", file.FileName, err)
+		return nil, err
 	}
-
-	// Генерация подписанного URL для получения объекта
-	url, err := m.mc.PresignedGetObject(
-		context.Background(), m.cfg.BucketName, objectID,
-		time.Second*time.Duration(m.cfg.FileTimeExpiration),
-		nil)
-
-	if err != nil {
-		return nil, fmt.Errorf("ошибка при создании URL для объекта %s: %v", file.FileName, err)
-	}
-
-	return &service.FileUploadResult{
-		ObjectID: objectID,
-		Link:     url.String(),
-	}, nil
+	return m.upload(ctx, files[0])
 }
 
-// CreateMany создает несколько объектов в хранилище MinIO
-func (m *minioServiceImpl) CreateMany(data []service.FileData) ([]*service.FileUploadResult, error) {
-	objects := make([]*service.FileUploadResult, len(data))
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	errCh := make(chan error, 1)
-	var wg sync.WaitGroup
-	for index, file := range data {
-		objectID := uuid.NewString()
-		wg.Add(1)
-		go func(index int, objectID string, file service.FileData) {
-			defer wg.Done()
-			_, err := m.mc.PutObject(ctx, m.cfg.BucketName, objectID, bytes.NewReader(file.Data), int64(len(file.Data)), minio.PutObjectOptions{
-				ContentType: http.DetectContentType(file.Data),
-			})
-			if err == nil {
-				var link *url.URL
-				link, err = m.mc.PresignedGetObject(ctx, m.cfg.BucketName, objectID, time.Second*time.Duration(m.cfg.FileTimeExpiration), nil)
-				if err == nil {
-					objects[index] = &service.FileUploadResult{ObjectID: objectID, Link: link.String()}
-				}
+// upload передаёт ограниченный поток в SDK, сохраняя один ID объекта и ссылки.
+func (m *minioServiceImpl) upload(ctx context.Context, file service.FileData) (*service.FileUploadResult, error) {
+	objectID := uuid.NewString()
+	_, err := m.mc.PutObject(ctx, m.cfg.BucketName, objectID, io.LimitReader(file.Reader, file.Size), file.Size, minio.PutObjectOptions{ContentType: file.ContentType})
+	if err != nil {
+		return nil, fmt.Errorf("ошибка при создании объекта %s: %w", file.FileName, err)
+	}
+	link, err := m.mc.PresignedGetObject(ctx, m.cfg.BucketName, objectID, time.Second*time.Duration(m.cfg.FileTimeExpiration), nil)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка при создании URL для объекта %s: %w", file.FileName, err)
+	}
+	return &service.FileUploadResult{ObjectID: objectID, Link: link.String()}, nil
+}
+
+// prepareUploads проверяет весь пакет до первого обращения к хранилищу.
+func prepareUploads(data []service.FileData) ([]service.FileData, error) {
+	if len(data) == 0 || len(data) > service.MaxUploadFiles {
+		return nil, fmt.Errorf("число файлов должно быть от 1 до %d", service.MaxUploadFiles)
+	}
+	files := append([]service.FileData(nil), data...)
+	var total int64
+	for i := range files {
+		file := &files[i]
+		if file.Reader == nil {
+			file.Reader = bytes.NewReader(file.Data)
+			file.Size = int64(len(file.Data))
+			if file.ContentType == "" {
+				file.ContentType = http.DetectContentType(file.Data)
 			}
+		}
+		if file.Size < 0 || file.Size > service.MaxUploadBytes-total {
+			return nil, fmt.Errorf("общий размер файлов превышает %d байт", service.MaxUploadBytes)
+		}
+		total += file.Size
+	}
+	return files, nil
+}
+
+// CreateMany загружает пакет максимум четырьмя параллельными потоками.
+func (m *minioServiceImpl) CreateMany(ctx context.Context, data []service.FileData) ([]*service.FileUploadResult, error) {
+	files, err := prepareUploads(data)
+	if err != nil {
+		return nil, err
+	}
+	objects := make([]*service.FileUploadResult, len(files))
+	group, uploadCtx := errgroup.WithContext(ctx)
+	group.SetLimit(4)
+	for index, file := range files {
+		group.Go(func() error {
+			if err := uploadCtx.Err(); err != nil {
+				return err
+			}
+			result, err := m.upload(uploadCtx, file)
 			if err != nil {
-				select {
-				case errCh <- err:
-					cancel()
-				default:
-				}
+				return err
 			}
-		}(index, objectID, file)
+			objects[index] = result
+			return nil
+		})
 	}
-	wg.Wait()
-	select {
-	case err := <-errCh:
+	if err := group.Wait(); err != nil {
 		return nil, fmt.Errorf("ошибка при создании объектов: %w", err)
-	default:
-		return objects, nil
 	}
+	return objects, nil
 }
 
 // GetOne получает один объект из бакета Minio по его идентификатору

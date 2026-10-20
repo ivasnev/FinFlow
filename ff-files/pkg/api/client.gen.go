@@ -612,6 +612,7 @@ type UploadFileResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *FileUploadResponse
 	JSON400      *ErrorResponse
+	JSON413      *ErrorResponse
 	JSON500      *ErrorResponse
 }
 
@@ -684,6 +685,7 @@ type UploadFilesResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *FilesUploadResponse
 	JSON400      *ErrorResponse
+	JSON413      *ErrorResponse
 	JSON500      *ErrorResponse
 }
 
@@ -913,6 +915,13 @@ func ParseUploadFileResponse(rsp *http.Response) (*UploadFileResponse, error) {
 		}
 		response.JSON400 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -1032,6 +1041,13 @@ func ParseUploadFilesResponse(rsp *http.Response) (*UploadFilesResponse, error) 
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse

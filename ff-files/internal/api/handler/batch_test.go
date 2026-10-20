@@ -2,6 +2,8 @@ package handler
 
 import (
 	"bytes"
+	"context"
+	"io"
 	"mime/multipart"
 	"net/http/httptest"
 	"testing"
@@ -18,8 +20,15 @@ type batchStorage struct {
 }
 
 // CreateMany сохраняет исходные записи для проверки одинаковых имён.
-func (s *batchStorage) CreateMany(files []service.FileData) ([]*service.FileUploadResult, error) {
-	s.files = files
+func (s *batchStorage) CreateMany(ctx context.Context, files []service.FileData) ([]*service.FileUploadResult, error) {
+	s.files = append([]service.FileData(nil), files...)
+	for i := range files {
+		var err error
+		s.files[i].Data, err = io.ReadAll(files[i].Reader)
+		if err != nil {
+			return nil, err
+		}
+	}
 	results := make([]*service.FileUploadResult, len(files))
 	for i := range files {
 		results[i] = &service.FileUploadResult{ObjectID: uuid.NewString(), Link: "http://files.local/object"}

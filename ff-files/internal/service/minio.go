@@ -1,15 +1,26 @@
 package service
 
 import (
+	"context"
+	"io"
 	"time"
 
 	"github.com/ivasnev/FinFlow/ff-files/internal/common/config"
 )
 
+const (
+	MaxUploadBytes int64 = 100 << 20 // Общий объём файлов одного запроса: 100 МиБ.
+	MaxUploadFiles       = 10        // Максимум файлов в одном запросе.
+)
+
 // FileData представляет данные файла для загрузки
 type FileData struct {
-	FileName string
-	Data     []byte
+	FileName    string
+	Reader      io.Reader
+	Size        int64
+	ContentType string
+	// Data поддерживает существующие вызовы из памяти; HTTP использует Reader и Size.
+	Data []byte
 }
 
 // FileUploadResult представляет результат загрузки файла
@@ -41,10 +52,10 @@ type MinIO interface {
 	InitMinio(cfg *config.MinIO) error
 
 	// CreateOne создает один объект в бакете MinIO
-	CreateOne(file FileData) (*FileUploadResult, error)
+	CreateOne(ctx context.Context, file FileData) (*FileUploadResult, error)
 
 	// CreateMany создает несколько объектов в бакете MinIO
-	CreateMany(files []FileData) ([]*FileUploadResult, error)
+	CreateMany(ctx context.Context, files []FileData) ([]*FileUploadResult, error)
 
 	// GetOne получает один объект из бакета MinIO
 	GetOne(objectID string) (string, error)

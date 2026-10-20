@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -25,45 +24,18 @@ func NewServerHandler(minioService service.MinIO) *ServerHandler {
 
 // UploadFile обрабатывает запрос на загрузку одного файла
 func (h *ServerHandler) UploadFile(c *gin.Context) {
-	// Получаем файл из запроса
-	file, err := c.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse{
-			Error: "No file is received",
-			Code:  &[]int{http.StatusBadRequest}[0],
-		})
+	defer cleanupUpload(c)
+	files, ok := parseUpload(c, "file", 1)
+	if !ok {
 		return
 	}
-
-	// Открываем файл для чтения
-	f, err := file.Open()
+	file, closer, err := openUpload(files[0])
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse{
-			Error: "Unable to open the file",
-			Code:  &[]int{http.StatusInternalServerError}[0],
-		})
+		uploadError(c, http.StatusInternalServerError, "Unable to open file")
 		return
 	}
-	defer f.Close()
-
-	// Читаем содержимое файла в байтовый срез
-	fileBytes, err := io.ReadAll(f)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse{
-			Error: "Unable to read the file",
-			Code:  &[]int{http.StatusInternalServerError}[0],
-		})
-		return
-	}
-
-	// Создаем структуру FileData для хранения данных файла
-	fileData := service.FileData{
-		FileName: file.Filename,
-		Data:     fileBytes,
-	}
-
-	// Сохраняем файл в MinIO
-	result, err := h.minioService.CreateOne(fileData)
+	defer closer.Close()
+	result, err := h.minioService.CreateOne(c.Request.Context(), file)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{
 			Error: "Unable to save the file",
@@ -95,59 +67,22 @@ func (h *ServerHandler) UploadFile(c *gin.Context) {
 
 // UploadFiles обрабатывает запрос на загрузку нескольких файлов
 func (h *ServerHandler) UploadFiles(c *gin.Context) {
-	// Получаем multipart форму из запроса
-	form, err := c.MultipartForm()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse{
-			Error: "Invalid form",
-			Code:  &[]int{http.StatusBadRequest}[0],
-		})
+	defer cleanupUpload(c)
+	files, ok := parseUpload(c, "files", service.MaxUploadFiles)
+	if !ok {
 		return
 	}
-
-	// Получаем файлы из формы
-	files := form.File["files"]
-	if files == nil {
-		c.JSON(http.StatusBadRequest, api.ErrorResponse{
-			Error: "No files received",
-			Code:  &[]int{http.StatusBadRequest}[0],
-		})
-		return
-	}
-
-	// Подготавливаем данные для загрузки
 	fileData := make([]service.FileData, 0, len(files))
-	for _, file := range files {
-		// Открываем файл
-		f, err := file.Open()
+	for _, header := range files {
+		file, closer, err := openUpload(header)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, api.ErrorResponse{
-				Error: "Unable to open file: " + file.Filename,
-				Code:  &[]int{http.StatusInternalServerError}[0],
-			})
+			uploadError(c, http.StatusInternalServerError, "Unable to open file")
 			return
 		}
-
-		// Читаем содержимое файла
-		fileBytes, err := io.ReadAll(f)
-		f.Close()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, api.ErrorResponse{
-				Error: "Unable to read file: " + file.Filename,
-				Code:  &[]int{http.StatusInternalServerError}[0],
-			})
-			return
-		}
-
-		// Добавляем файл в пакет
-		fileData = append(fileData, service.FileData{
-			FileName: file.Filename,
-			Data:     fileBytes,
-		})
+		defer closer.Close()
+		fileData = append(fileData, file)
 	}
-
-	// Загружаем файлы
-	results, err := h.minioService.CreateMany(fileData)
+	results, err := h.minioService.CreateMany(c.Request.Context(), fileData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.ErrorResponse{
 			Error: "Unable to save files",

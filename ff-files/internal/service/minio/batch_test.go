@@ -1,6 +1,7 @@
 package minio
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -34,7 +35,7 @@ func TestBatchObjectIdentity(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := &minioServiceImpl{mc: client, cfg: &config.MinIO{BucketName: "test-bucket", FileTimeExpiration: 300}}
-	got, err := s.CreateMany([]service.FileData{{FileName: "same.txt", Data: []byte("first")}, {FileName: "same.txt", Data: []byte("second")}})
+	got, err := s.CreateMany(context.Background(), []service.FileData{{FileName: "same.txt", Data: []byte("first")}, {FileName: "same.txt", Data: []byte("second")}})
 	if err != nil {
 		t.Fatal(err)
 	}
