@@ -33,7 +33,7 @@ func TestBatchObjectIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := &minioServiceImpl{mc: client, cfg: &config.MinIO{BucketName: "test-bucket", FileTimeExpiration: 1}}
+	s := &minioServiceImpl{mc: client, cfg: &config.MinIO{BucketName: "test-bucket", FileTimeExpiration: 300}}
 	got, err := s.CreateMany([]service.FileData{{FileName: "same.txt", Data: []byte("first")}, {FileName: "same.txt", Data: []byte("second")}})
 	if err != nil {
 		t.Fatal(err)
@@ -56,6 +56,9 @@ func TestBatchObjectIdentity(t *testing.T) {
 		link, err := url.Parse(file.Link)
 		if err != nil {
 			t.Fatal(err)
+		}
+		if link.Query().Get("X-Amz-Expires") != "300" {
+			t.Fatalf("expiry must be seconds: %s", link.Query().Get("X-Amz-Expires"))
 		}
 		if link.Path != "/test-bucket/"+file.ObjectID {
 			t.Fatalf("link does not identify object: %s", file.Link)

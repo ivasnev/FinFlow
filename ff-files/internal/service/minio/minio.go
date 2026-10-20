@@ -129,7 +129,7 @@ func (m *minioServiceImpl) CreateMany(data []service.FileData) ([]*service.FileU
 			})
 			if err == nil {
 				var link *url.URL
-				link, err = m.mc.PresignedGetObject(ctx, m.cfg.BucketName, objectID, time.Hour*time.Duration(m.cfg.FileTimeExpiration), nil)
+				link, err = m.mc.PresignedGetObject(ctx, m.cfg.BucketName, objectID, time.Second*time.Duration(m.cfg.FileTimeExpiration), nil)
 				if err == nil {
 					objects[index] = &service.FileUploadResult{ObjectID: objectID, Link: link.String()}
 				}
