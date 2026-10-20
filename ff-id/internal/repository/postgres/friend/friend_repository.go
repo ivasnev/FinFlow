@@ -13,6 +13,7 @@ import (
 const (
 	FriendStatusPending  = "pending"
 	FriendStatusAccepted = "accepted"
+	FriendStatusBlocked  = "blocked"
 )
 
 // FriendRepository реализует интерфейс repository.Friend для работы с друзьями в PostgreSQL через GORM
@@ -81,25 +82,18 @@ func (r *FriendRepository) CreateMutualFriendship(ctx context.Context, userID, f
 	})
 }
 
-// RemoveFriend удаляет пользователя из друзей
+// RemoveFriend удаляет собственную связь и обратную дружбу, сохраняя чужую блокировку.
 func (r *FriendRepository) RemoveFriend(ctx context.Context, userID, friendID int64) error {
-	// Используем транзакцию для удаления двух записей
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Удаляем связь в одну сторону
-		result1 := tx.Where("user_id = ? AND friend_id = ?", userID, friendID).
-			Delete(&UserFriend{})
-
-		// Удаляем связь в обратную сторону
-		result2 := tx.Where("user_id = ? AND friend_id = ?", friendID, userID).
-			Delete(&UserFriend{})
-
-		// Проверяем, что хотя бы одна запись была удалена
-		if result1.RowsAffected == 0 && result2.RowsAffected == 0 {
-			return errors.New("friend relationship not found")
-		}
-
-		return nil
-	})
+	result := r.db.WithContext(ctx).
+		Where("(user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ? AND status <> ?)", userID, friendID, friendID, userID, FriendStatusBlocked).
+		Delete(&UserFriend{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("friend relationship not found")
+	}
+	return nil
 }
 
 // GetFriendRelation получает информацию о связи дружбы между пользователями
