@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/history"
 	"gorm.io/gorm"
 
 	domainerrors "github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
@@ -107,6 +108,13 @@ func (r *TransactionRepository) UpdateTransaction(tx *models.Transaction) error 
 func (r *TransactionRepository) DeleteTransaction(id int) error {
 	// Выполняем операции в транзакции
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := history.LockExpense(tx, id); err != nil {
+			return err
+		}
+		before, err := history.Expense(tx, id)
+		if err != nil {
+			return err
+		}
 		var expense Transaction
 		if err := tx.First(&expense, id).Error; err != nil {
 			return err
@@ -135,6 +143,9 @@ func (r *TransactionRepository) DeleteTransaction(id int) error {
 			}
 		}
 
+		if expense.EventID != nil {
+			return history.Record(tx.Statement.Context, tx, *expense.EventID, "expense.deleted", int64(id), before, nil)
+		}
 		return nil
 	})
 }

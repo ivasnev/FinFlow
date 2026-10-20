@@ -10,6 +10,7 @@ import (
 	customErrors "github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
+	"github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/history"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -174,48 +175,49 @@ func (r *UserRepository) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-// AddUserToEvent добавляет пользователя в мероприятие
-func (r *UserRepository) AddUserToEvent(ctx context.Context, userID, eventID int64) error {
-
-	// Добавляем связь между пользователем и мероприятием
-	err := db.GetTx(ctx, r.db).WithContext(ctx).
-		Exec("INSERT INTO user_event (user_id, event_id) VALUES (?, ?) ON CONFLICT DO NOTHING",
-			userID, eventID).Error
-	if err != nil {
-		return fmt.Errorf("ошибка при добавлении пользователя в мероприятие: %w", err)
-	}
-
-	return nil
-}
-
-// AddUsersToEvent добавляет пользователя в мероприятие
-func (r *UserRepository) AddUsersToEvent(ctx context.Context, ids []int64, eventID int64) error {
-	if len(ids) == 0 {
+// changeMembership объединяет фактическое изменение участия и журнал в общей транзакции.
+func (r *UserRepository) changeMembership(ctx context.Context, ids []int64, eventID int64, added bool) error {
+	return db.WithTx(ctx, r.db, func(ctx context.Context) error {
+		tx := db.GetTx(ctx, r.db).WithContext(ctx)
+		if err := history.LockEvent(tx, eventID); err != nil {
+			return err
+		}
+		for _, id := range ids {
+			var result *gorm.DB
+			if added {
+				result = tx.Exec("INSERT INTO user_event(user_id,event_id) VALUES(?,?) ON CONFLICT DO NOTHING", id, eventID)
+			} else {
+				result = tx.Exec("DELETE FROM user_event WHERE user_id=? AND event_id=?", id, eventID)
+			}
+			if result.Error != nil {
+				return result.Error
+			}
+			if result.RowsAffected > 0 {
+				if err := history.Member(ctx, tx, eventID, id, added); err != nil {
+					return err
+				}
+			}
+		}
 		return nil
-	}
-
-	var entries []UserEvent
-	for _, id := range ids {
-		entries = append(entries, UserEvent{UserID: id, EventID: eventID})
-	}
-
-	err := db.GetTx(ctx, r.db).WithContext(ctx).
-		Clauses(clause.OnConflict{DoNothing: true}).
-		Create(&entries).Error
-
-	if err != nil {
-		return fmt.Errorf("ошибка при добавлении пользователей в мероприятие: %w", err)
-	}
-
-	return nil
+	})
 }
 
-// RemoveUserFromEvent удаляет пользователя из мероприятия
+// AddUserToEvent сохраняет добавление одного участника.
+func (r *UserRepository) AddUserToEvent(ctx context.Context, userID, eventID int64) error {
+	return r.changeMembership(ctx, []int64{userID}, eventID, true)
+}
+
+// AddUsersToEvent сохраняет добавление участников без дублирования истории.
+func (r *UserRepository) AddUsersToEvent(ctx context.Context, ids []int64, eventID int64) error {
+	return r.changeMembership(ctx, ids, eventID, true)
+}
+
+// RemoveUserFromEvent сохраняет удаление участника вместе с его именем в истории.
 func (r *UserRepository) RemoveUserFromEvent(ctx context.Context, userID, eventID int64) error {
-	result := db.GetTx(ctx, r.db).WithContext(ctx).
-		Exec("DELETE FROM user_event WHERE user_id = ? AND event_id = ?", userID, eventID)
-	if result.Error != nil {
-		return fmt.Errorf("ошибка при удалении пользователя из мероприятия: %w", result.Error)
-	}
-	return nil
+	return r.changeMembership(ctx, []int64{userID}, eventID, false)
+}
+
+// InTransaction объединяет создание гостя, его участие и журнал в одном commit.
+func (r *UserRepository) InTransaction(ctx context.Context, fn func(context.Context) error) error {
+	return db.WithTx(ctx, r.db, fn)
 }

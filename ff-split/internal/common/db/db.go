@@ -34,7 +34,13 @@ func WithTxIsolation(
 	isolation sql.IsolationLevel,
 	txFunc func(ctx context.Context) error,
 ) (err error) {
-	tx := db.Begin(&sql.TxOptions{Isolation: isolation})
+	if _, ok := ctx.Value(TxContextKey{}).(*gorm.DB); ok {
+		return txFunc(ctx)
+	}
+	tx := db.WithContext(ctx).Begin(&sql.TxOptions{Isolation: isolation})
+	if tx.Error != nil {
+		return tx.Error
+	}
 	defer func() {
 		if recoverErr := recover(); recoverErr != nil {
 			_ = tx.Rollback()

@@ -47,6 +47,21 @@ security:
   - BearerAuth: []
 
 paths:
+  /api/v1/event/{id_event}/history:
+    get:
+      operationId: listHistory
+      tags: [events]
+      summary: История изменений события
+      parameters:
+        - {name: id_event, in: path, required: true, schema: {type: integer, format: int64}}
+        - {name: before, in: query, schema: {type: integer, format: int64, minimum: 1}}
+      responses:
+        '200':
+          description: Страница истории
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HistoryListResponse'}
+        '403': {description: Нет доступа к событию}
   /api/v1/icon-files:
     post:
       tags: [icons]
@@ -1724,6 +1739,25 @@ components:
       description: Авторизация через Bearer токен
 
   schemas:
+    HistoryEntry:
+      type: object
+      required: [id, event_id, actor_id, actor_name, kind, entity_id, before, after, created_at]
+      properties:
+        id: {type: integer, format: int64}
+        event_id: {type: integer, format: int64}
+        actor_id: {type: integer, format: int64}
+        actor_name: {type: string}
+        kind: {type: string}
+        entity_id: {type: integer, format: int64}
+        before: {type: object, additionalProperties: {type: string}}
+        after: {type: object, additionalProperties: {type: string}}
+        created_at: {type: string, format: date-time}
+    HistoryListResponse:
+      type: object
+      required: [entries]
+      properties:
+        entries: {type: array, items: {$ref: '#/components/schemas/HistoryEntry'}}
+        next_before: {type: integer, format: int64}
     SettlementRequest:
       type: object
       required: [from_user_id, amount_cents, request_id]

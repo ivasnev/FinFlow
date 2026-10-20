@@ -6,6 +6,7 @@ import (
 
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/db"
 
+	"github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/history"
 	"gorm.io/gorm"
 
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
@@ -157,7 +158,11 @@ func (s *EventService) CreateEvent(ctx context.Context, request *service.EventRe
 		if err != nil {
 			return fmt.Errorf("ошибка при добавлении пользователей в мероприятие: %w", err)
 		}
-		return nil
+		after, err := history.Event(db.GetTx(ctx, s.db).WithContext(ctx), event.ID)
+		if err != nil {
+			return err
+		}
+		return history.Record(ctx, db.GetTx(ctx, s.db).WithContext(ctx), event.ID, "event.created", event.ID, nil, after)
 	})
 	if err != nil {
 		return nil, err
@@ -195,11 +200,23 @@ func (s *EventService) UpdateEvent(ctx context.Context, id int64, request *servi
 		columns = append(columns, "category_id")
 	}
 	err := db.WithTx(ctx, s.db, func(ctx context.Context) error {
-		err := s.repo.Update(ctx, id, event, columns...)
+		tx := db.GetTx(ctx, s.db).WithContext(ctx)
+		if err := history.LockEvent(tx, id); err != nil {
+			return err
+		}
+		before, err := history.Event(tx, id)
+		if err != nil {
+			return err
+		}
+		err = s.repo.Update(ctx, id, event, columns...)
 		if err != nil {
 			return fmt.Errorf("Ошибка при обновлении мероприятия: %w", err)
 		}
-		return nil
+		after, err := history.Event(tx, id)
+		if err != nil {
+			return err
+		}
+		return history.Record(ctx, tx, id, "event.updated", id, before, after)
 	})
 	if err != nil {
 		return nil, err

@@ -13,6 +13,7 @@ import (
 	commonerrors "github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
+	"github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/history"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service/debt_calculator"
 	"gorm.io/gorm"
@@ -125,6 +126,9 @@ func (s *TransactionService) CreateTransaction(ctx context.Context, eventID int6
 	var result *service.TransactionResponse
 	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		repo := s.repo.WithTx(tx)
+		if err := history.LockEvent(tx, eventID); err != nil {
+			return err
+		}
 		// Проверяем существование мероприятия
 		_, err := s.eventService.GetEventByID(ctx, eventID)
 		if err != nil {
@@ -197,7 +201,11 @@ func (s *TransactionService) CreateTransaction(ctx context.Context, eventID int6
 		if err := repo.InvalidateOptimization(eventID); err != nil {
 			return err
 		}
-		return nil
+		after, err := history.Expense(tx, transaction.ID)
+		if err != nil {
+			return err
+		}
+		return history.Record(ctx, tx, eventID, "expense.created", int64(transaction.ID), nil, after)
 	})
 
 	if err != nil {
@@ -225,6 +233,13 @@ func (s *TransactionService) UpdateTransaction(ctx context.Context, id int, req 
 	var result *service.TransactionResponse
 	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		repo := s.repo.WithTx(tx)
+		if err := history.LockExpense(tx, id); err != nil {
+			return err
+		}
+		before, err := history.Expense(tx, id)
+		if err != nil {
+			return err
+		}
 		// Получаем транзакцию
 		transaction, err := repo.GetTransactionByID(id)
 		if err != nil {
@@ -303,7 +318,11 @@ func (s *TransactionService) UpdateTransaction(ctx context.Context, id int, req 
 		if err := repo.InvalidateOptimization(eventID); err != nil {
 			return err
 		}
-		return nil
+		after, err := history.Expense(tx, transaction.ID)
+		if err != nil {
+			return err
+		}
+		return history.Record(ctx, tx, eventID, "expense.updated", int64(transaction.ID), before, after)
 	})
 
 	if err != nil {
@@ -336,7 +355,7 @@ func (s *TransactionService) validateParticipants(ctx context.Context, eventID i
 
 // DeleteTransaction удаляет транзакцию
 func (s *TransactionService) DeleteTransaction(ctx context.Context, id int) error {
-	return s.repo.DeleteTransaction(id)
+	return s.repo.WithContext(ctx).DeleteTransaction(id)
 }
 
 // GetDebtsByEventID возвращает долги в рамках мероприятия

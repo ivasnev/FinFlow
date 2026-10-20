@@ -137,6 +137,9 @@ type ClientInterface interface {
 	// GetDebtsByEventID request
 	GetDebtsByEventID(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListHistory request
+	ListHistory(ctx context.Context, idEvent int64, params *ListHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetOptimizedDebtsByEventID request
 	GetOptimizedDebtsByEventID(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -458,6 +461,18 @@ func (c *Client) UpdateActivity(ctx context.Context, idEvent int64, idActivity i
 
 func (c *Client) GetDebtsByEventID(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetDebtsByEventIDRequest(c.Server, idEvent)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListHistory(ctx context.Context, idEvent int64, params *ListHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListHistoryRequest(c.Server, idEvent, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1540,6 +1555,62 @@ func NewGetDebtsByEventIDRequest(server string, idEvent int64) (*http.Request, e
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListHistoryRequest generates requests for ListHistory
+func NewListHistoryRequest(server string, idEvent int64, params *ListHistoryParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_event", runtime.ParamLocationPath, idEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/event/%s/history", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Before != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "before", runtime.ParamLocationQuery, *params.Before); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
@@ -3069,6 +3140,9 @@ type ClientWithResponsesInterface interface {
 	// GetDebtsByEventIDWithResponse request
 	GetDebtsByEventIDWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*GetDebtsByEventIDResponse, error)
 
+	// ListHistoryWithResponse request
+	ListHistoryWithResponse(ctx context.Context, idEvent int64, params *ListHistoryParams, reqEditors ...RequestEditorFn) (*ListHistoryResponse, error)
+
 	// GetOptimizedDebtsByEventIDWithResponse request
 	GetOptimizedDebtsByEventIDWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*GetOptimizedDebtsByEventIDResponse, error)
 
@@ -3500,6 +3574,28 @@ func (r GetDebtsByEventIDResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetDebtsByEventIDResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListHistoryResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *HistoryListResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListHistoryResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListHistoryResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -4468,6 +4564,15 @@ func (c *ClientWithResponses) GetDebtsByEventIDWithResponse(ctx context.Context,
 	return ParseGetDebtsByEventIDResponse(rsp)
 }
 
+// ListHistoryWithResponse request returning *ListHistoryResponse
+func (c *ClientWithResponses) ListHistoryWithResponse(ctx context.Context, idEvent int64, params *ListHistoryParams, reqEditors ...RequestEditorFn) (*ListHistoryResponse, error) {
+	rsp, err := c.ListHistory(ctx, idEvent, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListHistoryResponse(rsp)
+}
+
 // GetOptimizedDebtsByEventIDWithResponse request returning *GetOptimizedDebtsByEventIDResponse
 func (c *ClientWithResponses) GetOptimizedDebtsByEventIDWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*GetOptimizedDebtsByEventIDResponse, error) {
 	rsp, err := c.GetOptimizedDebtsByEventID(ctx, idEvent, reqEditors...)
@@ -5370,6 +5475,32 @@ func ParseGetDebtsByEventIDResponse(rsp *http.Response) (*GetDebtsByEventIDRespo
 			return nil, err
 		}
 		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListHistoryResponse parses an HTTP response from a ListHistoryWithResponse call
+func ParseListHistoryResponse(rsp *http.Response) (*ListHistoryResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListHistoryResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest HistoryListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	}
 

@@ -27,6 +27,7 @@ func TestTransactionService_GetTransactionByID(t *testing.T) {
 	transactionService := NewTransactionService(db, mockTransactionRepo, mockUserService, mockEventService)
 
 	ctx := context.Background()
+	mockTransactionRepo.EXPECT().WithContext(gomock.Any()).Return(mockTransactionRepo).AnyTimes()
 	transactionID := 1
 
 	t.Run("успешное получение транзакции", func(t *testing.T) {
@@ -99,6 +100,7 @@ func TestTransactionService_DeleteTransaction(t *testing.T) {
 	transactionService := NewTransactionService(db, mockTransactionRepo, mockUserService, mockEventService)
 
 	ctx := context.Background()
+	mockTransactionRepo.EXPECT().WithContext(gomock.Any()).Return(mockTransactionRepo).AnyTimes()
 	transactionID := 1
 
 	t.Run("успешное удаление транзакции", func(t *testing.T) {

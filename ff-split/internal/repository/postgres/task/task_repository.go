@@ -1,7 +1,10 @@
 package task
 
 import (
+	"context"
 	"errors"
+	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
+	"github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/history"
 	"strconv"
 
 	customErrors "github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
@@ -40,37 +43,76 @@ func (r *TaskRepository) GetTaskByID(id uint) (*models.Task, error) {
 	return extract(&dbTask), nil
 }
 
-// CreateTask создает новую задачу
+// WithContext привязывает запросы к автору и сроку жизни операции.
+func (r *TaskRepository) WithContext(ctx context.Context) repository.Task {
+	return NewTaskRepository(r.db.WithContext(ctx))
+}
+
+// CreateTask атомарно сохраняет задачу и запись журнала.
 func (r *TaskRepository) CreateTask(task *models.Task) error {
-	dbTask := load(task)
-	if err := r.db.Create(dbTask).Error; err != nil {
-		return err
-	}
-	task.ID = dbTask.ID
-	return nil
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if task.EventID != nil {
+			if err := history.LockEvent(tx, *task.EventID); err != nil {
+				return err
+			}
+		}
+		row := load(task)
+		if err := tx.Create(row).Error; err != nil {
+			return err
+		}
+		task.ID = row.ID
+		after, err := history.Task(tx, uint(row.ID))
+		if err != nil {
+			return err
+		}
+		if task.EventID != nil {
+			return history.Record(tx.Statement.Context, tx, *task.EventID, "task.created", int64(task.ID), nil, after)
+		}
+		return nil
+	})
 }
 
-// UpdateTask обновляет существующую задачу
-func (r *TaskRepository) UpdateTask(task *models.Task) error {
-	dbTask := load(task)
-	result := r.db.Save(dbTask)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return errors.New("задача не найдена")
-	}
-	return nil
+// change удерживает событие и задачу до окончания изменения и записи журнала.
+func (r *TaskRepository) change(id uint, task *models.Task) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var eventID int64
+		if err := tx.Raw("SELECT event_id FROM tasks WHERE id=?", id).Scan(&eventID).Error; err != nil {
+			return err
+		}
+		if err := history.LockEvent(tx, eventID); err != nil {
+			return err
+		}
+		var current Task
+		if err := tx.First(&current, id).Error; err != nil {
+			return err
+		}
+		before, err := history.Task(tx, id)
+		if err != nil {
+			return err
+		}
+		kind := "task.deleted"
+		var after map[string]string
+		if task == nil {
+			if err := tx.Delete(&Task{}, id).Error; err != nil {
+				return err
+			}
+		} else {
+			row := load(task)
+			if err := tx.Model(&Task{}).Where("id=?", id).Select("title", "description", "user_id", "priority").Updates(row).Error; err != nil {
+				return err
+			}
+			after, err = history.Task(tx, id)
+			if err != nil {
+				return err
+			}
+			kind = "task.updated"
+		}
+		return history.Record(tx.Statement.Context, tx, eventID, kind, int64(id), before, after)
+	})
 }
 
-// DeleteTask удаляет задачу по идентификатору
-func (r *TaskRepository) DeleteTask(id uint) error {
-	result := r.db.Delete(&Task{}, id)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return errors.New("задача не найдена")
-	}
-	return nil
-}
+// UpdateTask сохраняет новую задачу вместе со снимком прежних полей.
+func (r *TaskRepository) UpdateTask(task *models.Task) error { return r.change(uint(task.ID), task) }
+
+// DeleteTask сохраняет снимок перед удалением задачи.
+func (r *TaskRepository) DeleteTask(id uint) error { return r.change(id, nil) }

@@ -7,6 +7,7 @@ import (
 
 	txcontext "github.com/ivasnev/FinFlow/ff-split/internal/common/db"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
+	"github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/history"
 	"gorm.io/gorm"
 )
 
@@ -100,7 +101,15 @@ func (r *Repository) Create(ctx context.Context, row *models.Settlement) error {
 	if err := r.conn(ctx).Create(row).Error; err != nil {
 		return err
 	}
-	return r.conn(ctx).Exec("UPDATE events SET debt_revision=debt_revision+1 WHERE id=?", row.EventID).Error
+	tx := r.conn(ctx)
+	if err := tx.Exec("UPDATE events SET debt_revision=debt_revision+1 WHERE id=?", row.EventID).Error; err != nil {
+		return err
+	}
+	after, err := history.Payment(tx, row)
+	if err != nil {
+		return err
+	}
+	return history.Record(ctx, tx, row.EventID, "settlement.created", row.ID, nil, after)
 }
 
 // Cancel сохраняет сам факт ошибочной записи и увеличивает версию только при первой отмене.
@@ -112,5 +121,17 @@ func (r *Repository) Cancel(ctx context.Context, eventID, id int64) error {
 	if result.RowsAffected == 0 {
 		return nil
 	}
-	return r.conn(ctx).Exec("UPDATE events SET debt_revision=debt_revision+1 WHERE id=?", eventID).Error
+	tx := r.conn(ctx)
+	if err := tx.Exec("UPDATE events SET debt_revision=debt_revision+1 WHERE id=?", eventID).Error; err != nil {
+		return err
+	}
+	row, err := r.Get(ctx, eventID, id)
+	if err != nil {
+		return err
+	}
+	before, err := history.Payment(tx, row)
+	if err != nil {
+		return err
+	}
+	return history.Record(ctx, tx, eventID, "settlement.canceled", id, before, nil)
 }

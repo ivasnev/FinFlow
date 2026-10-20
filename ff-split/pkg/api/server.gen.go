@@ -53,6 +53,9 @@ type ServerInterface interface {
 	// Получить долги мероприятия
 	// (GET /api/v1/event/{id_event}/debts)
 	GetDebtsByEventID(c *gin.Context, idEvent int64)
+	// История изменений события
+	// (GET /api/v1/event/{id_event}/history)
+	ListHistory(c *gin.Context, idEvent int64, params ListHistoryParams)
 	// Получить оптимизированные долги
 	// (GET /api/v1/event/{id_event}/optimized-debts)
 	GetOptimizedDebtsByEventID(c *gin.Context, idEvent int64)
@@ -534,6 +537,43 @@ func (siw *ServerInterfaceWrapper) GetDebtsByEventID(c *gin.Context) {
 	}
 
 	siw.Handler.GetDebtsByEventID(c, idEvent)
+}
+
+// ListHistory operation middleware
+func (siw *ServerInterfaceWrapper) ListHistory(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id_event" -------------
+	var idEvent int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_event", c.Param("id_event"), &idEvent, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_event: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListHistoryParams
+
+	// ------------- Optional query parameter "before" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "before", c.Request.URL.Query(), &params.Before)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter before: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListHistory(c, idEvent, params)
 }
 
 // GetOptimizedDebtsByEventID operation middleware
@@ -1562,6 +1602,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/api/v1/event/:id_event/activity/:id_activity", wrapper.GetActivityByID)
 	router.PUT(options.BaseURL+"/api/v1/event/:id_event/activity/:id_activity", wrapper.UpdateActivity)
 	router.GET(options.BaseURL+"/api/v1/event/:id_event/debts", wrapper.GetDebtsByEventID)
+	router.GET(options.BaseURL+"/api/v1/event/:id_event/history", wrapper.ListHistory)
 	router.GET(options.BaseURL+"/api/v1/event/:id_event/optimized-debts", wrapper.GetOptimizedDebtsByEventID)
 	router.POST(options.BaseURL+"/api/v1/event/:id_event/optimized-debts", wrapper.OptimizeDebts)
 	router.GET(options.BaseURL+"/api/v1/event/:id_event/settlements", wrapper.ListSettlements)

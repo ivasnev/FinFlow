@@ -15,12 +15,14 @@ import (
 	ffidadapter "github.com/ivasnev/FinFlow/ff-split/internal/adapters/ffid"
 	handler "github.com/ivasnev/FinFlow/ff-split/internal/api/handler"
 	"github.com/ivasnev/FinFlow/ff-split/internal/api/middleware"
+	"github.com/ivasnev/FinFlow/ff-split/internal/common/actor"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/config"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
 	access_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/access"
 	activity_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/activity"
 	category_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/category"
 	event_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/event"
+	"github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/history"
 	icon_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/icon"
 	settlement_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/settlement"
 	task_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/task"
@@ -233,6 +235,7 @@ func (c *Container) initDB() error {
 // RegisterRoutes - регистрирует все маршруты API
 func (c *Container) RegisterRoutes() {
 	c.ServerHandler.SetSettlementService(c.SettlementService)
+	c.ServerHandler.SetHistoryService(history.NewRepository(c.DB))
 	// Добавляем CORS middleware глобально для всех маршрутов
 	c.Router.Use(middleware.CORSMiddleware())
 
@@ -250,6 +253,9 @@ func (c *Container) RegisterRoutes() {
 			func(c *gin.Context) {
 				authMiddleware(c)
 				if !c.IsAborted() {
+					if user, ok := auth.GetUserData(c); ok {
+						c.Request = c.Request.WithContext(actor.WithID(c.Request.Context(), user.UserID))
+					}
 					eventAccess(c)
 				}
 			},

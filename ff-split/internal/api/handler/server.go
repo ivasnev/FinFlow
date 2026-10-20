@@ -6,6 +6,7 @@ import (
 
 // ServerHandler реализует сгенерированный интерфейс api.ServerInterface
 type ServerHandler struct {
+	historyService     service.History
 	settlementService  service.Settlement
 	eventService       service.Event
 	userService        service.User
@@ -42,3 +43,6 @@ func NewServerHandler(
 
 // SetSettlementService подключает журнал возвратов к обработчику.
 func (s *ServerHandler) SetSettlementService(ledger service.Settlement) { s.settlementService = ledger }
+
+// SetHistoryService подключает доступ только для чтения журнала.
+func (s *ServerHandler) SetHistoryService(history service.History) { s.historyService = history }

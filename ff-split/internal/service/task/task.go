@@ -21,7 +21,7 @@ func NewTaskService(repo repository.Task, userService service.User) *TaskService
 
 // GetTasksByEventID возвращает список задач мероприятия
 func (s *TaskService) GetTasksByEventID(ctx context.Context, eventID int64) ([]service.TaskDTO, error) {
-	tasks, err := s.repo.GetTasksByEventID(eventID)
+	tasks, err := s.contextRepo(ctx).GetTasksByEventID(eventID)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func (s *TaskService) GetTasksByEventID(ctx context.Context, eventID int64) ([]s
 
 // GetTaskByID возвращает задачу по ID
 func (s *TaskService) GetTaskByID(ctx context.Context, id uint) (*service.TaskDTO, error) {
-	task, err := s.repo.GetTaskByID(id)
+	task, err := s.contextRepo(ctx).GetTaskByID(id)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (s *TaskService) CreateTask(ctx context.Context, eventID int64, taskRequest
 		Priority:    taskRequest.Priority,
 	}
 
-	err = s.repo.CreateTask(&task)
+	err = s.contextRepo(ctx).CreateTask(&task)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (s *TaskService) UpdateTask(ctx context.Context, id uint, taskRequest *serv
 	}
 
 	// Получаем существующую задачу для сохранения неизменяемых полей
-	existingTask, err := s.repo.GetTaskByID(id)
+	existingTask, err := s.contextRepo(ctx).GetTaskByID(id)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (s *TaskService) UpdateTask(ctx context.Context, id uint, taskRequest *serv
 	existingTask.Description = taskRequest.Description
 	existingTask.Priority = taskRequest.Priority
 
-	err = s.repo.UpdateTask(existingTask)
+	err = s.contextRepo(ctx).UpdateTask(existingTask)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (s *TaskService) UpdateTask(ctx context.Context, id uint, taskRequest *serv
 
 // DeleteTask удаляет задачу по ID
 func (s *TaskService) DeleteTask(ctx context.Context, id uint) error {
-	return s.repo.DeleteTask(id)
+	return s.contextRepo(ctx).DeleteTask(id)
 }
 
 // Вспомогательные функции для маппинга между моделью и DTO
@@ -121,4 +121,14 @@ func mapTaskToDTO(task models.Task) service.TaskDTO {
 		Priority:    task.Priority,
 		CreatedAt:   task.CreatedAt,
 	}
+}
+
+// contextRepo передаёт отмену и доверенного автора конкретному репозиторию без изменения общего экземпляра.
+func (s *TaskService) contextRepo(ctx context.Context) repository.Task {
+	if r, ok := s.repo.(interface {
+		WithContext(context.Context) repository.Task
+	}); ok {
+		return r.WithContext(ctx)
+	}
+	return s.repo
 }

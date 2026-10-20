@@ -193,6 +193,25 @@ type EventResponse struct {
 	PhotoId *string `json:"photo_id,omitempty"`
 }
 
+// HistoryEntry defines model for HistoryEntry.
+type HistoryEntry struct {
+	ActorId   int64             `json:"actor_id"`
+	ActorName string            `json:"actor_name"`
+	After     map[string]string `json:"after"`
+	Before    map[string]string `json:"before"`
+	CreatedAt time.Time         `json:"created_at"`
+	EntityId  int64             `json:"entity_id"`
+	EventId   int64             `json:"event_id"`
+	Id        int64             `json:"id"`
+	Kind      string            `json:"kind"`
+}
+
+// HistoryListResponse defines model for HistoryListResponse.
+type HistoryListResponse struct {
+	Entries    []HistoryEntry `json:"entries"`
+	NextBefore *int64         `json:"next_before,omitempty"`
+}
+
 // IconDTO defines model for IconDTO.
 type IconDTO struct {
 	// ExternalUuid Внешний UUID
@@ -440,6 +459,11 @@ type GetCategoriesParams struct {
 type GetCategoryByIDParams struct {
 	// CategoryType Тип категории
 	CategoryType CategoryType `form:"category_type" json:"category_type"`
+}
+
+// ListHistoryParams defines parameters for ListHistory.
+type ListHistoryParams struct {
+	Before *int64 `form:"before,omitempty" json:"before,omitempty"`
 }
 
 // ListSettlementsParams defines parameters for ListSettlements.

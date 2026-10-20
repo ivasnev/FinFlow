@@ -49,23 +49,26 @@ func (s *UserService) CreateUser(ctx context.Context, user *models.User) (*model
 
 // CreateDummyUser создает нового dummy-пользователя для мероприятия
 func (s *UserService) CreateDummyUser(ctx context.Context, name string, eventID int64) (*models.User, error) {
-	// Создаем dummy пользователя без UserID (он будет заполнен автоматически)
-	dummyUser := &models.User{
-		NameCashed: name,
-		IsDummy:    true,
+	var createdUser *models.User
+	create := func(ctx context.Context) error {
+		var err error
+		createdUser, err = s.userRepository.Create(ctx, &models.User{NameCashed: name, IsDummy: true})
+		if err != nil {
+			return fmt.Errorf("ошибка при создании dummy пользователя: %w", err)
+		}
+		return s.AddUserToEvent(ctx, createdUser.ID, eventID)
 	}
-
-	// Создаем пользователя
-	createdUser, err := s.userRepository.Create(ctx, dummyUser)
+	var err error
+	if atomic, ok := s.userRepository.(interface {
+		InTransaction(context.Context, func(context.Context) error) error
+	}); ok {
+		err = atomic.InTransaction(ctx, create)
+	} else {
+		err = create(ctx)
+	}
 	if err != nil {
-		return nil, fmt.Errorf("ошибка при создании dummy пользователя: %w", err)
+		return nil, err
 	}
-
-	// Добавляем пользователя в мероприятие
-	if err := s.AddUserToEvent(ctx, createdUser.ID, eventID); err != nil {
-		return nil, fmt.Errorf("ошибка при добавлении dummy пользователя в мероприятие: %w", err)
-	}
-
 	return createdUser, nil
 }
 
