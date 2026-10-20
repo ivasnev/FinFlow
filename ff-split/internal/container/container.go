@@ -165,6 +165,14 @@ func (c *Container) initHandler() {
 		c.TaskService,
 		c.CategoryService,
 		c.IconService,
+		&handler.IconFileGateway{
+			BaseURL: c.Config.FileService.BaseURL,
+			Client: &http.Client{
+				Transport:     tvmtransport.NewTVMTransport(c.TVMClient, http.DefaultTransport, c.Config.TVM.ServiceID, c.Config.FileService.ServiceID),
+				Timeout:       30 * time.Second,
+				CheckRedirect: func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse },
+			},
+		},
 	)
 }
 

@@ -36,12 +36,12 @@ func (s *ServerHandler) GetIconByID(c *gin.Context, id int) {
 
 	if icon == nil {
 		c.JSON(http.StatusNotFound, api.ErrorResponse{
-		Id: c.GetHeader("X-Request-ID"),
-		Error: api.ErrorResponseDetail{
-			Code:    "not_found",
-			Message: "иконка не найдена",
-		},
-	})
+			Id: c.GetHeader("X-Request-ID"),
+			Error: api.ErrorResponseDetail{
+				Code:    "not_found",
+				Message: "иконка не найдена",
+			},
+		})
 		return
 	}
 
@@ -50,15 +50,18 @@ func (s *ServerHandler) GetIconByID(c *gin.Context, id int) {
 
 // CreateIcon создает новую иконку
 func (s *ServerHandler) CreateIcon(c *gin.Context) {
+	if !requireIconAdmin(c) {
+		return
+	}
 	var apiRequest api.IconRequest
 	if err := c.ShouldBindJSON(&apiRequest); err != nil {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{
-		Id: c.GetHeader("X-Request-ID"),
-		Error: api.ErrorResponseDetail{
-			Code:    "validation",
-			Message: "некорректные данные запроса",
-		},
-	})
+			Id: c.GetHeader("X-Request-ID"),
+			Error: api.ErrorResponseDetail{
+				Code:    "validation",
+				Message: "некорректные данные запроса",
+			},
+		})
 		return
 	}
 
@@ -78,15 +81,18 @@ func (s *ServerHandler) CreateIcon(c *gin.Context) {
 
 // UpdateIcon обновляет иконку
 func (s *ServerHandler) UpdateIcon(c *gin.Context, id int) {
+	if !requireIconAdmin(c) {
+		return
+	}
 	var apiRequest api.IconRequest
 	if err := c.ShouldBindJSON(&apiRequest); err != nil {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{
-		Id: c.GetHeader("X-Request-ID"),
-		Error: api.ErrorResponseDetail{
-			Code:    "validation",
-			Message: "некорректные данные запроса",
-		},
-	})
+			Id: c.GetHeader("X-Request-ID"),
+			Error: api.ErrorResponseDetail{
+				Code:    "validation",
+				Message: "некорректные данные запроса",
+			},
+		})
 		return
 	}
 
@@ -107,6 +113,9 @@ func (s *ServerHandler) UpdateIcon(c *gin.Context, id int) {
 
 // DeleteIcon удаляет иконку
 func (s *ServerHandler) DeleteIcon(c *gin.Context, id int) {
+	if !requireIconAdmin(c) {
+		return
+	}
 	err := s.iconService.DeleteIcon(c.Request.Context(), uint(id))
 	if err != nil {
 		errors.HTTPErrorHandler(c, fmt.Errorf("ошибка при удалении иконки: %w", err))

@@ -15,7 +15,7 @@ import (
 // TestEventUpdateOptionalValues проверяет пропуск, очистку и замену полей через HTTP и настоящий PostgreSQL.
 func TestEventUpdateOptionalValues(t *testing.T) {
 	database, c := setupOptimizationTest(t)
-	h := handler.NewServerHandler(c.EventService, c.UserService, c.TransactionService, c.ActivityService, c.TaskService, c.CategoryService, c.IconService)
+	h := handler.NewServerHandler(c.EventService, c.UserService, c.TransactionService, c.ActivityService, c.TaskService, c.CategoryService, c.IconService, nil)
 	api.RegisterHandlers(c.Router, h)
 	if err := database.DB.Exec(`INSERT INTO event_categories(id,name) VALUES(10,'first'),(20,'second');`).Error; err != nil {
 		t.Fatal(err)

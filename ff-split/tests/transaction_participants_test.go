@@ -27,7 +27,7 @@ func TestTransactionParticipants(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := handler.NewServerHandler(c.EventService, c.UserService, c.TransactionService, c.ActivityService, c.TaskService, c.CategoryService, c.IconService)
+	h := handler.NewServerHandler(c.EventService, c.UserService, c.TransactionService, c.ActivityService, c.TaskService, c.CategoryService, c.IconService, nil)
 	api.RegisterHandlers(c.Router, h)
 	request := func(method, path, body string) *httptest.ResponseRecorder {
 		t.Helper()

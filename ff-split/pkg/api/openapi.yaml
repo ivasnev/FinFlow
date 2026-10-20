@@ -47,6 +47,72 @@ security:
   - BearerAuth: []
 
 paths:
+  /api/v1/icon-files:
+    post:
+      tags: [icons]
+      operationId: uploadIconFile
+      summary: Загрузить изображение иконки (только admin)
+      description: PNG, JPEG, GIF или WebP до 5 МиБ. TVM-вызов выполняется сервером.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Файл загружен
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [object_id]
+                    properties:
+                      object_id:
+                        type: string
+                        format: uuid
+        '403':
+          description: Требуется роль admin
+        '413':
+          description: Превышен размер файла
+        '502':
+          description: Файловый сервис недоступен
+  /api/v1/icon-files/{file_id}:
+    get:
+      tags: [icons]
+      operationId: getIconFileURL
+      summary: Получить ссылку на файл зарегистрированной иконки
+      parameters:
+        - name: file_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Временная ссылка на изображение
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: string
+        '404':
+          description: Файл не связан с иконкой
+        '502':
+          description: Файловый сервис недоступен
   /api/v1/event:
     get:
       tags:

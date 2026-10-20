@@ -44,7 +44,7 @@ func TestEventAccessHTTP(t *testing.T) {
 		t.Fatal(err)
 	}
 	c.AuthClient = auth.NewClient(keys.URL, time.Hour)
-	c.ServerHandler = handler.NewServerHandler(c.EventService, c.UserService, c.TransactionService, c.ActivityService, c.TaskService, c.CategoryService, c.IconService)
+	c.ServerHandler = handler.NewServerHandler(c.EventService, c.UserService, c.TransactionService, c.ActivityService, c.TaskService, c.CategoryService, c.IconService, nil)
 	c.RegisterRoutes()
 	payload, err := json.Marshal(map[string]interface{}{"user_id": 100, "roles": []string{"user"}, "exp": time.Now().Add(time.Hour).Unix(), "purpose": "access"})
 	if err != nil {

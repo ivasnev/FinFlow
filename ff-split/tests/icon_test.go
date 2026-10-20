@@ -12,6 +12,12 @@ type IconSuite struct {
 	BaseSuite
 }
 
+// SetupSuite включает администратора только для проверок управления иконками.
+func (s *IconSuite) SetupSuite() {
+	s.AdminActor = true
+	s.BaseSuite.SetupSuite()
+}
+
 // TestIconSuite запускает все тесты в IconSuite
 func TestIconSuite(t *testing.T) {
 	suite.Run(t, new(IconSuite))
@@ -145,4 +151,3 @@ func (s *IconSuite) TestDeleteIcon_Success() {
 	s.NoError(err)
 	s.Equal(int64(0), count, "иконка должна быть удалена из БД")
 }
-

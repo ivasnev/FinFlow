@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // ServerInterface represents all server handlers.
@@ -106,6 +107,12 @@ type ServerInterface interface {
 	// Получить оптимизированные долги пользователя
 	// (GET /api/v1/event/{id_event}/user/{id_user}/optimized-debts)
 	GetOptimizedDebtsByUserID(c *gin.Context, idEvent int64, idUser int64)
+	// Загрузить изображение иконки (только admin)
+	// (POST /api/v1/icon-files)
+	UploadIconFile(c *gin.Context)
+	// Получить ссылку на файл зарегистрированной иконки
+	// (GET /api/v1/icon-files/{file_id})
+	GetIconFileURL(c *gin.Context, fileId openapi_types.UUID)
 	// Создать категорию
 	// (POST /api/v1/manage/category)
 	CreateCategory(c *gin.Context, params CreateCategoryParams)
@@ -1060,6 +1067,47 @@ func (siw *ServerInterfaceWrapper) GetOptimizedDebtsByUserID(c *gin.Context) {
 	siw.Handler.GetOptimizedDebtsByUserID(c, idEvent, idUser)
 }
 
+// UploadIconFile operation middleware
+func (siw *ServerInterfaceWrapper) UploadIconFile(c *gin.Context) {
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UploadIconFile(c)
+}
+
+// GetIconFileURL operation middleware
+func (siw *ServerInterfaceWrapper) GetIconFileURL(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "file_id" -------------
+	var fileId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "file_id", c.Param("file_id"), &fileId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter file_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetIconFileURL(c, fileId)
+}
+
 // CreateCategory operation middleware
 func (siw *ServerInterfaceWrapper) CreateCategory(c *gin.Context) {
 
@@ -1425,6 +1473,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/api/v1/event/:id_event/user/dummy", wrapper.CreateDummyUser)
 	router.DELETE(options.BaseURL+"/api/v1/event/:id_event/user/:id_user", wrapper.RemoveUserFromEvent)
 	router.GET(options.BaseURL+"/api/v1/event/:id_event/user/:id_user/optimized-debts", wrapper.GetOptimizedDebtsByUserID)
+	router.POST(options.BaseURL+"/api/v1/icon-files", wrapper.UploadIconFile)
+	router.GET(options.BaseURL+"/api/v1/icon-files/:file_id", wrapper.GetIconFileURL)
 	router.POST(options.BaseURL+"/api/v1/manage/category", wrapper.CreateCategory)
 	router.DELETE(options.BaseURL+"/api/v1/manage/category/:id", wrapper.DeleteCategory)
 	router.PUT(options.BaseURL+"/api/v1/manage/category/:id", wrapper.UpdateCategory)

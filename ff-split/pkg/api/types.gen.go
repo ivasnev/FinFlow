@@ -5,6 +5,8 @@ package api
 
 import (
 	"time"
+
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 const (
@@ -414,6 +416,11 @@ type GetCategoryByIDParams struct {
 	CategoryType CategoryType `form:"category_type" json:"category_type"`
 }
 
+// UploadIconFileMultipartBody defines parameters for UploadIconFile.
+type UploadIconFileMultipartBody struct {
+	File openapi_types.File `json:"file"`
+}
+
 // CreateCategoryParams defines parameters for CreateCategory.
 type CreateCategoryParams struct {
 	// CategoryType Тип категории
@@ -467,6 +474,9 @@ type AddUsersToEventJSONRequestBody = AddUsersRequest
 
 // CreateDummyUserJSONRequestBody defines body for CreateDummyUser for application/json ContentType.
 type CreateDummyUserJSONRequestBody = DummyUserRequest
+
+// UploadIconFileMultipartRequestBody defines body for UploadIconFile for multipart/form-data ContentType.
+type UploadIconFileMultipartRequestBody UploadIconFileMultipartBody
 
 // CreateCategoryJSONRequestBody defines body for CreateCategory for application/json ContentType.
 type CreateCategoryJSONRequestBody = CategoryRequest

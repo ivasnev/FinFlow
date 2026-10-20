@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
@@ -201,6 +202,12 @@ type ClientInterface interface {
 
 	// GetOptimizedDebtsByUserID request
 	GetOptimizedDebtsByUserID(ctx context.Context, idEvent int64, idUser int64, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UploadIconFileWithBody request with any body
+	UploadIconFileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetIconFileURL request
+	GetIconFileURL(ctx context.Context, fileId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateCategoryWithBody request with any body
 	CreateCategoryWithBody(ctx context.Context, params *CreateCategoryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -728,6 +735,30 @@ func (c *Client) RemoveUserFromEvent(ctx context.Context, idEvent int64, idUser 
 
 func (c *Client) GetOptimizedDebtsByUserID(ctx context.Context, idEvent int64, idUser int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetOptimizedDebtsByUserIDRequest(c.Server, idEvent, idUser)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UploadIconFileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUploadIconFileRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetIconFileURL(ctx context.Context, fileId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetIconFileURLRequest(c.Server, fileId)
 	if err != nil {
 		return nil, err
 	}
@@ -2206,6 +2237,69 @@ func NewGetOptimizedDebtsByUserIDRequest(server string, idEvent int64, idUser in
 	return req, nil
 }
 
+// NewUploadIconFileRequestWithBody generates requests for UploadIconFile with any type of body
+func NewUploadIconFileRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/icon-files")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetIconFileURLRequest generates requests for GetIconFileURL
+func NewGetIconFileURLRequest(server string, fileId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "file_id", runtime.ParamLocationPath, fileId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/icon-files/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewCreateCategoryRequest calls the generic CreateCategory builder with application/json body
 func NewCreateCategoryRequest(server string, params *CreateCategoryParams, body CreateCategoryJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -2837,6 +2931,12 @@ type ClientWithResponsesInterface interface {
 
 	// GetOptimizedDebtsByUserIDWithResponse request
 	GetOptimizedDebtsByUserIDWithResponse(ctx context.Context, idEvent int64, idUser int64, reqEditors ...RequestEditorFn) (*GetOptimizedDebtsByUserIDResponse, error)
+
+	// UploadIconFileWithBodyWithResponse request with any body
+	UploadIconFileWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadIconFileResponse, error)
+
+	// GetIconFileURLWithResponse request
+	GetIconFileURLWithResponse(ctx context.Context, fileId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetIconFileURLResponse, error)
 
 	// CreateCategoryWithBodyWithResponse request with any body
 	CreateCategoryWithBodyWithResponse(ctx context.Context, params *CreateCategoryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCategoryResponse, error)
@@ -3625,6 +3725,56 @@ func (r GetOptimizedDebtsByUserIDResponse) StatusCode() int {
 	return 0
 }
 
+type UploadIconFileResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Data struct {
+			ObjectId openapi_types.UUID `json:"object_id"`
+		} `json:"data"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r UploadIconFileResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UploadIconFileResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetIconFileURLResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Data string `json:"data"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetIconFileURLResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetIconFileURLResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type CreateCategoryResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -4247,6 +4397,24 @@ func (c *ClientWithResponses) GetOptimizedDebtsByUserIDWithResponse(ctx context.
 		return nil, err
 	}
 	return ParseGetOptimizedDebtsByUserIDResponse(rsp)
+}
+
+// UploadIconFileWithBodyWithResponse request with arbitrary body returning *UploadIconFileResponse
+func (c *ClientWithResponses) UploadIconFileWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadIconFileResponse, error) {
+	rsp, err := c.UploadIconFileWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUploadIconFileResponse(rsp)
+}
+
+// GetIconFileURLWithResponse request returning *GetIconFileURLResponse
+func (c *ClientWithResponses) GetIconFileURLWithResponse(ctx context.Context, fileId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetIconFileURLResponse, error) {
+	rsp, err := c.GetIconFileURL(ctx, fileId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetIconFileURLResponse(rsp)
 }
 
 // CreateCategoryWithBodyWithResponse request with arbitrary body returning *CreateCategoryResponse
@@ -5615,6 +5783,64 @@ func ParseGetOptimizedDebtsByUserIDResponse(rsp *http.Response) (*GetOptimizedDe
 			return nil, err
 		}
 		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUploadIconFileResponse parses an HTTP response from a UploadIconFileWithResponse call
+func ParseUploadIconFileResponse(rsp *http.Response) (*UploadIconFileResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UploadIconFileResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Data struct {
+				ObjectId openapi_types.UUID `json:"object_id"`
+			} `json:"data"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetIconFileURLResponse parses an HTTP response from a GetIconFileURLWithResponse call
+func ParseGetIconFileURLResponse(rsp *http.Response) (*GetIconFileURLResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetIconFileURLResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Data string `json:"data"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	}
 

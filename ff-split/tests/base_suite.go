@@ -29,6 +29,7 @@ type BaseSuite struct {
 	Server      *httptest.Server
 	Container   *container.Container
 	Config      *config.Config
+	AdminActor  bool
 	APIClient   api.ClientWithResponsesInterface
 
 	// Мок-серверы для внешних зависимостей
@@ -85,11 +86,16 @@ func (s *BaseSuite) SetupSuite() {
 		s.Container.TaskService,
 		s.Container.CategoryService,
 		s.Container.IconService,
+		nil,
 	)
 
 	// 10. Тестовые данные авторизации имеют тот же формат, что и штатный middleware.
 	testAuthMiddleware := func(c *gin.Context) {
-		c.Set(string(auth.UserContextKey()), auth.UserData{UserID: TestUserID1, Roles: []string{"user"}})
+		roles := []string{"user"}
+		if s.AdminActor {
+			roles = append(roles, "admin")
+		}
+		c.Set(string(auth.UserContextKey()), auth.UserData{UserID: TestUserID1, Roles: roles, IsAdmin: s.AdminActor})
 		c.Next()
 	}
 

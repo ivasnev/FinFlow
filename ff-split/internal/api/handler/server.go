@@ -13,6 +13,7 @@ type ServerHandler struct {
 	taskService        service.Task
 	categoryService    service.Category
 	iconService        service.Icon
+	iconFiles          *IconFileGateway
 }
 
 // NewServerHandler создает новый экземпляр ServerHandler
@@ -24,6 +25,7 @@ func NewServerHandler(
 	taskService service.Task,
 	categoryService service.Category,
 	iconService service.Icon,
+	iconFiles *IconFileGateway,
 ) *ServerHandler {
 	return &ServerHandler{
 		eventService:       eventService,
@@ -33,5 +35,6 @@ func NewServerHandler(
 		taskService:        taskService,
 		categoryService:    categoryService,
 		iconService:        iconService,
+		iconFiles:          iconFiles,
 	}
 }
