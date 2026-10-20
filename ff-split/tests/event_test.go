@@ -218,6 +218,9 @@ func (s *EventSuite) TestUpdateEvent_Success() {
 	s.Require().NoError(err, "запрос должен выполниться успешно")
 	s.Require().Equal(200, resp.StatusCode(), "должен быть статус 200")
 	s.Require().NotNil(resp.JSON200, "обновленное мероприятие должно быть возвращено")
+	// Сценарий: репозиторий обновляет свою копию модели, а HTTP-ответ сохраняет ID исходного мероприятия.
+	s.Require().NotNil(resp.JSON200.Id)
+	s.Require().Equal(event.ID, *resp.JSON200.Id)
 	s.Require().Equal(newName, *resp.JSON200.Name)
 	s.Require().Equal(newDescription, *resp.JSON200.Description)
 

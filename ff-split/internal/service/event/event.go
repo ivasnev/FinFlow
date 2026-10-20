@@ -182,6 +182,7 @@ func (s *EventService) CreateEvent(ctx context.Context, request *service.EventRe
 func (s *EventService) UpdateEvent(ctx context.Context, id int64, request *service.EventRequest) (*service.EventResponse, error) {
 	// Преобразуем DTO в модель
 	event := &models.Event{
+		ID:          id,
 		Name:        request.Name,
 		Description: request.Description,
 		CategoryID:  request.CategoryID,
