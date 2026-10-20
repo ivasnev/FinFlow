@@ -41,7 +41,7 @@
             "method": "POST",
             "header": [
               {
-                "key": "X-TVM-Ticket",
+                "key": "X-FF-Service-Ticket",
                 "value": "{{tvm_ticket}}",
                 "type": "text"
               }
@@ -131,7 +131,7 @@
             "method": "POST",
             "header": [
               {
-                "key": "X-TVM-Ticket",
+                "key": "X-FF-Service-Ticket",
                 "value": "{{tvm_ticket}}",
                 "type": "text"
               }
@@ -181,7 +181,7 @@
             "method": "GET",
             "header": [
               {
-                "key": "X-TVM-Ticket",
+                "key": "X-FF-Service-Ticket",
                 "value": "{{tvm_ticket}}",
                 "type": "text"
               }
@@ -219,7 +219,7 @@
             "method": "GET",
             "header": [
               {
-                "key": "X-TVM-Ticket",
+                "key": "X-FF-Service-Ticket",
                 "value": "{{tvm_ticket}}",
                 "type": "text"
               }
@@ -268,7 +268,7 @@
             "method": "GET",
             "header": [
               {
-                "key": "X-TVM-Ticket",
+                "key": "X-FF-Service-Ticket",
                 "value": "{{tvm_ticket}}",
                 "type": "text"
               }
@@ -306,7 +306,7 @@
             "method": "GET",
             "header": [
               {
-                "key": "X-TVM-Ticket",
+                "key": "X-FF-Service-Ticket",
                 "value": "{{tvm_ticket}}",
                 "type": "text"
               }
@@ -359,7 +359,7 @@
             "method": "POST",
             "header": [
               {
-                "key": "X-TVM-Ticket",
+                "key": "X-FF-Service-Ticket",
                 "value": "{{tvm_ticket}}",
                 "type": "text"
               }
@@ -410,7 +410,7 @@
             "method": "DELETE",
             "header": [
               {
-                "key": "X-TVM-Ticket",
+                "key": "X-FF-Service-Ticket",
                 "value": "{{tvm_ticket}}",
                 "type": "text"
               }

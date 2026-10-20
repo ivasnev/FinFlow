@@ -10,6 +10,8 @@ import (
 	"github.com/ivasnev/FinFlow/ff-files/internal/service"
 	minioService "github.com/ivasnev/FinFlow/ff-files/internal/service/minio"
 	"github.com/ivasnev/FinFlow/ff-files/pkg/api"
+	tvmclient "github.com/ivasnev/FinFlow/ff-tvm/pkg/client"
+	tvmmiddleware "github.com/ivasnev/FinFlow/ff-tvm/pkg/middleware"
 )
 
 // Container - контейнер зависимостей для приложения
@@ -18,13 +20,15 @@ type Container struct {
 	Router        *gin.Engine
 	MinIOService  service.MinIO
 	ServerHandler *handler.ServerHandler
+	TVMClient     tvmmiddleware.TVMClient
 }
 
 // NewContainer - конструктор контейнера зависимостей
 func NewContainer(cfg *config.Config, router *gin.Engine) (*Container, error) {
 	container := &Container{
-		Config: cfg,
-		Router: router,
+		Config:    cfg,
+		Router:    router,
+		TVMClient: tvmclient.NewTVMClient(cfg.TVM.BaseURL, cfg.TVM.ServiceSecret),
 	}
 
 	// Инициализируем MinIO сервис
@@ -60,7 +64,8 @@ func (c *Container) initHandlers() {
 func (c *Container) RegisterRoutes() {
 	c.Router.Use(middleware.CORSMiddleware())
 	// API версии v1
-	v1 := c.Router.Group("")
+	ticketMiddleware := tvmmiddleware.NewTVMMiddleware(c.TVMClient, c.Config.TVM.ServiceID)
+	v1 := c.Router.Group("", ticketMiddleware.ValidateTicket())
 
 	// Регистрируем маршруты с помощью сгенерированного сервера
 	api.RegisterHandlersWithOptions(v1, c.ServerHandler, api.GinServerOptions{})

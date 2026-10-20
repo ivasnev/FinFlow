@@ -15,7 +15,7 @@ info:
     Все endpoints требуют аутентификации через TVM (Ticket-based Verification Module).
     Необходимо передавать TVM тикет в заголовке:
     ```
-    X-TVM-Ticket: <tvm_ticket>
+    X-FF-Service-Ticket: <tvm_ticket>
     ```
     
     ## Поддерживаемые форматы файлов
@@ -409,7 +409,7 @@ components:
     TVMAuth:
       type: apiKey
       in: header
-      name: X-TVM-Ticket
+      name: X-FF-Service-Ticket
       description: TVM тикет для аутентификации между сервисами
 
   schemas:

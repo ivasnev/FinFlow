@@ -52,8 +52,8 @@ services:
 
   ff-files:
     build:
-      context: ./ff-files
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ff-files/Dockerfile
     ports:
       - "8082:8082"
     environment:

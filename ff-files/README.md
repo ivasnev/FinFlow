@@ -73,7 +73,7 @@ ff-files/
 ```
 POST /api/v1/files
 Content-Type: multipart/form-data
-X-TVM-Ticket: {tvm_ticket}
+X-FF-Service-Ticket: {tvm_ticket}
 ```
 
 **Параметры:**
@@ -96,7 +96,7 @@ X-TVM-Ticket: {tvm_ticket}
 ```
 POST /api/v1/files/many
 Content-Type: multipart/form-data
-X-TVM-Ticket: {tvm_ticket}
+X-FF-Service-Ticket: {tvm_ticket}
 ```
 
 **Параметры:**
@@ -125,7 +125,7 @@ X-TVM-Ticket: {tvm_ticket}
 #### Получение одного файла
 ```
 GET /api/v1/files/{file_id}
-X-TVM-Ticket: {tvm_ticket}
+X-FF-Service-Ticket: {tvm_ticket}
 ```
 
 **Ответ:**
@@ -141,7 +141,7 @@ X-TVM-Ticket: {tvm_ticket}
 ```
 GET /api/v1/files/many
 Content-Type: application/json
-X-TVM-Ticket: {tvm_ticket}
+X-FF-Service-Ticket: {tvm_ticket}
 ```
 
 **Запрос:**
@@ -169,7 +169,7 @@ X-TVM-Ticket: {tvm_ticket}
 #### Получение метаданных файла
 ```
 GET /api/v1/files/{file_id}/metadata
-X-TVM-Ticket: {tvm_ticket}
+X-FF-Service-Ticket: {tvm_ticket}
 ```
 
 **Ответ:**
@@ -196,7 +196,7 @@ X-TVM-Ticket: {tvm_ticket}
 
 ```
 POST /api/v1/files/{file_id}/temporary-url?expires_in=3600
-X-TVM-Ticket: {tvm_ticket}
+X-FF-Service-Ticket: {tvm_ticket}
 ```
 
 **Параметры запроса:**
@@ -219,7 +219,7 @@ X-TVM-Ticket: {tvm_ticket}
 #### Удаление одного файла
 ```
 DELETE /api/v1/files/{file_id}
-X-TVM-Ticket: {tvm_ticket}
+X-FF-Service-Ticket: {tvm_ticket}
 ```
 
 **Ответ:**
@@ -234,7 +234,7 @@ X-TVM-Ticket: {tvm_ticket}
 ```
 DELETE /api/v1/files/many
 Content-Type: application/json
-X-TVM-Ticket: {tvm_ticket}
+X-FF-Service-Ticket: {tvm_ticket}
 ```
 
 **Запрос:**
@@ -260,7 +260,7 @@ X-TVM-Ticket: {tvm_ticket}
 Все endpoints требуют аутентификации через TVM (Ticket-based Verification Module) для межсервисного взаимодействия:
 
 ```
-X-TVM-Ticket: {tvm_ticket}
+X-FF-Service-Ticket: {tvm_ticket}
 ```
 
 TVM тикет должен быть получен от сервиса ff-tvm перед обращением к ff-files.
@@ -511,7 +511,7 @@ migrations:
 # 1. Получить TVM тикет от ff-tvm
 # 2. Загрузить файл чека
 curl -X POST http://localhost:8082/api/v1/files \
-  -H "X-TVM-Ticket: {ticket}" \
+  -H "X-FF-Service-Ticket: {ticket}" \
   -F "file=@receipt.jpg"
 
 # 3. Использовать object_id в транзакции
@@ -524,3 +524,5 @@ curl -X POST http://localhost:8082/api/v1/files \
 ## Лицензия
 
 MIT
+
+Docker-образ: `docker build -f ff-files/Dockerfile -t ff-files .` из корня репозитория. Доступ разрешён сервисам с действующим TVM-билетом для `tvm.service_id` файлового сервиса.
