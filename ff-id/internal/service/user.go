@@ -2,9 +2,13 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 )
+
+// ErrIdentityConflict обозначает занятый email или nickname.
+var ErrIdentityConflict = errors.New("указанный email или никнейм уже используется")
 
 // UserDTO представляет данные пользователя, возвращаемые в API
 type UserDTO struct {
@@ -63,6 +67,9 @@ type UserServiceInterface interface {
 
 	// GetUserByNickname получает пользователя по никнейму
 	GetUserByNickname(ctx context.Context, nickname string) (*UserDTO, error)
+
+	// GetUserByEmail получает актуальный профиль по email.
+	GetUserByEmail(ctx context.Context, email string) (*UserDTO, error)
 
 	// UpdateUser обновляет данные пользователя
 	UpdateUser(ctx context.Context, userID int64, req UpdateUserRequest) (*UserDTO, error)

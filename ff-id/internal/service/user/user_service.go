@@ -10,6 +10,7 @@ import (
 	"github.com/ivasnev/FinFlow/ff-id/internal/models"
 	"github.com/ivasnev/FinFlow/ff-id/internal/repository"
 	"github.com/ivasnev/FinFlow/ff-id/internal/service"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // UserService реализует интерфейс для работы с пользователями
@@ -134,6 +135,15 @@ func (s *UserService) GetUserByNickname(ctx context.Context, nickname string) (*
 	return userDTO, nil
 }
 
+// GetUserByEmail получает актуальный профиль по email.
+func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*service.UserDTO, error) {
+	user, err := s.userRepository.GetByEmail(ctx, email)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка получения пользователя: %w", err)
+	}
+	return s.GetUserByID(ctx, user.ID)
+}
+
 // UpdateUser обновляет данные пользователя
 func (s *UserService) UpdateUser(ctx context.Context, userID int64, req service.UpdateUserRequest) (*service.UserDTO, error) {
 	// Получаем пользователя по ID
@@ -148,7 +158,7 @@ func (s *UserService) UpdateUser(ctx context.Context, userID int64, req service.
 		if *req.Email != user.Email {
 			existingUser, err := s.userRepository.GetByEmail(ctx, *req.Email)
 			if err == nil && existingUser != nil && existingUser.ID != user.ID {
-				return nil, errors.New("указанный email уже используется")
+				return nil, service.ErrIdentityConflict
 			}
 			user.Email = *req.Email
 		}
@@ -160,7 +170,7 @@ func (s *UserService) UpdateUser(ctx context.Context, userID int64, req service.
 		if *req.Nickname != user.Nickname {
 			existingUser, err := s.userRepository.GetByNickname(ctx, *req.Nickname)
 			if err == nil && existingUser != nil && existingUser.ID != user.ID {
-				return nil, errors.New("указанный никнейм уже используется")
+				return nil, service.ErrIdentityConflict
 			}
 			user.Nickname = *req.Nickname
 		}
@@ -189,6 +199,10 @@ func (s *UserService) UpdateUser(ctx context.Context, userID int64, req service.
 
 	// Сохраняем изменения
 	if err := s.userRepository.Update(ctx, user); err != nil {
+		var conflict *pgconn.PgError
+		if errors.As(err, &conflict) && conflict.Code == "23505" {
+			return nil, service.ErrIdentityConflict
+		}
 		return nil, fmt.Errorf("ошибка обновления пользователя: %w", err)
 	}
 
@@ -239,19 +253,19 @@ func (s *UserService) RegisterUser(ctx context.Context, userID int64, req *servi
 	// Проверяем, не существует ли уже пользователь с таким ID
 	existingUser, err := s.userRepository.GetByID(ctx, userID)
 	if err == nil && existingUser != nil {
-		return nil, fmt.Errorf("пользователь с ID %d уже существует", userID)
+		return nil, fmt.Errorf("%w: пользователь с ID %d уже существует", service.ErrIdentityConflict, userID)
 	}
 
 	// Проверяем, не занят ли email
 	existingUser, err = s.userRepository.GetByEmail(ctx, req.Email)
 	if err == nil && existingUser != nil {
-		return nil, errors.New("указанный email уже используется")
+		return nil, service.ErrIdentityConflict
 	}
 
 	// Проверяем, не занят ли никнейм
 	existingUser, err = s.userRepository.GetByNickname(ctx, req.Nickname)
 	if err == nil && existingUser != nil {
-		return nil, errors.New("указанный никнейм уже используется")
+		return nil, service.ErrIdentityConflict
 	}
 
 	// Создаем нового пользователя
@@ -290,6 +304,10 @@ func (s *UserService) RegisterUser(ctx context.Context, userID int64, req *servi
 
 	// Сохраняем пользователя
 	if err := s.userRepository.Create(ctx, user); err != nil {
+		var conflict *pgconn.PgError
+		if errors.As(err, &conflict) && conflict.Code == "23505" {
+			return nil, service.ErrIdentityConflict
+		}
 		return nil, fmt.Errorf("ошибка создания пользователя: %w", err)
 	}
 

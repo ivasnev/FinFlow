@@ -13,6 +13,12 @@ import (
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Поиск актуальных идентификаторов пользователя
+	// (GET /api/v1/internal/identity)
+	LookupIdentity(c *gin.Context, params LookupIdentityParams)
+	// Изменение идентификаторов пользователя от сервиса аутентификации
+	// (PUT /api/v1/internal/identity/{user_id})
+	UpdateIdentity(c *gin.Context, userId int64)
 	// Получение пользователей по ID
 	// (GET api/v1/internal/users)
 	GetUsersByIds(c *gin.Context, params GetUsersByIdsParams)
@@ -53,6 +59,76 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(c *gin.Context)
+
+// LookupIdentity operation middleware
+func (siw *ServerInterfaceWrapper) LookupIdentity(c *gin.Context) {
+
+	var err error
+
+	c.Set(TVMAuthScopes, []string{})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params LookupIdentityParams
+
+	// ------------- Optional query parameter "login" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "login", c.Request.URL.Query(), &params.Login)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter login: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "kind" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "kind", c.Request.URL.Query(), &params.Kind)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter kind: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "user_id" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "user_id", c.Request.URL.Query(), &params.UserId)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter user_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.LookupIdentity(c, params)
+}
+
+// UpdateIdentity operation middleware
+func (siw *ServerInterfaceWrapper) UpdateIdentity(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "user_id" -------------
+	var userId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", c.Param("user_id"), &userId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter user_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(TVMAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateIdentity(c, userId)
+}
 
 // GetUsersByIds operation middleware
 func (siw *ServerInterfaceWrapper) GetUsersByIds(c *gin.Context) {
@@ -344,6 +420,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
+	router.GET(options.BaseURL+"/api/v1/internal/identity", wrapper.LookupIdentity)
+	router.PUT(options.BaseURL+"/api/v1/internal/identity/:user_id", wrapper.UpdateIdentity)
 	router.GET(options.BaseURL+"api/v1/internal/users", wrapper.GetUsersByIds)
 	router.POST(options.BaseURL+"api/v1/internal/users/register", wrapper.RegisterUserFromService)
 	router.PATCH(options.BaseURL+"api/v1/users/me", wrapper.UpdateUser)

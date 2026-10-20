@@ -3,9 +3,9 @@
 -- Таблица пользователей
 CREATE TABLE IF NOT EXISTS users (
 	id BIGSERIAL PRIMARY KEY,
-	email TEXT NOT NULL UNIQUE,
+	email TEXT NOT NULL,
 	password_hash TEXT NOT NULL,
-	nickname TEXT NOT NULL UNIQUE,
+	nickname TEXT NOT NULL,
 	created_at TIMESTAMP NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

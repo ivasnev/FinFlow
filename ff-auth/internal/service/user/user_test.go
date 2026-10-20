@@ -7,364 +7,111 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/adapters/ffid"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/models"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/repository/mock"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
-	"github.com/stretchr/testify/assert"
+	serviceMock "github.com/ivasnev/FinFlow/ff-auth/internal/service/mock"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 )
 
-func TestUserService_GetUserByID(t *testing.T) {
+// TestUserService_CurrentIdentity проверяет получение актуальных полей вместо локальной копии.
+func TestUserService_CurrentIdentity(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockRepo := mock.NewMockUser(ctrl)
-	userService := NewUserService(mockRepo, 0)
-
+	repo := mock.NewMockUser(ctrl)
+	identity := serviceMock.NewMockIdentity(ctrl)
+	svc := NewUserService(repo, 8, identity)
 	ctx := context.Background()
-	userID := int64(1)
-
-	t.Run("успешное получение пользователя", func(t *testing.T) {
-		user := &models.User{
-			ID:        userID,
-			Email:     "test@example.com",
-			Nickname:  "testuser",
-			CreatedAt: time.Now().Add(-24 * time.Hour),
-			UpdatedAt: time.Now().Add(-1 * time.Hour),
+	for _, byNickname := range []bool{false, true} {
+		if byNickname {
+			identity.EXPECT().FindIdentity(ctx, "new", ffid.LookupNickname).Return(&ffid.UserDTO{ID: 1}, nil)
 		}
-
-		roles := []models.RoleEntity{
-			{ID: 1, Name: "user"},
-			{ID: 2, Name: "admin"},
+		repo.EXPECT().GetByID(ctx, int64(1)).Return(&models.User{ID: 1, Email: "old@example.com", Nickname: "old"}, nil)
+		identity.EXPECT().GetIdentity(ctx, int64(1)).Return(&ffid.UserDTO{ID: 1, Email: "new@example.com", Nickname: "new", UpdatedAt: 1234567890}, nil)
+		repo.EXPECT().GetRoles(ctx, int64(1)).Return([]models.RoleEntity{{Name: "user"}}, nil)
+		var got *service.UserData
+		var err error
+		if byNickname {
+			got, err = svc.GetUserByNickname(ctx, "new")
+		} else {
+			got, err = svc.GetUserByID(ctx, 1)
 		}
-
-		mockRepo.EXPECT().
-			GetByID(ctx, userID).
-			Return(user, nil).
-			Times(1)
-
-		mockRepo.EXPECT().
-			GetRoles(ctx, userID).
-			Return(roles, nil).
-			Times(1)
-
-		result, err := userService.GetUserByID(ctx, userID)
-
-		assert.NoError(t, err)
-		assert.NotNil(t, result)
-		assert.Equal(t, userID, result.Id)
-		assert.Equal(t, "test@example.com", result.Email)
-		assert.Equal(t, "testuser", result.Nickname)
-		assert.Equal(t, 2, len(result.Roles))
-		assert.Equal(t, []string{"user", "admin"}, result.Roles)
-	})
-
-	t.Run("ошибка получения пользователя", func(t *testing.T) {
-		expectedErr := errors.New("user not found")
-		mockRepo.EXPECT().
-			GetByID(ctx, userID).
-			Return(nil, expectedErr).
-			Times(1)
-
-		result, err := userService.GetUserByID(ctx, userID)
-
-		assert.Error(t, err)
-		assert.Nil(t, result)
-		assert.ErrorIs(t, err, expectedErr)
-	})
-
-	t.Run("ошибка получения ролей", func(t *testing.T) {
-		user := &models.User{
-			ID:       userID,
-			Email:    "test@example.com",
-			Nickname: "testuser",
-		}
-
-		mockRepo.EXPECT().
-			GetByID(ctx, userID).
-			Return(user, nil).
-			Times(1)
-
-		expectedErr := errors.New("roles not found")
-		mockRepo.EXPECT().
-			GetRoles(ctx, userID).
-			Return(nil, expectedErr).
-			Times(1)
-
-		result, err := userService.GetUserByID(ctx, userID)
-
-		assert.Error(t, err)
-		assert.Nil(t, result)
-		assert.ErrorIs(t, err, expectedErr)
-	})
+		require.NoError(t, err)
+		require.Equal(t, "new@example.com", got.Email)
+		require.Equal(t, "new", got.Nickname)
+		require.Equal(t, int64(1234567890), got.UpdatedAt.Unix())
+	}
+	identity.EXPECT().FindIdentity(ctx, "old", ffid.LookupNickname).Return(nil, ffid.ErrNotFound)
+	_, err := svc.GetUserByNickname(ctx, "old")
+	require.ErrorIs(t, err, ffid.ErrNotFound)
+	repo.EXPECT().GetByID(ctx, int64(1)).Return(&models.User{ID: 1}, nil)
+	identity.EXPECT().GetIdentity(ctx, int64(1)).Return(nil, ffid.ErrUnavailable)
+	_, err = svc.GetUserByID(ctx, 1)
+	require.ErrorIs(t, err, ffid.ErrUnavailable)
 }
 
-func TestUserService_GetUserByNickname(t *testing.T) {
+// TestUserService_UpdateIdentity проверяет единственную запись email и nickname в ff-id.
+func TestUserService_UpdateIdentity(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockRepo := mock.NewMockUser(ctrl)
-	userService := NewUserService(mockRepo, 0)
-
+	repo := mock.NewMockUser(ctrl)
+	identity := serviceMock.NewMockIdentity(ctrl)
+	svc := NewUserService(repo, 8, identity)
 	ctx := context.Background()
-	nickname := "testuser"
-
-	t.Run("успешное получение пользователя по никнейму", func(t *testing.T) {
-		user := &models.User{
-			ID:        1,
-			Email:     "test@example.com",
-			Nickname:  nickname,
-			CreatedAt: time.Now().Add(-24 * time.Hour),
-			UpdatedAt: time.Now().Add(-1 * time.Hour),
-		}
-
-		roles := []models.RoleEntity{
-			{ID: 1, Name: "user"},
-		}
-
-		mockRepo.EXPECT().
-			GetByNickname(ctx, nickname).
-			Return(user, nil).
-			Times(1)
-
-		mockRepo.EXPECT().
-			GetRoles(ctx, user.ID).
-			Return(roles, nil).
-			Times(1)
-
-		result, err := userService.GetUserByNickname(ctx, nickname)
-
-		assert.NoError(t, err)
-		assert.NotNil(t, result)
-		assert.Equal(t, nickname, result.Nickname)
-	})
-
-	t.Run("ошибка получения пользователя по никнейму", func(t *testing.T) {
-		expectedErr := errors.New("user not found")
-		mockRepo.EXPECT().
-			GetByNickname(ctx, nickname).
-			Return(nil, expectedErr).
-			Times(1)
-
-		result, err := userService.GetUserByNickname(ctx, nickname)
-
-		assert.Error(t, err)
-		assert.Nil(t, result)
-		assert.ErrorIs(t, err, expectedErr)
-	})
+	email, nickname := "new@example.com", "new"
+	repo.EXPECT().GetByID(ctx, int64(1)).Return(&models.User{ID: 1, Email: "old@example.com", Nickname: "old"}, nil)
+	identity.EXPECT().UpdateIdentity(ctx, int64(1), &email, &nickname).Return(&ffid.UserDTO{ID: 1, Email: email, Nickname: nickname}, nil)
+	repo.EXPECT().GetRoles(ctx, int64(1)).Return([]models.RoleEntity{{Name: "user"}}, nil)
+	got, err := svc.UpdateUser(ctx, 1, service.UserUpdateData{Email: &email, Nickname: &nickname})
+	require.NoError(t, err)
+	require.Equal(t, email, got.Email)
+	require.Equal(t, nickname, got.Nickname)
 }
 
-func TestUserService_UpdateUser(t *testing.T) {
+// TestUserService_PasswordAndIdentityFailure проверяет частичные отказы смешанного запроса и повторяемость смены пароля.
+func TestUserService_PasswordAndIdentityFailure(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockRepo := mock.NewMockUser(ctrl)
-	userService := NewUserService(mockRepo, 0)
-
+	repo := mock.NewMockUser(ctrl)
+	identity := serviceMock.NewMockIdentity(ctrl)
+	svc := NewUserService(repo, 8, identity)
 	ctx := context.Background()
-	userID := int64(1)
-
-	t.Run("успешное обновление email", func(t *testing.T) {
-		oldUser := &models.User{
-			ID:        userID,
-			Email:     "old@example.com",
-			Nickname:  "testuser",
-			CreatedAt: time.Now().Add(-24 * time.Hour),
-			UpdatedAt: time.Now().Add(-1 * time.Hour),
-		}
-
-		newEmail := "new@example.com"
-		updateData := service.UserUpdateData{
-			Email: &newEmail,
-		}
-
-		roles := []models.RoleEntity{
-			{ID: 1, Name: "user"},
-		}
-
-		// Получение пользователя
-		mockRepo.EXPECT().
-			GetByID(ctx, userID).
-			Return(oldUser, nil).
-			Times(1)
-
-		// Проверка, что новый email не занят
-		mockRepo.EXPECT().
-			GetByEmail(ctx, newEmail).
-			Return(nil, errors.New("not found")).
-			Times(1)
-
-		// Обновление пользователя
-		mockRepo.EXPECT().
-			Update(ctx, gomock.Any()).
-			DoAndReturn(func(ctx context.Context, user *models.User) error {
-				assert.Equal(t, newEmail, user.Email)
-				return nil
-			}).
-			Times(1)
-
-		// Получение обновленного пользователя
-		updatedUser := &models.User{
-			ID:        userID,
-			Email:     newEmail,
-			Nickname:  "testuser",
-			CreatedAt: oldUser.CreatedAt,
-			UpdatedAt: time.Now(),
-		}
-
-		mockRepo.EXPECT().
-			GetByID(ctx, userID).
-			Return(updatedUser, nil).
-			Times(1)
-
-		mockRepo.EXPECT().
-			GetRoles(ctx, userID).
-			Return(roles, nil).
-			Times(1)
-
-		result, err := userService.UpdateUser(ctx, userID, updateData)
-
-		assert.NoError(t, err)
-		assert.NotNil(t, result)
-		assert.Equal(t, newEmail, result.Email)
+	email, value := "new@example.com", "password123"
+	repo.EXPECT().GetByID(ctx, int64(1)).Return(&models.User{ID: 1}, nil)
+	identity.EXPECT().UpdateIdentity(ctx, int64(1), &email, nil).Return(nil, ffid.ErrUnavailable)
+	_, err := svc.UpdateUser(ctx, 1, service.UserUpdateData{Email: &email, Password: &value})
+	require.ErrorIs(t, err, ffid.ErrUnavailable)
+	// Сценарий: ошибка локального сохранения пароля не создаёт вторую версию идентификаторов.
+	repo.EXPECT().GetByID(ctx, int64(1)).Return(&models.User{ID: 1}, nil)
+	identity.EXPECT().UpdateIdentity(ctx, int64(1), &email, nil).Return(&ffid.UserDTO{ID: 1, Email: email}, nil)
+	failure := errors.New("database failure")
+	repo.EXPECT().Update(ctx, gomock.Any()).Return(failure)
+	_, err = svc.UpdateUser(ctx, 1, service.UserUpdateData{Email: &email, Password: &value})
+	require.ErrorIs(t, err, failure)
+	// Сценарий: повторная смена пароля использует актуальный профиль и сохраняет рабочий хеш.
+	repo.EXPECT().GetByID(ctx, int64(1)).Return(&models.User{ID: 1}, nil)
+	identity.EXPECT().GetIdentity(ctx, int64(1)).Return(&ffid.UserDTO{ID: 1, Email: email}, nil)
+	repo.EXPECT().Update(ctx, gomock.Any()).DoAndReturn(func(_ context.Context, user *models.User) error {
+		return bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(value))
 	})
-
-	t.Run("email уже используется", func(t *testing.T) {
-		oldUser := &models.User{
-			ID:       userID,
-			Email:    "old@example.com",
-			Nickname: "testuser",
-		}
-
-		newEmail := "existing@example.com"
-		updateData := service.UserUpdateData{
-			Email: &newEmail,
-		}
-
-		existingUser := &models.User{
-			ID:    2, // Другой пользователь
-			Email: newEmail,
-		}
-
-		mockRepo.EXPECT().
-			GetByID(ctx, userID).
-			Return(oldUser, nil).
-			Times(1)
-
-		mockRepo.EXPECT().
-			GetByEmail(ctx, newEmail).
-			Return(existingUser, nil).
-			Times(1)
-
-		result, err := userService.UpdateUser(ctx, userID, updateData)
-
-		assert.Error(t, err)
-		assert.Nil(t, result)
-		assert.Equal(t, "указанный email уже используется", err.Error())
-	})
-
-	t.Run("успешное обновление пароля", func(t *testing.T) {
-		oldUser := &models.User{
-			ID:        userID,
-			Email:     "test@example.com",
-			Nickname:  "testuser",
-			CreatedAt: time.Now().Add(-24 * time.Hour),
-			UpdatedAt: time.Now().Add(-1 * time.Hour),
-		}
-
-		newPassword := "newpassword123"
-		updateData := service.UserUpdateData{
-			Password: &newPassword,
-		}
-
-		roles := []models.RoleEntity{
-			{ID: 1, Name: "user"},
-		}
-
-		mockRepo.EXPECT().
-			GetByID(ctx, userID).
-			Return(oldUser, nil).
-			Times(1)
-
-		mockRepo.EXPECT().
-			Update(ctx, gomock.Any()).
-			DoAndReturn(func(ctx context.Context, user *models.User) error {
-				assert.NotEmpty(t, user.PasswordHash)
-				return nil
-			}).
-			Times(1)
-
-		updatedUser := &models.User{
-			ID:        userID,
-			Email:     "test@example.com",
-			Nickname:  "testuser",
-			CreatedAt: oldUser.CreatedAt,
-			UpdatedAt: time.Now(),
-		}
-
-		mockRepo.EXPECT().
-			GetByID(ctx, userID).
-			Return(updatedUser, nil).
-			Times(1)
-
-		mockRepo.EXPECT().
-			GetRoles(ctx, userID).
-			Return(roles, nil).
-			Times(1)
-
-		result, err := userService.UpdateUser(ctx, userID, updateData)
-
-		assert.NoError(t, err)
-		assert.NotNil(t, result)
-	})
-
-	t.Run("ошибка получения пользователя", func(t *testing.T) {
-		expectedErr := errors.New("user not found")
-		mockRepo.EXPECT().
-			GetByID(ctx, userID).
-			Return(nil, expectedErr).
-			Times(1)
-
-		updateData := service.UserUpdateData{}
-
-		result, err := userService.UpdateUser(ctx, userID, updateData)
-
-		assert.Error(t, err)
-		assert.Nil(t, result)
-		assert.ErrorIs(t, err, expectedErr)
-	})
+	repo.EXPECT().GetRoles(ctx, int64(1)).Return(nil, nil)
+	beforePassword := time.Now().Add(-time.Second)
+	got, err := svc.UpdateUser(ctx, 1, service.UserUpdateData{Password: &value})
+	require.NoError(t, err)
+	require.Equal(t, email, got.Email)
+	require.True(t, got.UpdatedAt.After(beforePassword))
 }
 
-func TestUserService_DeleteUser(t *testing.T) {
+// TestUserService_MissingAndDelete проверяет отсутствие профиля и удаление локальных учётных данных.
+func TestUserService_MissingAndDelete(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockRepo := mock.NewMockUser(ctrl)
-	userService := NewUserService(mockRepo, 0)
-
+	repo := mock.NewMockUser(ctrl)
+	identity := serviceMock.NewMockIdentity(ctrl)
+	svc := NewUserService(repo, 8, identity)
 	ctx := context.Background()
-	userID := int64(1)
-
-	t.Run("успешное удаление пользователя", func(t *testing.T) {
-		mockRepo.EXPECT().
-			Delete(ctx, userID).
-			Return(nil).
-			Times(1)
-
-		err := userService.DeleteUser(ctx, userID)
-
-		assert.NoError(t, err)
-	})
-
-	t.Run("ошибка удаления пользователя", func(t *testing.T) {
-		expectedErr := errors.New("delete error")
-		mockRepo.EXPECT().
-			Delete(ctx, userID).
-			Return(expectedErr).
-			Times(1)
-
-		err := userService.DeleteUser(ctx, userID)
-
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, expectedErr)
-	})
+	failure := errors.New("missing")
+	repo.EXPECT().GetByID(ctx, int64(1)).Return(nil, failure)
+	_, err := svc.UpdateUser(ctx, 1, service.UserUpdateData{})
+	require.ErrorIs(t, err, failure)
+	repo.EXPECT().Delete(ctx, int64(1)).Return(nil)
+	require.NoError(t, svc.DeleteUser(ctx, 1))
 }

@@ -183,14 +183,7 @@ func (s *UsersSuite) TestUpdateUser_DuplicateEmail() {
 	})
 
 	s.NoError(err, "запрос должен выполниться успешно")
-	// API может возвращать 400 или 500 при конфликте email, проверяем что это ошибка
-	s.NotEqual(200, updateResp.StatusCode(), "должен быть статус ошибки")
-	s.True(updateResp.StatusCode() == 400 || updateResp.StatusCode() == 500, "должен быть статус 400 или 500")
-	if updateResp.StatusCode() == 400 {
-		s.NotNil(updateResp.JSON400, "должен быть возвращен объект ошибки")
-	} else if updateResp.StatusCode() == 500 {
-		s.NotNil(updateResp.JSON500, "должен быть возвращен объект ошибки")
-	}
+	s.Equal(409, updateResp.StatusCode(), "занятый email возвращает конфликт")
 }
 
 // TestDeleteUser_Success тестирует успешное удаление пользователя

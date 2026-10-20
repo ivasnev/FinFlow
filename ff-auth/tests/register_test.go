@@ -84,7 +84,7 @@ func (s *RegisterSuite) TestRegister_DuplicateEmail() {
 	s.NoError(err)
 	s.Equal(201, resp1.StatusCode())
 
-	// Вторая регистрация с тем же email (мок не нужен, так как ошибка на уровне БД)
+	// Вторая регистрация с тем же email (мок не нужен, так как конфликт в источнике идентификаторов)
 	reqBody2 := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("duplicate@example.com"),
 		Nickname: "user2",
@@ -92,9 +92,9 @@ func (s *RegisterSuite) TestRegister_DuplicateEmail() {
 	}
 	resp2, err := s.APIClient.RegisterWithResponse(ctx, reqBody2)
 	s.NoError(err)
-	s.Equal(500, resp2.StatusCode(), "должна быть ошибка 500")
-	s.NotNil(resp2.JSON500, "должен быть возвращен объект ошибки")
-	s.Contains(resp2.JSON500.Error, "уже существует")
+	s.Equal(409, resp2.StatusCode(), "должна быть ошибка 409")
+	s.NotNil(resp2.JSON409, "должен быть возвращен объект ошибки")
+	s.Contains(resp2.JSON409.Error, "уже используется")
 }
 
 // TestRegister_DuplicateNickname тестирует регистрацию с дублирующимся nickname
@@ -118,7 +118,7 @@ func (s *RegisterSuite) TestRegister_DuplicateNickname() {
 	s.NoError(err)
 	s.Equal(201, resp1.StatusCode())
 
-	// Вторая регистрация с тем же nickname (мок не нужен, так как ошибка на уровне БД)
+	// Вторая регистрация с тем же nickname (мок не нужен, так как конфликт в источнике идентификаторов)
 	reqBody2 := api.RegisterJSONRequestBody{
 		Email:    openapi_types.Email("user2@example.com"),
 		Nickname: "duplicatenick",
@@ -126,9 +126,9 @@ func (s *RegisterSuite) TestRegister_DuplicateNickname() {
 	}
 	resp2, err := s.APIClient.RegisterWithResponse(ctx, reqBody2)
 	s.NoError(err)
-	s.Equal(500, resp2.StatusCode(), "должна быть ошибка 500")
-	s.NotNil(resp2.JSON500, "должен быть возвращен объект ошибки")
-	s.Contains(resp2.JSON500.Error, "уже существует")
+	s.Equal(409, resp2.StatusCode(), "должна быть ошибка 409")
+	s.NotNil(resp2.JSON409, "должен быть возвращен объект ошибки")
+	s.Contains(resp2.JSON409.Error, "уже используется")
 }
 
 // TestRegister_WithMockServerError тестирует обработку ошибок от мок-сервера
@@ -149,9 +149,9 @@ func (s *RegisterSuite) TestRegister_WithMockServerError() {
 
 	resp, err := s.APIClient.RegisterWithResponse(ctx, reqBody)
 	s.NoError(err)
-	s.Equal(500, resp.StatusCode(), "должна быть ошибка 500")
-	s.NotNil(resp.JSON500, "должен быть возвращен объект ошибки")
-	s.Contains(resp.JSON500.Error, "ID", "ошибка должна быть связана с ID сервисом")
+	s.Equal(503, resp.StatusCode(), "должна быть ошибка недоступности источника")
+	s.NotNil(resp.JSON503, "должен быть возвращен объект ошибки")
+	s.Contains(resp.JSON503.Error, "ID", "ошибка должна быть связана с ID сервисом")
 
 	// Проверяем, что пользователь не создан в БД (должен быть откат транзакции)
 	var count int64

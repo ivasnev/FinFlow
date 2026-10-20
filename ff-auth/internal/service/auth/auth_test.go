@@ -19,12 +19,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// createMockIDAdapter создает мок адаптера для тестов
-func createMockIDAdapter() *ffid.Adapter {
-	// Создаем реальный адаптер с моковым URL для тестов
-	// В реальных тестах можно использовать httptest сервер
-	adapter, _ := ffid.NewAdapter("http://localhost:9999", nil)
-	return adapter
+// createMockIDAdapter создаёт независимый источник идентификаторов для unit-тестов.
+func createMockIDAdapter(ctrl *gomock.Controller) *servicemock.MockIdentity {
+	return servicemock.NewMockIdentity(ctrl)
 }
 
 func TestAuthService_ValidateToken(t *testing.T) {
@@ -37,7 +34,7 @@ func TestAuthService_ValidateToken(t *testing.T) {
 	mockDeviceService := servicemock.NewMockDevice(ctrl)
 	mockLoginHistoryRepo := mock.NewMockLoginHistory(ctrl)
 	mockTokenManager := servicemock.NewMockTokenManager(ctrl)
-	mockIDClient := createMockIDAdapter()
+	mockIDClient := createMockIDAdapter(ctrl)
 
 	cfg := &config.Config{}
 
@@ -99,7 +96,7 @@ func TestAuthService_GetPublicKey(t *testing.T) {
 	mockDeviceService := servicemock.NewMockDevice(ctrl)
 	mockLoginHistoryRepo := mock.NewMockLoginHistory(ctrl)
 	mockTokenManager := servicemock.NewMockTokenManager(ctrl)
-	mockIDClient := createMockIDAdapter()
+	mockIDClient := createMockIDAdapter(ctrl)
 
 	cfg := &config.Config{}
 
@@ -139,7 +136,7 @@ func TestAuthService_GenerateTokenPair(t *testing.T) {
 	mockDeviceService := servicemock.NewMockDevice(ctrl)
 	mockLoginHistoryRepo := mock.NewMockLoginHistory(ctrl)
 	mockTokenManager := servicemock.NewMockTokenManager(ctrl)
-	mockIDClient := createMockIDAdapter()
+	mockIDClient := createMockIDAdapter(ctrl)
 
 	cfg := &config.Config{}
 	cfg.Auth.AccessTokenDuration = 15
@@ -206,7 +203,7 @@ func TestAuthService_RecordLogin(t *testing.T) {
 	mockDeviceService := servicemock.NewMockDevice(ctrl)
 	mockLoginHistoryRepo := mock.NewMockLoginHistory(ctrl)
 	mockTokenManager := servicemock.NewMockTokenManager(ctrl)
-	mockIDClient := createMockIDAdapter()
+	mockIDClient := createMockIDAdapter(ctrl)
 
 	cfg := &config.Config{}
 
@@ -257,6 +254,7 @@ func TestAuthService_RecordLogin(t *testing.T) {
 	})
 }
 
+// TestAuthService_Login проверяет актуальные логины, пароль и отказ без источника профиля.
 func TestAuthService_Login(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -267,7 +265,7 @@ func TestAuthService_Login(t *testing.T) {
 	mockDeviceService := servicemock.NewMockDevice(ctrl)
 	mockLoginHistoryRepo := mock.NewMockLoginHistory(ctrl)
 	mockTokenManager := servicemock.NewMockTokenManager(ctrl)
-	mockIDClient := createMockIDAdapter()
+	mockIDClient := createMockIDAdapter(ctrl)
 
 	cfg := &config.Config{}
 	cfg.Auth.AccessTokenDuration = 15
@@ -286,195 +284,38 @@ func TestAuthService_Login(t *testing.T) {
 
 	ctx := context.Background()
 	password := "password123"
-	hashedPassword, _ := hashPassword(password, 10)
-
-	t.Run("успешный вход по email", func(t *testing.T) {
-		email := "test@example.com"
-		userID := int64(1)
-		user := &models.User{
-			ID:           userID,
-			Email:        email,
-			PasswordHash: hashedPassword,
-			Nickname:     "testuser",
-			CreatedAt:    time.Now().Add(-24 * time.Hour),
-			UpdatedAt:    time.Now().Add(-1 * time.Hour),
-		}
-
-		roles := []models.RoleEntity{
-			{ID: 1, Name: "user"},
-		}
-
-		accessToken := "access-token"
-		refreshToken := "refresh-token"
-		expiresAt := time.Now().Add(15 * time.Minute).Unix()
-
-		mockUserRepo.EXPECT().
-			GetByEmail(ctx, email).
-			Return(user, nil).
-			Times(1)
-
-		mockUserRepo.EXPECT().
-			GetRoles(ctx, userID).
-			Return(roles, nil).
-			Times(1)
-
-		mockTokenManager.EXPECT().
-			GenerateTokenPair(userID, []string{"user"}, 15*time.Minute, 10080*time.Minute).
-			Return(accessToken, refreshToken, expiresAt, expiresAt+7*24*3600, nil).
-			Times(1)
-
-		mockDeviceService.EXPECT().
-			GetOrCreateDevice(ctx, gomock.Any(), "Mozilla/5.0", userID).
-			Return(&models.Device{ID: 1, UserID: userID, DeviceID: "device1"}, nil).
-			Times(1)
-
-		mockSessionRepo.EXPECT().
-			Create(ctx, gomock.Any()).
-			DoAndReturn(func(ctx context.Context, session *models.Session) error {
-				assert.Equal(t, userID, session.UserID)
-				assert.Equal(t, refreshToken, session.RefreshToken)
-				return nil
-			}).
-			Times(1)
-
-		mockLoginHistoryRepo.EXPECT().
-			Create(ctx, gomock.Any()).
-			Return(nil).
-			Times(1)
-
-		params := service.LoginParams{
-			Login:     email,
-			Password:  password,
-			UserAgent: "Mozilla/5.0",
-			IpAddress: "192.168.1.1",
-		}
-
-		result, err := authService.Login(ctx, params)
-
+	hash, _ := hashPassword(password, 10)
+	for _, login := range []string{"fresh@example.com", "fresh"} {
+		mockIDClient.EXPECT().FindIdentity(ctx, login, ffid.LookupLogin).Return(&ffid.UserDTO{ID: 1, Email: "fresh@example.com", Nickname: "fresh"}, nil)
+		mockUserRepo.EXPECT().GetByID(ctx, int64(1)).Return(&models.User{ID: 1, Email: "stale@example.com", Nickname: "stale", PasswordHash: hash}, nil)
+		mockUserRepo.EXPECT().GetRoles(ctx, int64(1)).Return([]models.RoleEntity{{ID: 1, Name: "user"}}, nil)
+		mockTokenManager.EXPECT().GenerateTokenPair(int64(1), []string{"user"}, 15*time.Minute, 10080*time.Minute).Return("access", "refresh", time.Now().Add(time.Minute).Unix(), time.Now().Add(time.Hour).Unix(), nil)
+		mockDeviceService.EXPECT().GetOrCreateDevice(gomock.Any(), gomock.Any(), gomock.Any(), int64(1)).Return(nil, nil)
+		mockSessionRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil)
+		mockLoginHistoryRepo.EXPECT().Create(ctx, gomock.Any()).Return(nil)
+		got, err := authService.Login(ctx, service.LoginParams{Login: login, Password: password})
 		assert.NoError(t, err)
-		assert.NotNil(t, result)
-		assert.Equal(t, accessToken, result.AccessToken)
-		assert.Equal(t, refreshToken, result.RefreshToken)
-		assert.Equal(t, userID, result.User.Id)
-		assert.Equal(t, email, result.User.Email)
-	})
-
-	t.Run("успешный вход по nickname", func(t *testing.T) {
-		nickname := "testuser"
-		userID := int64(1)
-		user := &models.User{
-			ID:           userID,
-			Email:        "test@example.com",
-			PasswordHash: hashedPassword,
-			Nickname:     nickname,
-			CreatedAt:    time.Now().Add(-24 * time.Hour),
-			UpdatedAt:    time.Now().Add(-1 * time.Hour),
+		if assert.NotNil(t, got) {
+			assert.Equal(t, "fresh", got.User.Nickname)
+			assert.Equal(t, "fresh@example.com", got.User.Email)
 		}
-
-		roles := []models.RoleEntity{
-			{ID: 1, Name: "user"},
-		}
-
-		accessToken := "access-token"
-		refreshToken := "refresh-token"
-		expiresAt := time.Now().Add(15 * time.Minute).Unix()
-
-		mockUserRepo.EXPECT().
-			GetByNickname(ctx, nickname).
-			Return(user, nil).
-			Times(1)
-
-		mockUserRepo.EXPECT().
-			GetRoles(ctx, userID).
-			Return(roles, nil).
-			Times(1)
-
-		mockTokenManager.EXPECT().
-			GenerateTokenPair(userID, []string{"user"}, 15*time.Minute, 10080*time.Minute).
-			Return(accessToken, refreshToken, expiresAt, expiresAt+7*24*3600, nil).
-			Times(1)
-
-		mockDeviceService.EXPECT().
-			GetOrCreateDevice(ctx, gomock.Any(), "Mozilla/5.0", userID).
-			Return(&models.Device{ID: 1, UserID: userID, DeviceID: "device1"}, nil).
-			Times(1)
-
-		mockSessionRepo.EXPECT().
-			Create(ctx, gomock.Any()).
-			Return(nil).
-			Times(1)
-
-		mockLoginHistoryRepo.EXPECT().
-			Create(ctx, gomock.Any()).
-			Return(nil).
-			Times(1)
-
-		params := service.LoginParams{
-			Login:     nickname,
-			Password:  password,
-			UserAgent: "Mozilla/5.0",
-			IpAddress: "192.168.1.1",
-		}
-
-		result, err := authService.Login(ctx, params)
-
-		assert.NoError(t, err)
-		assert.NotNil(t, result)
-		assert.Equal(t, nickname, result.User.Nickname)
-	})
-
-	t.Run("неверный логин", func(t *testing.T) {
-		email := "nonexistent@example.com"
-
-		mockUserRepo.EXPECT().
-			GetByEmail(ctx, email).
-			Return(nil, errors.New("user not found")).
-			Times(1)
-
-		params := service.LoginParams{
-			Login:     email,
-			Password:  password,
-			UserAgent: "Mozilla/5.0",
-			IpAddress: "192.168.1.1",
-		}
-
-		result, err := authService.Login(ctx, params)
-
-		assert.Error(t, err)
-		assert.Nil(t, result)
-		assert.Equal(t, "неверный логин или пароль", err.Error())
-	})
-
-	t.Run("неверный пароль", func(t *testing.T) {
-		email := "test@example.com"
-		userID := int64(1)
-		user := &models.User{
-			ID:           userID,
-			Email:        email,
-			PasswordHash: hashedPassword,
-			Nickname:     "testuser",
-		}
-
-		mockUserRepo.EXPECT().
-			GetByEmail(ctx, email).
-			Return(user, nil).
-			Times(1)
-
-		params := service.LoginParams{
-			Login:     email,
-			Password:  "wrongpassword",
-			UserAgent: "Mozilla/5.0",
-			IpAddress: "192.168.1.1",
-		}
-
-		result, err := authService.Login(ctx, params)
-
-		assert.Error(t, err)
-		assert.Nil(t, result)
-		assert.Equal(t, "неверный логин или пароль", err.Error())
-	})
+	}
+	// Сценарий: старый логин отсутствует в источнике профиля, локальный поиск не выполняется.
+	mockIDClient.EXPECT().FindIdentity(ctx, "stale", ffid.LookupLogin).Return(nil, ffid.ErrNotFound)
+	_, err := authService.Login(ctx, service.LoginParams{Login: "stale", Password: password})
+	assert.Error(t, err)
+	// Сценарий: недоступность ff-id не разрешает вход по локальной копии.
+	mockIDClient.EXPECT().FindIdentity(ctx, "fresh", ffid.LookupLogin).Return(nil, ffid.ErrUnavailable)
+	_, err = authService.Login(ctx, service.LoginParams{Login: "fresh", Password: password})
+	assert.ErrorIs(t, err, ffid.ErrUnavailable)
+	// Сценарий: правильный актуальный логин не обходит проверку пароля.
+	mockIDClient.EXPECT().FindIdentity(ctx, "fresh", ffid.LookupLogin).Return(&ffid.UserDTO{ID: 1}, nil)
+	mockUserRepo.EXPECT().GetByID(ctx, int64(1)).Return(&models.User{ID: 1, PasswordHash: hash}, nil)
+	_, err = authService.Login(ctx, service.LoginParams{Login: "fresh", Password: "wrong"})
+	assert.Error(t, err)
 }
 
+// TestAuthService_RefreshToken проверяет обновление сессии с актуальным профилем.
 func TestAuthService_RefreshToken(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -485,7 +326,7 @@ func TestAuthService_RefreshToken(t *testing.T) {
 	mockDeviceService := servicemock.NewMockDevice(ctrl)
 	mockLoginHistoryRepo := mock.NewMockLoginHistory(ctrl)
 	mockTokenManager := servicemock.NewMockTokenManager(ctrl)
-	mockIDClient := createMockIDAdapter()
+	mockIDClient := createMockIDAdapter(ctrl)
 
 	cfg := &config.Config{}
 	cfg.Auth.AccessTokenDuration = 15
@@ -541,6 +382,8 @@ func TestAuthService_RefreshToken(t *testing.T) {
 			GetByID(ctx, userID).
 			Return(user, nil).
 			Times(1)
+
+		mockIDClient.EXPECT().GetIdentity(ctx, userID).Return(&ffid.UserDTO{ID: userID, Email: "test@example.com", Nickname: "testuser"}, nil)
 
 		mockUserRepo.EXPECT().
 			GetRoles(ctx, userID).
@@ -626,7 +469,7 @@ func TestAuthService_Logout(t *testing.T) {
 	mockDeviceService := servicemock.NewMockDevice(ctrl)
 	mockLoginHistoryRepo := mock.NewMockLoginHistory(ctrl)
 	mockTokenManager := servicemock.NewMockTokenManager(ctrl)
-	mockIDClient := createMockIDAdapter()
+	mockIDClient := createMockIDAdapter(ctrl)
 
 	cfg := &config.Config{}
 
@@ -709,6 +552,7 @@ func TestAuthService_Logout(t *testing.T) {
 	})
 }
 
+// TestAuthService_Register проверяет уникальность идентификаторов и отказ без источника.
 func TestAuthService_Register(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -719,7 +563,7 @@ func TestAuthService_Register(t *testing.T) {
 	mockDeviceService := servicemock.NewMockDevice(ctrl)
 	mockLoginHistoryRepo := mock.NewMockLoginHistory(ctrl)
 	mockTokenManager := servicemock.NewMockTokenManager(ctrl)
-	mockIDClient := createMockIDAdapter()
+	mockIDClient := createMockIDAdapter(ctrl)
 
 	cfg := &config.Config{}
 	cfg.Auth.PasswordHashCost = 10
@@ -738,101 +582,28 @@ func TestAuthService_Register(t *testing.T) {
 	)
 
 	ctx := context.Background()
-
-	t.Run("email уже существует", func(t *testing.T) {
-		email := "existing@example.com"
-		existingUser := &models.User{
-			ID:    1,
-			Email: email,
-		}
-
-		mockUserRepo.EXPECT().
-			GetByEmail(ctx, email).
-			Return(existingUser, nil).
-			Times(1)
-
-		params := service.RegisterParams{
-			Email:    email,
-			Password: "password123",
-			Nickname: "testuser",
-		}
-
-		result, err := authService.Register(ctx, params)
-
-		assert.Error(t, err)
-		assert.Nil(t, result)
-		assert.Equal(t, "пользователь с таким email уже существует", err.Error())
-	})
-
-	t.Run("никнейм уже существует", func(t *testing.T) {
-		email := "test@example.com"
-		nickname := "existinguser"
-
-		mockUserRepo.EXPECT().
-			GetByEmail(ctx, email).
-			Return(nil, errors.New("not found")).
-			Times(1)
-
-		existingUser := &models.User{
-			ID:       1,
-			Nickname: nickname,
-		}
-
-		mockUserRepo.EXPECT().
-			GetByNickname(ctx, nickname).
-			Return(existingUser, nil).
-			Times(1)
-
-		params := service.RegisterParams{
-			Email:    email,
-			Password: "password123",
-			Nickname: nickname,
-		}
-
-		result, err := authService.Register(ctx, params)
-
-		assert.Error(t, err)
-		assert.Nil(t, result)
-		assert.Equal(t, "пользователь с таким никнеймом уже существует", err.Error())
-	})
-
-	t.Run("ошибка создания пользователя", func(t *testing.T) {
-		email := "test@example.com"
-		nickname := "testuser"
-
-		mockUserRepo.EXPECT().
-			GetByEmail(ctx, email).
-			Return(nil, errors.New("not found")).
-			Times(1)
-
-		mockUserRepo.EXPECT().
-			GetByNickname(ctx, nickname).
-			Return(nil, errors.New("not found")).
-			Times(1)
-
-		expectedErr := errors.New("create error")
-
-		mockUserRepo.EXPECT().
-			Create(ctx, gomock.Any()).
-			Return(expectedErr).
-			Times(1)
-
-		params := service.RegisterParams{
-			Email:    email,
-			Password: "password123",
-			Nickname: nickname,
-		}
-
-		result, err := authService.Register(ctx, params)
-
-		assert.Error(t, err)
-		assert.Nil(t, result)
-		assert.Contains(t, err.Error(), "ошибка создания пользователя")
-	})
-
+	params := service.RegisterParams{Email: "test@example.com", Nickname: "testuser", Password: "password123"}
+	// Сценарий: занятость email и nickname определяется ff-id.
+	mockIDClient.EXPECT().FindIdentity(ctx, params.Email, ffid.LookupEmail).Return(&ffid.UserDTO{ID: 1}, nil)
+	_, err := authService.Register(ctx, params)
+	assert.Error(t, err)
+	mockIDClient.EXPECT().FindIdentity(ctx, params.Email, ffid.LookupEmail).Return(nil, ffid.ErrNotFound)
+	mockIDClient.EXPECT().FindIdentity(ctx, params.Nickname, ffid.LookupNickname).Return(&ffid.UserDTO{ID: 1}, nil)
+	_, err = authService.Register(ctx, params)
+	assert.Error(t, err)
+	// Сценарий: недоступность источника не допускает создания локальной учётной записи.
+	mockIDClient.EXPECT().FindIdentity(ctx, params.Email, ffid.LookupEmail).Return(nil, ffid.ErrUnavailable)
+	_, err = authService.Register(ctx, params)
+	assert.ErrorIs(t, err, ffid.ErrUnavailable)
+	mockIDClient.EXPECT().FindIdentity(ctx, params.Email, ffid.LookupEmail).Return(nil, ffid.ErrNotFound)
+	mockIDClient.EXPECT().FindIdentity(ctx, params.Nickname, ffid.LookupNickname).Return(nil, ffid.ErrNotFound)
+	expected := errors.New("create failure")
+	mockUserRepo.EXPECT().Create(ctx, gomock.Any()).Return(expected)
+	_, err = authService.Register(ctx, params)
+	assert.ErrorIs(t, err, expected)
 }
 
-// hashPassword хеширует пароль для тестов
+// hashPassword создаёт хеш пароля для проверки входа.
 func hashPassword(password string, cost int) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), cost)
 	if err != nil {

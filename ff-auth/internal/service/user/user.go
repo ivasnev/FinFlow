@@ -2,10 +2,10 @@ package user
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
+	"github.com/ivasnev/FinFlow/ff-auth/internal/adapters/ffid"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/repository"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service/password"
@@ -16,16 +16,19 @@ import (
 type UserService struct {
 	userRepository    repository.User
 	passwordMinLength int
+	identity          service.Identity
 }
 
 // NewUserService создает новый сервис пользователей
 func NewUserService(
 	userRepository repository.User,
 	passwordMinLength int,
+	identity service.Identity,
 ) *UserService {
 	return &UserService{
 		userRepository:    userRepository,
 		passwordMinLength: passwordMinLength,
+		identity:          identity,
 	}
 }
 
@@ -36,6 +39,11 @@ func (s *UserService) GetUserByID(ctx context.Context, id int64) (*service.UserD
 		return nil, fmt.Errorf("ошибка получения пользователя: %w", err)
 	}
 
+	identity, err := s.identity.GetIdentity(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
 	// Получаем роли пользователя
 	roles, err := s.userRepository.GetRoles(ctx, user.ID)
 	if err != nil {
@@ -48,48 +56,30 @@ func (s *UserService) GetUserByID(ctx context.Context, id int64) (*service.UserD
 		roleStrings[i] = role.Name
 	}
 
+	updatedAt := user.UpdatedAt
+	if profileUpdatedAt := time.Unix(identity.UpdatedAt, 0); profileUpdatedAt.After(updatedAt) {
+		updatedAt = profileUpdatedAt
+	}
+
 	// Формируем данные для пользователя
 	userData := &service.UserData{
 		Id:        user.ID,
-		Email:     user.Email,
-		Nickname:  user.Nickname,
+		Email:     identity.Email,
+		Nickname:  identity.Nickname,
 		Roles:     roleStrings,
 		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
+		UpdatedAt: updatedAt,
 	}
 	return userData, nil
 }
 
 // GetUserByNickname получает пользователя по никнейму
 func (s *UserService) GetUserByNickname(ctx context.Context, nickname string) (*service.UserData, error) {
-	user, err := s.userRepository.GetByNickname(ctx, nickname)
+	identity, err := s.identity.FindIdentity(ctx, nickname, ffid.LookupNickname)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка получения пользователя: %w", err)
+		return nil, err
 	}
-
-	// Получаем роли пользователя
-	roles, err := s.userRepository.GetRoles(ctx, user.ID)
-	if err != nil {
-		return nil, fmt.Errorf("ошибка получения ролей пользователя: %w", err)
-	}
-
-	// Преобразуем роли в строки
-	roleStrings := make([]string, len(roles))
-	for i, role := range roles {
-		roleStrings[i] = role.Name
-	}
-
-	// Формируем данные для пользователя
-	userData := &service.UserData{
-		Id:        user.ID,
-		Email:     user.Email,
-		Nickname:  user.Nickname,
-		Roles:     roleStrings,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-	}
-
-	return userData, nil
+	return s.GetUserByID(ctx, identity.ID)
 }
 
 // UpdateUser обновляет данные пользователя
@@ -106,25 +96,7 @@ func (s *UserService) UpdateUser(ctx context.Context, userID int64, req service.
 		return nil, fmt.Errorf("ошибка получения пользователя: %w", err)
 	}
 
-	// Обновляем email, если указан
-	if req.Email != nil {
-		emailStr := string(*req.Email)
-		// Проверяем, не занят ли email другим пользователем
-		if emailStr != user.Email {
-			existingUser, err := s.userRepository.GetByEmail(ctx, emailStr)
-			if err == nil && existingUser != nil && existingUser.ID != user.ID {
-				return nil, errors.New("указанный email уже используется")
-			}
-			user.Email = emailStr
-		}
-	}
-
-	// Обновляем никнейм, если указан
-	if req.Nickname != nil {
-		user.Nickname = *req.Nickname
-	}
-
-	// Обновляем пароль, если указан
+	// Хеш готовится до внешнего изменения; при отказе ff-id пароль остаётся прежним.
 	if req.Password != nil {
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(*req.Password), bcrypt.DefaultCost)
 		if err != nil {
@@ -132,17 +104,36 @@ func (s *UserService) UpdateUser(ctx context.Context, userID int64, req service.
 		}
 		user.PasswordHash = string(hashedPassword)
 	}
-
-	// Обновляем время изменения
-	user.UpdatedAt = time.Now()
-
-	// Сохраняем изменения
-	if err := s.userRepository.Update(ctx, user); err != nil {
-		return nil, fmt.Errorf("ошибка обновления пользователя: %w", err)
+	var identity *ffid.UserDTO
+	if req.Email != nil || req.Nickname != nil {
+		identity, err = s.identity.UpdateIdentity(ctx, userID, req.Email, req.Nickname)
+	} else {
+		identity, err = s.identity.GetIdentity(ctx, userID)
+	}
+	if err != nil {
+		return nil, err
 	}
 
-	// Получаем обновленного пользователя
-	return s.GetUserByID(ctx, user.ID)
+	// Пароль изменяет только время учётных данных. Время профиля принадлежит ff-id.
+	if req.Password != nil {
+		user.UpdatedAt = time.Now()
+		if err := s.userRepository.Update(ctx, user); err != nil {
+			return nil, fmt.Errorf("профиль доступен в ff-id, но пароль не сохранён; повторите смену пароля: %w", err)
+		}
+	}
+	roles, err := s.userRepository.GetRoles(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	roleNames := make([]string, len(roles))
+	for i, role := range roles {
+		roleNames[i] = role.Name
+	}
+	updatedAt := user.UpdatedAt
+	if profileUpdatedAt := time.Unix(identity.UpdatedAt, 0); profileUpdatedAt.After(updatedAt) {
+		updatedAt = profileUpdatedAt
+	}
+	return &service.UserData{Id: userID, Email: identity.Email, Nickname: identity.Nickname, Roles: roleNames, CreatedAt: user.CreatedAt, UpdatedAt: updatedAt}, nil
 }
 
 // DeleteUser удаляет пользователя

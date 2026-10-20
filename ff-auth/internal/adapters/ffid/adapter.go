@@ -38,18 +38,18 @@ func (a *Adapter) RegisterUser(ctx context.Context, req *RegisterUserRequest) (*
 
 	resp, err := a.client.RegisterUserFromServiceWithResponse(ctx, apiReq)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка выполнения запроса: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrUnavailable, err)
 	}
 
-	// Обработка различных статусов
+	if resp.StatusCode() == http.StatusConflict {
+		return nil, ErrConflict
+	}
 	if resp.StatusCode() != http.StatusCreated {
-		if resp.JSON400 != nil {
-			return nil, fmt.Errorf("ошибка сервера: %s", resp.JSON400.Error)
-		}
-		if resp.JSON500 != nil {
-			return nil, fmt.Errorf("ошибка сервера: %s", resp.JSON500.Error)
-		}
-		return nil, fmt.Errorf("неожиданный статус: %d", resp.StatusCode())
+		return nil, fmt.Errorf("%w: status %d", ErrUnavailable, resp.StatusCode())
+	}
+
+	if resp.JSON201 == nil || resp.JSON201.Id != req.UserID {
+		return nil, fmt.Errorf("%w: некорректный ID созданного профиля", ErrUnavailable)
 	}
 
 	// Конвертация из API типов в адаптерные типы

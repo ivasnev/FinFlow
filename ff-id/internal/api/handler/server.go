@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -344,7 +345,11 @@ func (h *ServerHandler) RegisterUserFromService(c *gin.Context) {
 	// Регистрируем пользователя
 	serviceUser, err := h.userService.RegisterUser(c.Request.Context(), req.UserId, serviceReq)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: err.Error()})
+		status := http.StatusInternalServerError
+		if errors.Is(err, service.ErrIdentityConflict) {
+			status = http.StatusConflict
+		}
+		c.JSON(status, api.ErrorResponse{Error: err.Error()})
 		return
 	}
 

@@ -15,7 +15,7 @@ import (
 func TestConfiguredPasswordMinimum(t *testing.T) {
 	controller := gomock.NewController(t)
 	repo := mock.NewMockUser(controller)
-	svc := NewUserService(repo, 12)
+	svc := NewUserService(repo, 12, nil)
 	value := "12345678901"
 	if _, err := svc.UpdateUser(context.Background(), 1, service.UserUpdateData{Password: &value}); !errors.Is(err, password.ErrInvalid) {
 		t.Fatalf("configured minimum ignored: %v", err)

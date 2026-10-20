@@ -83,6 +83,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Источник идентификаторов ff-id недоступен; локальная копия не используется
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /auth/login:
     post:
@@ -125,6 +131,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Источник идентификаторов ff-id недоступен; локальная копия не используется
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 
   /auth/refresh:
     post:
@@ -166,6 +179,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Источник идентификаторов ff-id недоступен; локальная копия не используется
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 
   /auth/logout:
     post:
@@ -265,13 +285,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Источник идентификаторов ff-id недоступен; локальная копия не используется
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 
   /users/me:
     patch:
       tags:
         - users
       summary: Обновление профиля текущего пользователя
-      description: Обновляет профиль авторизованного пользователя
+      description: Изменяет email и nickname в ff-id. Пароль хранится в ff-auth; при частичном отказе повторите смену пароля отдельно.
       operationId: updateUser
       security:
         - BearerAuth: []
@@ -310,6 +337,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Источник идентификаторов ff-id недоступен; локальная копия не используется
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Email или nickname уже используется
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 
   /sessions:
     get:

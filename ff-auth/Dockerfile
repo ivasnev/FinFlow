@@ -1,41 +1,17 @@
-# Этап сборки
+# Сборка из корня репозитория использует согласованные локальные версии auth, id и tvm.
 FROM golang:1.24-alpine AS builder
-
-# Устанавливаем git для скачивания Go модулей
 RUN apk add --no-cache git
-
-WORKDIR /app
-
-# Копируем файлы с зависимостями
-COPY go.mod go.sum ./
-
-RUN sed -i '/replace (/,/)/d' go.mod
-RUN sed -i '/replace .*=>/d' go.mod
-
-# Скачиваем зависимости
-RUN go mod download all
-
-# Копируем исходный код
-COPY internal/ ./internal
-COPY cmd/ ./cmd
-COPY pkg/ ./pkg
-COPY config/ ./config
-
-# Собираем приложение
+WORKDIR /src
+COPY ff-auth/ ./ff-auth/
+COPY ff-id/ ./ff-id/
+COPY ff-tvm/ ./ff-tvm/
+WORKDIR /src/ff-auth
+RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server ./cmd/app
 
-# Финальный этап
 FROM alpine:latest
-
 WORKDIR /app
-
-# Копируем бинарный файл из этапа сборки
 COPY --from=builder /app/server .
-
-COPY config/ ./config
-
-# Открываем порт
+COPY ff-auth/config/ ./config
 EXPOSE 8084
-
-# Запускаем приложение
 CMD ["./server"]

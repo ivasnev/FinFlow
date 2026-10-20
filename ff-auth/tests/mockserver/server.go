@@ -24,6 +24,7 @@ type MockServer struct {
 	router   *chi.Mux
 	server   *httptest.Server
 	handlers []*Handler
+	profiles map[int64]map[string]interface{}
 	mu       sync.RWMutex
 }
 
@@ -53,6 +54,7 @@ func NewMockServer() *MockServer {
 	ms := &MockServer{
 		router:   router,
 		handlers: make([]*Handler, 0),
+		profiles: make(map[int64]map[string]interface{}),
 	}
 
 	// Настраиваем универсальный обработчик для всех запросов
@@ -107,6 +109,17 @@ func (ms *MockServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
+				if r.Method == http.MethodPost && r.URL.Path == "/api/v1/internal/users/register" && h.statusCode == http.StatusCreated {
+					var input, profile map[string]interface{}
+					if json.Unmarshal(body, &input) == nil && json.Unmarshal(respBody, &profile) == nil {
+						id, _ := input["user_id"].(float64)
+						profile["id"] = id
+						profile["email"] = input["email"]
+						profile["nickname"] = input["nickname"]
+						ms.profiles[int64(id)] = profile
+						respBody, _ = json.Marshal(profile)
+					}
+				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(h.statusCode)
 				w.Write(respBody)
@@ -122,6 +135,10 @@ func (ms *MockServer) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 			return
 		}
+	}
+
+	if ms.handleIdentity(w, r) {
+		return
 	}
 
 	// Обработчик не найден
@@ -190,6 +207,7 @@ func (ms *MockServer) Clear(t *testing.T) {
 	ms.mu.Lock()
 	defer func() {
 		ms.handlers = nil
+		ms.profiles = make(map[int64]map[string]interface{})
 		ms.mu.Unlock()
 	}()
 

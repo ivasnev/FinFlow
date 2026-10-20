@@ -6,12 +6,12 @@ import (
 	"gorm.io/gorm"
 )
 
-// User представляет пользователя системы
+// User хранит учётные данные. Email и Nickname — исторические копии регистрации; актуальные значения принадлежат ff-id.
 type User struct {
 	ID           int64     `gorm:"primaryKey;autoIncrement;column:id" json:"id"`
-	Email        string    `gorm:"type:text;unique;not null;column:email" json:"email"`
+	Email        string    `gorm:"type:text;not null;column:email" json:"email"`
 	PasswordHash string    `gorm:"type:text;not null;column:password_hash" json:"-"`
-	Nickname     string    `gorm:"type:text;unique;not null;column:nickname" json:"nickname"`
+	Nickname     string    `gorm:"type:text;not null;column:nickname" json:"nickname"`
 	CreatedAt    time.Time `gorm:"type:timestamp;not null;default:now();column:created_at" json:"created_at"`
 	UpdatedAt    time.Time `gorm:"type:timestamp;not null;default:now();column:updated_at" json:"updated_at"`
 }

@@ -2,9 +2,13 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/ivasnev/FinFlow/ff-id/internal/models"
 )
+
+// ErrUserNotFound обозначает отсутствие пользователя без маскировки ошибок хранилища.
+var ErrUserNotFound = errors.New("пользователь не найден")
 
 // User определяет методы для работы с пользователями
 type User interface {

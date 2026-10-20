@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// User представляет пользователя системы
+// User хранит учётные данные; Email и Nickname являются историческими копиями регистрации, актуальные значения берутся из ff-id.
 type User struct {
 	ID           int64     `json:"id"`
 	Email        string    `json:"email"`

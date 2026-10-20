@@ -554,6 +554,88 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: ID, email или nickname уже используется
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/internal/identity:
+    get:
+      summary: Поиск актуальных идентификаторов пользователя
+      operationId: lookupIdentity
+      security:
+        - TVMAuth: []
+      parameters:
+        - name: login
+          in: query
+          schema:
+            type: string
+        - name: kind
+          in: query
+          description: Тип поиска; login сохраняет приоритет email при наличии символа @
+          schema:
+            type: string
+            enum: [login, email, nickname]
+        - name: user_id
+          in: query
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Актуальные данные пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+        '400':
+          description: Требуется ровно один параметр поиска
+        '404':
+          description: Пользователь не найден
+        '500':
+          description: Ошибка хранилища
+  /api/v1/internal/identity/{user_id}:
+    put:
+      summary: Изменение идентификаторов пользователя от сервиса аутентификации
+      operationId: updateIdentity
+      security:
+        - TVMAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                nickname:
+                  type: string
+      responses:
+        '200':
+          description: Актуальные данные пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+        '400':
+          description: Некорректное изменение
+        '404':
+          description: Пользователь не найден
+        '409':
+          description: Email или nickname уже используется
+        '500':
+          description: Ошибка изменения
 
 components:
   securitySchemes:

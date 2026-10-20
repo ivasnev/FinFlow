@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/adapters/ffid"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service"
 	"github.com/ivasnev/FinFlow/ff-auth/internal/service/password"
 	"github.com/ivasnev/FinFlow/ff-auth/pkg/api"
@@ -57,7 +58,11 @@ func (h *ServerHandler) Login(c *gin.Context) {
 
 	response, err := h.authService.Login(c.Request.Context(), loginParams)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, api.ErrorResponse{Error: err.Error()})
+		status := http.StatusUnauthorized
+		if errors.Is(err, ffid.ErrUnavailable) {
+			status = http.StatusServiceUnavailable
+		}
+		c.JSON(status, api.ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -111,7 +116,11 @@ func (h *ServerHandler) RefreshToken(c *gin.Context) {
 
 	response, err := h.authService.RefreshToken(c.Request.Context(), req.RefreshToken)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, api.ErrorResponse{Error: err.Error()})
+		status := http.StatusUnauthorized
+		if errors.Is(err, ffid.ErrUnavailable) {
+			status = http.StatusServiceUnavailable
+		}
+		c.JSON(status, api.ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -151,6 +160,12 @@ func (h *ServerHandler) Register(c *gin.Context) {
 	response, err := h.authService.Register(c.Request.Context(), registerParams)
 	if err != nil {
 		status := http.StatusInternalServerError
+		if errors.Is(err, ffid.ErrConflict) {
+			status = http.StatusConflict
+		}
+		if errors.Is(err, ffid.ErrUnavailable) {
+			status = http.StatusServiceUnavailable
+		}
 		if errors.Is(err, password.ErrInvalid) {
 			status = http.StatusBadRequest
 		}
@@ -292,6 +307,12 @@ func (h *ServerHandler) UpdateUser(c *gin.Context) {
 	updatedUser, err := h.userService.UpdateUser(c.Request.Context(), userData.UserID, updateData)
 	if err != nil {
 		status := http.StatusInternalServerError
+		if errors.Is(err, ffid.ErrConflict) {
+			status = http.StatusConflict
+		}
+		if errors.Is(err, ffid.ErrUnavailable) {
+			status = http.StatusServiceUnavailable
+		}
 		if errors.Is(err, password.ErrInvalid) {
 			status = http.StatusBadRequest
 		}
@@ -316,7 +337,11 @@ func (h *ServerHandler) UpdateUser(c *gin.Context) {
 func (h *ServerHandler) GetUserByNickname(c *gin.Context, nickname string) {
 	user, err := h.userService.GetUserByNickname(c.Request.Context(), nickname)
 	if err != nil {
-		c.JSON(http.StatusNotFound, api.ErrorResponse{Error: "user not found"})
+		status := http.StatusNotFound
+		if errors.Is(err, ffid.ErrUnavailable) {
+			status = http.StatusServiceUnavailable
+		}
+		c.JSON(status, api.ErrorResponse{Error: "user not found or unavailable"})
 		return
 	}
 

@@ -27,6 +27,13 @@ const (
 	FriendDTOStatusRejected FriendDTOStatus = "rejected"
 )
 
+// Defines values for LookupIdentityParamsKind.
+const (
+	Email    LookupIdentityParamsKind = "email"
+	Login    LookupIdentityParamsKind = "login"
+	Nickname LookupIdentityParamsKind = "nickname"
+)
+
 // Defines values for GetFriendsParamsStatus.
 const (
 	GetFriendsParamsStatusAccepted GetFriendsParamsStatus = "accepted"
@@ -176,6 +183,24 @@ type UserDTO struct {
 	UpdatedAt int64 `json:"updated_at"`
 }
 
+// LookupIdentityParams defines parameters for LookupIdentity.
+type LookupIdentityParams struct {
+	Login *string `form:"login,omitempty" json:"login,omitempty"`
+
+	// Kind Тип поиска; login сохраняет приоритет email при наличии символа @
+	Kind   *LookupIdentityParamsKind `form:"kind,omitempty" json:"kind,omitempty"`
+	UserId *int64                    `form:"user_id,omitempty" json:"user_id,omitempty"`
+}
+
+// LookupIdentityParamsKind defines parameters for LookupIdentity.
+type LookupIdentityParamsKind string
+
+// UpdateIdentityJSONBody defines parameters for UpdateIdentity.
+type UpdateIdentityJSONBody struct {
+	Email    *openapi_types.Email `json:"email,omitempty"`
+	Nickname *string              `json:"nickname,omitempty"`
+}
+
 // GetUsersByIdsParams defines parameters for GetUsersByIds.
 type GetUsersByIdsParams struct {
 	// UserId ID пользователей (можно передать несколько)
@@ -211,6 +236,9 @@ type GetFriendsParams struct {
 
 // GetFriendsParamsStatus defines parameters for GetFriends.
 type GetFriendsParamsStatus string
+
+// UpdateIdentityJSONRequestBody defines body for UpdateIdentity for application/json ContentType.
+type UpdateIdentityJSONRequestBody UpdateIdentityJSONBody
 
 // RegisterUserFromServiceJSONRequestBody defines body for RegisterUserFromService for application/json ContentType.
 type RegisterUserFromServiceJSONRequestBody = ServiceRegisterUserRequest

@@ -9,10 +9,10 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 	"github.com/ivasnev/FinFlow/ff-id/internal/models"
 	"github.com/ivasnev/FinFlow/ff-id/internal/repository/mock"
 	"github.com/ivasnev/FinFlow/ff-id/internal/service"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestUserService_GetUserByID(t *testing.T) {
@@ -195,6 +195,7 @@ func TestUserService_GetUserByNickname(t *testing.T) {
 	})
 }
 
+// TestUserService_UpdateUser проверяет изменение профиля и конфликт идентификаторов.
 func TestUserService_UpdateUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -289,7 +290,7 @@ func TestUserService_UpdateUser(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
-		assert.Equal(t, "указанный email уже используется", err.Error())
+		assert.ErrorIs(t, err, service.ErrIdentityConflict)
 	})
 
 	t.Run("успешное обновление никнейма", func(t *testing.T) {
@@ -443,6 +444,7 @@ func TestUserService_DeleteUser(t *testing.T) {
 	})
 }
 
+// TestUserService_RegisterUser проверяет создание профиля и конфликты уникальности.
 func TestUserService_RegisterUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -543,7 +545,7 @@ func TestUserService_RegisterUser(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
-		assert.Equal(t, "указанный email уже используется", err.Error())
+		assert.ErrorIs(t, err, service.ErrIdentityConflict)
 	})
 
 	t.Run("никнейм уже используется", func(t *testing.T) {
@@ -576,7 +578,6 @@ func TestUserService_RegisterUser(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Nil(t, result)
-		assert.Equal(t, "указанный никнейм уже используется", err.Error())
+		assert.ErrorIs(t, err, service.ErrIdentityConflict)
 	})
 }
-

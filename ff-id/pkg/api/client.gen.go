@@ -89,6 +89,14 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// LookupIdentity request
+	LookupIdentity(ctx context.Context, params *LookupIdentityParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateIdentityWithBody request with any body
+	UpdateIdentityWithBody(ctx context.Context, userId int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateIdentity(ctx context.Context, userId int64, body UpdateIdentityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetUsersByIds request
 	GetUsersByIds(ctx context.Context, params *GetUsersByIdsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -128,6 +136,42 @@ type ClientInterface interface {
 
 	// GetFriends request
 	GetFriends(ctx context.Context, nickname string, params *GetFriendsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) LookupIdentity(ctx context.Context, params *LookupIdentityParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewLookupIdentityRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateIdentityWithBody(ctx context.Context, userId int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateIdentityRequestWithBody(c.Server, userId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateIdentity(ctx context.Context, userId int64, body UpdateIdentityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateIdentityRequest(c.Server, userId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) GetUsersByIds(ctx context.Context, params *GetUsersByIdsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -308,6 +352,134 @@ func (c *Client) GetFriends(ctx context.Context, nickname string, params *GetFri
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewLookupIdentityRequest generates requests for LookupIdentity
+func NewLookupIdentityRequest(server string, params *LookupIdentityParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/internal/identity")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Login != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "login", runtime.ParamLocationQuery, *params.Login); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Kind != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "kind", runtime.ParamLocationQuery, *params.Kind); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.UserId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "user_id", runtime.ParamLocationQuery, *params.UserId); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateIdentityRequest calls the generic UpdateIdentity builder with application/json body
+func NewUpdateIdentityRequest(server string, userId int64, body UpdateIdentityJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateIdentityRequestWithBody(server, userId, "application/json", bodyReader)
+}
+
+// NewUpdateIdentityRequestWithBody generates requests for UpdateIdentity with any type of body
+func NewUpdateIdentityRequestWithBody(server string, userId int64, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "user_id", runtime.ParamLocationPath, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/internal/identity/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
 }
 
 // NewGetUsersByIdsRequest generates requests for GetUsersByIds
@@ -851,6 +1023,14 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// LookupIdentityWithResponse request
+	LookupIdentityWithResponse(ctx context.Context, params *LookupIdentityParams, reqEditors ...RequestEditorFn) (*LookupIdentityResponse, error)
+
+	// UpdateIdentityWithBodyWithResponse request with any body
+	UpdateIdentityWithBodyWithResponse(ctx context.Context, userId int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateIdentityResponse, error)
+
+	UpdateIdentityWithResponse(ctx context.Context, userId int64, body UpdateIdentityJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateIdentityResponse, error)
+
 	// GetUsersByIdsWithResponse request
 	GetUsersByIdsWithResponse(ctx context.Context, params *GetUsersByIdsParams, reqEditors ...RequestEditorFn) (*GetUsersByIdsResponse, error)
 
@@ -892,6 +1072,50 @@ type ClientWithResponsesInterface interface {
 	GetFriendsWithResponse(ctx context.Context, nickname string, params *GetFriendsParams, reqEditors ...RequestEditorFn) (*GetFriendsResponse, error)
 }
 
+type LookupIdentityResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *UserDTO
+}
+
+// Status returns HTTPResponse.Status
+func (r LookupIdentityResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r LookupIdentityResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateIdentityResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *UserDTO
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateIdentityResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateIdentityResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetUsersByIdsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -921,6 +1145,7 @@ type RegisterUserFromServiceResponse struct {
 	HTTPResponse *http.Response
 	JSON201      *UserDTO
 	JSON400      *ErrorResponse
+	JSON409      *ErrorResponse
 	JSON500      *ErrorResponse
 }
 
@@ -1147,6 +1372,32 @@ func (r GetFriendsResponse) StatusCode() int {
 	return 0
 }
 
+// LookupIdentityWithResponse request returning *LookupIdentityResponse
+func (c *ClientWithResponses) LookupIdentityWithResponse(ctx context.Context, params *LookupIdentityParams, reqEditors ...RequestEditorFn) (*LookupIdentityResponse, error) {
+	rsp, err := c.LookupIdentity(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseLookupIdentityResponse(rsp)
+}
+
+// UpdateIdentityWithBodyWithResponse request with arbitrary body returning *UpdateIdentityResponse
+func (c *ClientWithResponses) UpdateIdentityWithBodyWithResponse(ctx context.Context, userId int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateIdentityResponse, error) {
+	rsp, err := c.UpdateIdentityWithBody(ctx, userId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateIdentityResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateIdentityWithResponse(ctx context.Context, userId int64, body UpdateIdentityJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateIdentityResponse, error) {
+	rsp, err := c.UpdateIdentity(ctx, userId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateIdentityResponse(rsp)
+}
+
 // GetUsersByIdsWithResponse request returning *GetUsersByIdsResponse
 func (c *ClientWithResponses) GetUsersByIdsWithResponse(ctx context.Context, params *GetUsersByIdsParams, reqEditors ...RequestEditorFn) (*GetUsersByIdsResponse, error) {
 	rsp, err := c.GetUsersByIds(ctx, params, reqEditors...)
@@ -1277,6 +1528,58 @@ func (c *ClientWithResponses) GetFriendsWithResponse(ctx context.Context, nickna
 	return ParseGetFriendsResponse(rsp)
 }
 
+// ParseLookupIdentityResponse parses an HTTP response from a LookupIdentityWithResponse call
+func ParseLookupIdentityResponse(rsp *http.Response) (*LookupIdentityResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &LookupIdentityResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest UserDTO
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateIdentityResponse parses an HTTP response from a UpdateIdentityWithResponse call
+func ParseUpdateIdentityResponse(rsp *http.Response) (*UpdateIdentityResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateIdentityResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest UserDTO
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetUsersByIdsResponse parses an HTTP response from a GetUsersByIdsWithResponse call
 func ParseGetUsersByIdsResponse(rsp *http.Response) (*GetUsersByIdsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -1344,6 +1647,13 @@ func ParseRegisterUserFromServiceResponse(rsp *http.Response) (*RegisterUserFrom
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest ErrorResponse

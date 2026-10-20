@@ -33,7 +33,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id int64) (*models.User, e
 	err := r.db.WithContext(ctx).First(&user, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("пользователь не найден")
+			return nil, repository.ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("пользователь не найден")
+			return nil, repository.ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (r *UserRepository) GetByNickname(ctx context.Context, nickname string) (*m
 	err := r.db.WithContext(ctx).Where("nickname = ?", nickname).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("пользователь не найден")
+			return nil, repository.ErrUserNotFound
 		}
 		return nil, err
 	}

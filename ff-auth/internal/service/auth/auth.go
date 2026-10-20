@@ -5,7 +5,6 @@ import (
 	"crypto/ed25519"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -27,7 +26,7 @@ type AuthService struct {
 	deviceService          service.Device
 	loginHistoryRepository repository.LoginHistory
 	tokenManager           service.TokenManager
-	idClient               *ffid.Adapter
+	idClient               service.Identity
 }
 
 // NewAuthService создает новый сервис аутентификации
@@ -39,7 +38,7 @@ func NewAuthService(
 	deviceService service.Device,
 	loginHistoryRepository repository.LoginHistory,
 	tokenManager service.TokenManager,
-	idClient *ffid.Adapter,
+	idClient service.Identity,
 ) *AuthService {
 	return &AuthService{
 		config:                 config,
@@ -59,16 +58,15 @@ func (s *AuthService) Register(ctx context.Context, params service.RegisterParam
 		return nil, err
 	}
 
-	// Проверяем, существует ли пользователь с таким email
-	existingUser, err := s.userRepository.GetByEmail(ctx, params.Email)
-	if err == nil && existingUser != nil {
-		return nil, errors.New("пользователь с таким email уже существует")
-	}
-
-	// Проверяем, существует ли пользователь с таким никнеймом
-	existingUser, err = s.userRepository.GetByNickname(ctx, params.Nickname)
-	if err == nil && existingUser != nil {
-		return nil, errors.New("пользователь с таким никнеймом уже существует")
+	// Уникальность проверяет источник профиля; локальные поля auth не определяют занятость логина.
+	for _, query := range []struct{ value, kind string }{{params.Email, ffid.LookupEmail}, {params.Nickname, ffid.LookupNickname}} {
+		_, err := s.idClient.FindIdentity(ctx, query.value, query.kind)
+		if err == nil {
+			return nil, ffid.ErrConflict
+		}
+		if !errors.Is(err, ffid.ErrNotFound) {
+			return nil, err
+		}
 	}
 
 	// Хешируем пароль
@@ -98,7 +96,7 @@ func (s *AuthService) Register(ctx context.Context, params service.RegisterParam
 		Name:     params.Name,
 	}
 
-	_, err = s.idClient.RegisterUser(ctx, reqRegister)
+	identity, err := s.idClient.RegisterUser(ctx, reqRegister)
 	if err != nil {
 		dbErr := s.userRepository.Delete(ctx, user.ID)
 		if dbErr != nil {
@@ -143,8 +141,8 @@ func (s *AuthService) Register(ctx context.Context, params service.RegisterParam
 		ExpiresAt:    time.Unix(expiresAt, 0),
 		User: service.ShortUserParams{
 			Id:       user.ID,
-			Email:    user.Email,
-			Nickname: user.Nickname,
+			Email:    identity.Email,
+			Nickname: identity.Nickname,
 			Roles:    []string{string(models.RoleUser)},
 		},
 	}, nil
@@ -152,16 +150,14 @@ func (s *AuthService) Register(ctx context.Context, params service.RegisterParam
 
 // Login выполняет вход пользователя в систему
 func (s *AuthService) Login(ctx context.Context, params service.LoginParams) (*service.AccessDataParams, error) {
-	var user *models.User
-	var err error
-
-	// Пытаемся найти пользователя по email или никнейму
-	if strings.Contains(params.Login, "@") {
-		user, err = s.userRepository.GetByEmail(ctx, params.Login)
-	} else {
-		user, err = s.userRepository.GetByNickname(ctx, params.Login)
+	identity, err := s.idClient.FindIdentity(ctx, params.Login, ffid.LookupLogin)
+	if errors.Is(err, ffid.ErrNotFound) {
+		return nil, errors.New("неверный логин или пароль")
 	}
-
+	if err != nil {
+		return nil, err
+	}
+	user, err := s.userRepository.GetByID(ctx, identity.ID)
 	if err != nil {
 		return nil, errors.New("неверный логин или пароль")
 	}
@@ -221,8 +217,8 @@ func (s *AuthService) Login(ctx context.Context, params service.LoginParams) (*s
 	// Формируем DTO для пользователя
 	userDTO := service.ShortUserParams{
 		Id:       user.ID,
-		Email:    user.Email,
-		Nickname: user.Nickname,
+		Email:    identity.Email,
+		Nickname: identity.Nickname,
 		Roles:    roleStrings,
 	}
 
@@ -254,6 +250,11 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*s
 	user, err := s.userRepository.GetByID(ctx, session.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("пользователь не найден: %w", err)
+	}
+
+	identity, err := s.idClient.GetIdentity(ctx, user.ID)
+	if err != nil {
+		return nil, err
 	}
 
 	// Получаем роли пользователя
@@ -298,8 +299,8 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*s
 	// Формируем DTO для пользователя
 	userDTO := service.ShortUserParams{
 		Id:       user.ID,
-		Email:    user.Email,
-		Nickname: user.Nickname,
+		Email:    identity.Email,
+		Nickname: identity.Nickname,
 		Roles:    roleStrings,
 	}
 
