@@ -144,7 +144,7 @@ func (r *UserRepository) GetByEventID(ctx context.Context, eventID int64) ([]mod
 func (r *UserRepository) GetDummiesByEventID(ctx context.Context, eventID int64) ([]models.User, error) {
 	var dbUsers []User
 	err := r.db.WithContext(ctx).
-		Joins("JOIN user_event ON users.user_id = user_event.user_id").
+		Joins("JOIN user_event ON users.id = user_event.user_id").
 		Where("user_event.event_id = ? AND users.is_dummy = true", eventID).
 		Find(&dbUsers).Error
 	if err != nil {
