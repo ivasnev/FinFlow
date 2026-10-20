@@ -116,7 +116,7 @@ type RegisterUserRequest struct {
 	// Nickname Никнейм пользователя
 	Nickname string `json:"nickname"`
 
-	// Phone Номер телефона
+	// Phone Номер телефона. Пустая или пробельная строка означает отсутствие номера.
 	Phone *string `json:"phone,omitempty"`
 }
 
@@ -149,7 +149,7 @@ type UpdateUserRequest struct {
 	// Nickname Новый никнейм пользователя
 	Nickname *string `json:"nickname,omitempty"`
 
-	// Phone Новый номер телефона
+	// Phone Новый номер телефона. Пустая или пробельная строка удаляет телефон; отсутствие поля сохраняет текущий номер.
 	Phone *string `json:"phone,omitempty"`
 }
 

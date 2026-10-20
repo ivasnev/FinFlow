@@ -2,8 +2,10 @@ package user
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -178,8 +180,7 @@ func (s *UserService) UpdateUser(ctx context.Context, userID int64, req service.
 
 	// Обновляем телефон, если указан
 	if req.Phone != nil {
-		user.Phone.String = *req.Phone
-		user.Phone.Valid = true
+		user.Phone = optionalPhone(*req.Phone)
 	}
 
 	// Обновляем имя, если указано
@@ -199,11 +200,7 @@ func (s *UserService) UpdateUser(ctx context.Context, userID int64, req service.
 
 	// Сохраняем изменения
 	if err := s.userRepository.Update(ctx, user); err != nil {
-		var conflict *pgconn.PgError
-		if errors.As(err, &conflict) && conflict.Code == "23505" {
-			return nil, service.ErrIdentityConflict
-		}
-		return nil, fmt.Errorf("ошибка обновления пользователя: %w", err)
+		return nil, fmt.Errorf("ошибка обновления пользователя: %w", classifyUserWriteError(err))
 	}
 
 	// Получаем обновленного пользователя
@@ -286,8 +283,7 @@ func (s *UserService) RegisterUser(ctx context.Context, userID int64, req *servi
 
 	// Устанавливаем телефон, если указан
 	if req.Phone != nil {
-		user.Phone.String = *req.Phone
-		user.Phone.Valid = true
+		user.Phone = optionalPhone(*req.Phone)
 	}
 
 	// Устанавливаем дату рождения, если указана
@@ -304,11 +300,7 @@ func (s *UserService) RegisterUser(ctx context.Context, userID int64, req *servi
 
 	// Сохраняем пользователя
 	if err := s.userRepository.Create(ctx, user); err != nil {
-		var conflict *pgconn.PgError
-		if errors.As(err, &conflict) && conflict.Code == "23505" {
-			return nil, service.ErrIdentityConflict
-		}
-		return nil, fmt.Errorf("ошибка создания пользователя: %w", err)
+		return nil, fmt.Errorf("ошибка создания пользователя: %w", classifyUserWriteError(err))
 	}
 
 	// Возвращаем созданного пользователя
@@ -319,4 +311,26 @@ func (s *UserService) RegisterUser(ctx context.Context, userID int64, req *servi
 		CreatedAt: user.CreatedAt.Unix(),
 		UpdatedAt: user.UpdatedAt.Unix(),
 	}, nil
+}
+
+// optionalPhone хранит пустой или пробельный телефон как SQL NULL.
+func optionalPhone(phone string) sql.NullString {
+	if strings.TrimSpace(phone) == "" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: phone, Valid: true}
+}
+
+// classifyUserWriteError распознаёт известные ограничения уникальности пользователя.
+func classifyUserWriteError(err error) error {
+	var conflict *pgconn.PgError
+	if errors.As(err, &conflict) && conflict.Code == "23505" {
+		switch conflict.ConstraintName {
+		case "users_phone_key":
+			return service.ErrPhoneConflict
+		case "users_email_key", "users_nickname_key", "users_pkey":
+			return service.ErrIdentityConflict
+		}
+	}
+	return err
 }

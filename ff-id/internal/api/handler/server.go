@@ -276,7 +276,11 @@ func (h *ServerHandler) UpdateUser(c *gin.Context) {
 
 	serviceUser, err := h.userService.UpdateUser(c.Request.Context(), userData.UserID, serviceReq)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: err.Error()})
+		status := http.StatusInternalServerError
+		if errors.Is(err, service.ErrIdentityConflict) || errors.Is(err, service.ErrPhoneConflict) {
+			status = http.StatusConflict
+		}
+		c.JSON(status, api.ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -315,7 +319,11 @@ func (h *ServerHandler) RegisterUser(c *gin.Context) {
 	// Регистрируем пользователя
 	serviceUser, err := h.userService.RegisterUser(c.Request.Context(), userData.UserID, serviceReq)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, api.ErrorResponse{Error: err.Error()})
+		status := http.StatusInternalServerError
+		if errors.Is(err, service.ErrIdentityConflict) || errors.Is(err, service.ErrPhoneConflict) {
+			status = http.StatusConflict
+		}
+		c.JSON(status, api.ErrorResponse{Error: err.Error()})
 		return
 	}
 

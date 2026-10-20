@@ -10,6 +10,9 @@ import (
 // ErrIdentityConflict обозначает занятый email или nickname.
 var ErrIdentityConflict = errors.New("указанный email или никнейм уже используется")
 
+// ErrPhoneConflict обозначает занятый непустой телефон.
+var ErrPhoneConflict = errors.New("указанный телефон уже используется")
+
 // UserDTO представляет данные пользователя, возвращаемые в API
 type UserDTO struct {
 	ID        int64
