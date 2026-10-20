@@ -1669,6 +1669,52 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/event/{id_event}/settlements:
+    parameters:
+      - {name: id_event, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    get:
+      tags: [transactions]
+      operationId: listSettlements
+      summary: История подтверждённых возвратов
+      parameters:
+        - {name: before, in: query, schema: {type: integer, format: int64, minimum: 1}}
+      responses:
+        '200':
+          description: Страница из не более 50 возвратов
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SettlementListResponse'}
+        '403': {description: Нет доступа}
+    post:
+      tags: [transactions]
+      operationId: receiveSettlement
+      summary: Получатель подтверждает получение возврата
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SettlementRequest'}
+      responses:
+        '200':
+          description: Сохранённый результат, включая идемпотентный повтор
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SettlementResponse'}
+        '400': {description: Некорректная сумма или участник}
+        '403': {description: Нет доступа}
+        '409': {description: Ключ уже использован с другими данными}
+  /api/v1/event/{id_event}/settlements/{id_settlement}:
+    delete:
+      tags: [transactions]
+      operationId: cancelSettlement
+      summary: Создатель отменяет ошибочную запись возврата
+      parameters:
+        - {name: id_event, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+        - {name: id_settlement, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+      responses:
+        '200': {description: Возврат отменён, запись сохранена}
+        '403': {description: Нет доступа}
+
 components:
   securitySchemes:
     BearerAuth:
@@ -1678,6 +1724,35 @@ components:
       description: Авторизация через Bearer токен
 
   schemas:
+    SettlementRequest:
+      type: object
+      required: [from_user_id, amount_cents, request_id]
+      additionalProperties: false
+      properties:
+        from_user_id: {type: integer, format: int64, minimum: 1}
+        amount_cents: {type: integer, format: int64, minimum: 1, maximum: 9999999999}
+        request_id: {type: string, format: uuid}
+    SettlementResponse:
+      type: object
+      required: [id, event_id, from_user_id, to_user_id, created_by, amount_cents, request_id, created_at]
+      properties:
+        id: {type: integer, format: int64}
+        event_id: {type: integer, format: int64}
+        from_user_id: {type: integer, format: int64}
+        to_user_id: {type: integer, format: int64}
+        created_by: {type: integer, format: int64}
+        amount_cents: {type: integer, format: int64}
+        request_id: {type: string, format: uuid}
+        created_at: {type: string, format: date-time}
+        canceled_at: {type: string, format: date-time}
+    SettlementListResponse:
+      type: object
+      required: [settlements]
+      properties:
+        settlements:
+          type: array
+          items: {$ref: '#/components/schemas/SettlementResponse'}
+        next_before: {type: integer, format: int64}
     ErrorResponse:
       type: object
       required:

@@ -240,6 +240,32 @@ type OptimizedDebtListResponse struct {
 	OptimizedDebts *[]OptimizedDebtDTO `json:"optimized_debts,omitempty"`
 }
 
+// SettlementListResponse defines model for SettlementListResponse.
+type SettlementListResponse struct {
+	NextBefore  *int64               `json:"next_before,omitempty"`
+	Settlements []SettlementResponse `json:"settlements"`
+}
+
+// SettlementRequest defines model for SettlementRequest.
+type SettlementRequest struct {
+	AmountCents int64              `json:"amount_cents"`
+	FromUserId  int64              `json:"from_user_id"`
+	RequestId   openapi_types.UUID `json:"request_id"`
+}
+
+// SettlementResponse defines model for SettlementResponse.
+type SettlementResponse struct {
+	AmountCents int64              `json:"amount_cents"`
+	CanceledAt  *time.Time         `json:"canceled_at,omitempty"`
+	CreatedAt   time.Time          `json:"created_at"`
+	CreatedBy   int64              `json:"created_by"`
+	EventId     int64              `json:"event_id"`
+	FromUserId  int64              `json:"from_user_id"`
+	Id          int64              `json:"id"`
+	RequestId   openapi_types.UUID `json:"request_id"`
+	ToUserId    int64              `json:"to_user_id"`
+}
+
 // ShareDTO defines model for ShareDTO.
 type ShareDTO struct {
 	// Id ID доли
@@ -416,6 +442,11 @@ type GetCategoryByIDParams struct {
 	CategoryType CategoryType `form:"category_type" json:"category_type"`
 }
 
+// ListSettlementsParams defines parameters for ListSettlements.
+type ListSettlementsParams struct {
+	Before *int64 `form:"before,omitempty" json:"before,omitempty"`
+}
+
 // UploadIconFileMultipartBody defines parameters for UploadIconFile.
 type UploadIconFileMultipartBody struct {
 	File openapi_types.File `json:"file"`
@@ -456,6 +487,9 @@ type CreateActivityJSONRequestBody = ActivityRequest
 
 // UpdateActivityJSONRequestBody defines body for UpdateActivity for application/json ContentType.
 type UpdateActivityJSONRequestBody = ActivityRequest
+
+// ReceiveSettlementJSONRequestBody defines body for ReceiveSettlement for application/json ContentType.
+type ReceiveSettlementJSONRequestBody = SettlementRequest
 
 // CreateTaskJSONRequestBody defines body for CreateTask for application/json ContentType.
 type CreateTaskJSONRequestBody = TaskRequest

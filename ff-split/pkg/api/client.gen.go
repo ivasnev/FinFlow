@@ -143,6 +143,17 @@ type ClientInterface interface {
 	// OptimizeDebts request
 	OptimizeDebts(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListSettlements request
+	ListSettlements(ctx context.Context, idEvent int64, params *ListSettlementsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReceiveSettlementWithBody request with any body
+	ReceiveSettlementWithBody(ctx context.Context, idEvent int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ReceiveSettlement(ctx context.Context, idEvent int64, body ReceiveSettlementJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CancelSettlement request
+	CancelSettlement(ctx context.Context, idEvent int64, idSettlement int64, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetTasksByEventID request
 	GetTasksByEventID(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -471,6 +482,54 @@ func (c *Client) GetOptimizedDebtsByEventID(ctx context.Context, idEvent int64, 
 
 func (c *Client) OptimizeDebts(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewOptimizeDebtsRequest(c.Server, idEvent)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListSettlements(ctx context.Context, idEvent int64, params *ListSettlementsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSettlementsRequest(c.Server, idEvent, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReceiveSettlementWithBody(ctx context.Context, idEvent int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReceiveSettlementRequestWithBody(c.Server, idEvent, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReceiveSettlement(ctx context.Context, idEvent int64, body ReceiveSettlementJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReceiveSettlementRequest(c.Server, idEvent, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CancelSettlement(ctx context.Context, idEvent int64, idSettlement int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelSettlementRequest(c.Server, idEvent, idSettlement)
 	if err != nil {
 		return nil, err
 	}
@@ -1552,6 +1611,150 @@ func NewOptimizeDebtsRequest(server string, idEvent int64) (*http.Request, error
 	}
 
 	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListSettlementsRequest generates requests for ListSettlements
+func NewListSettlementsRequest(server string, idEvent int64, params *ListSettlementsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_event", runtime.ParamLocationPath, idEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/event/%s/settlements", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Before != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "before", runtime.ParamLocationQuery, *params.Before); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReceiveSettlementRequest calls the generic ReceiveSettlement builder with application/json body
+func NewReceiveSettlementRequest(server string, idEvent int64, body ReceiveSettlementJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReceiveSettlementRequestWithBody(server, idEvent, "application/json", bodyReader)
+}
+
+// NewReceiveSettlementRequestWithBody generates requests for ReceiveSettlement with any type of body
+func NewReceiveSettlementRequestWithBody(server string, idEvent int64, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_event", runtime.ParamLocationPath, idEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/event/%s/settlements", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCancelSettlementRequest generates requests for CancelSettlement
+func NewCancelSettlementRequest(server string, idEvent int64, idSettlement int64) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_event", runtime.ParamLocationPath, idEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "id_settlement", runtime.ParamLocationPath, idSettlement)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/event/%s/settlements/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2872,6 +3075,17 @@ type ClientWithResponsesInterface interface {
 	// OptimizeDebtsWithResponse request
 	OptimizeDebtsWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*OptimizeDebtsResponse, error)
 
+	// ListSettlementsWithResponse request
+	ListSettlementsWithResponse(ctx context.Context, idEvent int64, params *ListSettlementsParams, reqEditors ...RequestEditorFn) (*ListSettlementsResponse, error)
+
+	// ReceiveSettlementWithBodyWithResponse request with any body
+	ReceiveSettlementWithBodyWithResponse(ctx context.Context, idEvent int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReceiveSettlementResponse, error)
+
+	ReceiveSettlementWithResponse(ctx context.Context, idEvent int64, body ReceiveSettlementJSONRequestBody, reqEditors ...RequestEditorFn) (*ReceiveSettlementResponse, error)
+
+	// CancelSettlementWithResponse request
+	CancelSettlementWithResponse(ctx context.Context, idEvent int64, idSettlement int64, reqEditors ...RequestEditorFn) (*CancelSettlementResponse, error)
+
 	// GetTasksByEventIDWithResponse request
 	GetTasksByEventIDWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*GetTasksByEventIDResponse, error)
 
@@ -3336,6 +3550,71 @@ func (r OptimizeDebtsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r OptimizeDebtsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListSettlementsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SettlementListResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSettlementsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSettlementsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ReceiveSettlementResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SettlementResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ReceiveSettlementResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReceiveSettlementResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CancelSettlementResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r CancelSettlementResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CancelSettlementResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -4205,6 +4484,41 @@ func (c *ClientWithResponses) OptimizeDebtsWithResponse(ctx context.Context, idE
 		return nil, err
 	}
 	return ParseOptimizeDebtsResponse(rsp)
+}
+
+// ListSettlementsWithResponse request returning *ListSettlementsResponse
+func (c *ClientWithResponses) ListSettlementsWithResponse(ctx context.Context, idEvent int64, params *ListSettlementsParams, reqEditors ...RequestEditorFn) (*ListSettlementsResponse, error) {
+	rsp, err := c.ListSettlements(ctx, idEvent, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSettlementsResponse(rsp)
+}
+
+// ReceiveSettlementWithBodyWithResponse request with arbitrary body returning *ReceiveSettlementResponse
+func (c *ClientWithResponses) ReceiveSettlementWithBodyWithResponse(ctx context.Context, idEvent int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReceiveSettlementResponse, error) {
+	rsp, err := c.ReceiveSettlementWithBody(ctx, idEvent, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReceiveSettlementResponse(rsp)
+}
+
+func (c *ClientWithResponses) ReceiveSettlementWithResponse(ctx context.Context, idEvent int64, body ReceiveSettlementJSONRequestBody, reqEditors ...RequestEditorFn) (*ReceiveSettlementResponse, error) {
+	rsp, err := c.ReceiveSettlement(ctx, idEvent, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReceiveSettlementResponse(rsp)
+}
+
+// CancelSettlementWithResponse request returning *CancelSettlementResponse
+func (c *ClientWithResponses) CancelSettlementWithResponse(ctx context.Context, idEvent int64, idSettlement int64, reqEditors ...RequestEditorFn) (*CancelSettlementResponse, error) {
+	rsp, err := c.CancelSettlement(ctx, idEvent, idSettlement, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCancelSettlementResponse(rsp)
 }
 
 // GetTasksByEventIDWithResponse request returning *GetTasksByEventIDResponse
@@ -5151,6 +5465,74 @@ func ParseOptimizeDebtsResponse(rsp *http.Response) (*OptimizeDebtsResponse, err
 		}
 		response.JSON500 = &dest
 
+	}
+
+	return response, nil
+}
+
+// ParseListSettlementsResponse parses an HTTP response from a ListSettlementsWithResponse call
+func ParseListSettlementsResponse(rsp *http.Response) (*ListSettlementsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSettlementsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SettlementListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReceiveSettlementResponse parses an HTTP response from a ReceiveSettlementWithResponse call
+func ParseReceiveSettlementResponse(rsp *http.Response) (*ReceiveSettlementResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReceiveSettlementResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SettlementResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCancelSettlementResponse parses an HTTP response from a CancelSettlementWithResponse call
+func ParseCancelSettlementResponse(rsp *http.Response) (*CancelSettlementResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CancelSettlementResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
 	}
 
 	return response, nil

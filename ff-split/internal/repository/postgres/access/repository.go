@@ -27,6 +27,8 @@ func (r *Repository) IsMember(ctx context.Context, externalID, eventID int64) (b
 func (r *Repository) HasResource(ctx context.Context, eventID int64, kind string, resourceID int64) (bool, error) {
 	var table string
 	switch kind {
+	case "settlement":
+		table = "settlements"
 	case "transaction":
 		table = "transactions"
 	case "task":

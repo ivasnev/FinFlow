@@ -59,6 +59,15 @@ type ServerInterface interface {
 	// Оптимизировать долги
 	// (POST /api/v1/event/{id_event}/optimized-debts)
 	OptimizeDebts(c *gin.Context, idEvent int64)
+	// История подтверждённых возвратов
+	// (GET /api/v1/event/{id_event}/settlements)
+	ListSettlements(c *gin.Context, idEvent int64, params ListSettlementsParams)
+	// Получатель подтверждает получение возврата
+	// (POST /api/v1/event/{id_event}/settlements)
+	ReceiveSettlement(c *gin.Context, idEvent int64)
+	// Создатель отменяет ошибочную запись возврата
+	// (DELETE /api/v1/event/{id_event}/settlements/{id_settlement})
+	CancelSettlement(c *gin.Context, idEvent int64, idSettlement int64)
 	// Получить задачи мероприятия
 	// (GET /api/v1/event/{id_event}/task)
 	GetTasksByEventID(c *gin.Context, idEvent int64)
@@ -577,6 +586,104 @@ func (siw *ServerInterfaceWrapper) OptimizeDebts(c *gin.Context) {
 	}
 
 	siw.Handler.OptimizeDebts(c, idEvent)
+}
+
+// ListSettlements operation middleware
+func (siw *ServerInterfaceWrapper) ListSettlements(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id_event" -------------
+	var idEvent int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_event", c.Param("id_event"), &idEvent, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_event: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSettlementsParams
+
+	// ------------- Optional query parameter "before" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "before", c.Request.URL.Query(), &params.Before)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter before: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListSettlements(c, idEvent, params)
+}
+
+// ReceiveSettlement operation middleware
+func (siw *ServerInterfaceWrapper) ReceiveSettlement(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id_event" -------------
+	var idEvent int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_event", c.Param("id_event"), &idEvent, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_event: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ReceiveSettlement(c, idEvent)
+}
+
+// CancelSettlement operation middleware
+func (siw *ServerInterfaceWrapper) CancelSettlement(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id_event" -------------
+	var idEvent int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_event", c.Param("id_event"), &idEvent, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_event: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "id_settlement" -------------
+	var idSettlement int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_settlement", c.Param("id_settlement"), &idSettlement, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_settlement: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CancelSettlement(c, idEvent, idSettlement)
 }
 
 // GetTasksByEventID operation middleware
@@ -1457,6 +1564,9 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/api/v1/event/:id_event/debts", wrapper.GetDebtsByEventID)
 	router.GET(options.BaseURL+"/api/v1/event/:id_event/optimized-debts", wrapper.GetOptimizedDebtsByEventID)
 	router.POST(options.BaseURL+"/api/v1/event/:id_event/optimized-debts", wrapper.OptimizeDebts)
+	router.GET(options.BaseURL+"/api/v1/event/:id_event/settlements", wrapper.ListSettlements)
+	router.POST(options.BaseURL+"/api/v1/event/:id_event/settlements", wrapper.ReceiveSettlement)
+	router.DELETE(options.BaseURL+"/api/v1/event/:id_event/settlements/:id_settlement", wrapper.CancelSettlement)
 	router.GET(options.BaseURL+"/api/v1/event/:id_event/task", wrapper.GetTasksByEventID)
 	router.POST(options.BaseURL+"/api/v1/event/:id_event/task", wrapper.CreateTask)
 	router.DELETE(options.BaseURL+"/api/v1/event/:id_event/task/:id_task", wrapper.DeleteTask)

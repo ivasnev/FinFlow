@@ -10,6 +10,8 @@ type DebtOptimizationState struct {
 
 // Debt представляет долг одного пользователя другому
 type Debt struct {
+	// Settlement помечает обратное ребро возврата, которое не является расходом.
+	Settlement    bool `gorm:"-"`
 	ID            int
 	TransactionID int
 	FromUserID    int64

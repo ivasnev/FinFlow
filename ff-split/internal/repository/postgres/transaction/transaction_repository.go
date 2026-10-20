@@ -166,35 +166,57 @@ func (r *TransactionRepository) GetDebtsByTransactionID(transactionID int) ([]mo
 
 // GetDebtsByEventID возвращает долги в рамках мероприятия
 func (r *TransactionRepository) GetDebtsByEventID(eventID int64) ([]models.Debt, error) {
-	var dbDebts []Debt
-	if err := r.db.Joins("JOIN transactions ON transactions.id = debts.transaction_id").
-		Where("transactions.event_id = ?", eventID).
-		Find(&dbDebts).Error; err != nil {
+	var rows []struct {
+		ID            int
+		TransactionID int
+		FromUserID    int64
+		ToUserID      int64
+		Amount        float64
+		Settlement    bool
+	}
+	// Один SQL-снимок объединяет расходы и возвраты, не умножая их JOIN-ом.
+	err := r.db.Table(`(SELECT d.id,d.transaction_id,d.from_user_id,d.to_user_id,d.amount,false AS settlement
+ FROM debts d JOIN transactions t ON t.id=d.transaction_id WHERE t.event_id=?
+ UNION ALL SELECT 0,0,to_user_id,from_user_id,amount_cents::numeric/100,true
+ FROM settlements WHERE event_id=? AND canceled_at IS NULL) AS debts`, eventID, eventID).Find(&rows).Error
+	if err != nil {
 		return nil, err
 	}
-	return extractDebtSlice(dbDebts), nil
+	result := make([]models.Debt, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, models.Debt{ID: row.ID, TransactionID: row.TransactionID, FromUserID: row.FromUserID, ToUserID: row.ToUserID, Amount: row.Amount, Settlement: row.Settlement})
+	}
+	return result, nil
 }
 
-// GetDebtsByEventIDToUser возвращает долги в рамках мероприятия для конкретного пользователя
-func (r *TransactionRepository) GetDebtsByEventIDToUser(eventID int64, userID int64) ([]models.Debt, error) {
-	var dbDebts []Debt
-	if err := r.db.Joins("JOIN transactions ON transactions.id = debts.transaction_id").
-		Where("transactions.event_id = ? AND debts.to_user_id = ?", eventID, userID).
-		Find(&dbDebts).Error; err != nil {
+// GetDebtsByEventIDToUser учитывает остатки после возвратов, включая оплату непрямому кредитору.
+func (r *TransactionRepository) GetDebtsByEventIDToUser(eventID, userID int64) ([]models.Debt, error) {
+	rows, err := r.GetDebtsByEventID(eventID)
+	if err != nil {
 		return nil, err
 	}
-	return extractDebtSlice(dbDebts), nil
+	result := []models.Debt{}
+	for _, row := range models.OutstandingDebts(rows) {
+		if row.ToUserID == userID {
+			result = append(result, row)
+		}
+	}
+	return result, nil
 }
 
-// GetDebtsByEventIDFromUser возвращает долги в рамках мероприятия для конкретного пользователя
-func (r *TransactionRepository) GetDebtsByEventIDFromUser(eventID int64, userID int64) ([]models.Debt, error) {
-	var dbDebts []Debt
-	if err := r.db.Joins("JOIN transactions ON transactions.id = debts.transaction_id").
-		Where("transactions.event_id = ? AND debts.from_user_id = ?", eventID, userID).
-		Find(&dbDebts).Error; err != nil {
+// GetDebtsByEventIDFromUser возвращает текущие исходящие долги.
+func (r *TransactionRepository) GetDebtsByEventIDFromUser(eventID, userID int64) ([]models.Debt, error) {
+	rows, err := r.GetDebtsByEventID(eventID)
+	if err != nil {
 		return nil, err
 	}
-	return extractDebtSlice(dbDebts), nil
+	result := []models.Debt{}
+	for _, row := range models.OutstandingDebts(rows) {
+		if row.FromUserID == userID {
+			result = append(result, row)
+		}
+	}
+	return result, nil
 }
 
 // CreateTransactionShares создает доли пользователей в транзакции

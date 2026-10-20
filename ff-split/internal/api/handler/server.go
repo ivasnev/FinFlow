@@ -6,6 +6,7 @@ import (
 
 // ServerHandler реализует сгенерированный интерфейс api.ServerInterface
 type ServerHandler struct {
+	settlementService  service.Settlement
 	eventService       service.Event
 	userService        service.User
 	transactionService service.Transaction
@@ -38,3 +39,6 @@ func NewServerHandler(
 		iconFiles:          iconFiles,
 	}
 }
+
+// SetSettlementService подключает журнал возвратов к обработчику.
+func (s *ServerHandler) SetSettlementService(ledger service.Settlement) { s.settlementService = ledger }

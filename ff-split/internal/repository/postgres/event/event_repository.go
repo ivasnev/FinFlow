@@ -115,16 +115,12 @@ func (r *EventRepository) CalculateUserBalances(ctx context.Context, userID int6
 	// Используем прямой SQL запрос для расчета баланса
 	// Баланс = что ему должны (to_user_id = userID) - что он должен (from_user_id = userID)
 	err := r.db.WithContext(ctx).
-		Raw(`
-			SELECT 
-				t.event_id,
-				COALESCE(SUM(CASE WHEN d.to_user_id = ? THEN d.amount ELSE 0 END), 0) - 
-				COALESCE(SUM(CASE WHEN d.from_user_id = ? THEN d.amount ELSE 0 END), 0) as balance
-			FROM debts d
-			JOIN transactions t ON d.transaction_id = t.id
-			WHERE t.event_id IN ?
-			GROUP BY t.event_id
-		`, userID, userID, eventIDs).
+		Raw(`SELECT event_id, COALESCE(SUM(CASE WHEN to_user_id=? THEN amount ELSE 0 END),0)
+        - COALESCE(SUM(CASE WHEN from_user_id=? THEN amount ELSE 0 END),0) AS balance
+        FROM (
+          SELECT t.event_id,d.from_user_id,d.to_user_id,d.amount FROM debts d JOIN transactions t ON d.transaction_id=t.id WHERE t.event_id IN ?
+          UNION ALL SELECT event_id,to_user_id,from_user_id,amount_cents::numeric/100 FROM settlements WHERE event_id IN ? AND canceled_at IS NULL
+        ) ledger GROUP BY event_id`, userID, userID, eventIDs, eventIDs).
 		Scan(&results).Error
 
 	if err != nil {

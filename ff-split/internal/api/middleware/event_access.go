@@ -29,7 +29,7 @@ func EventAccess(checker *access.Service) gin.HandlerFunc {
 		}
 		var kind string
 		var resourceID int64
-		for _, candidate := range []string{"transaction", "task", "activity", "user"} {
+		for _, candidate := range []string{"transaction", "task", "activity", "user", "settlement"} {
 			if raw := c.Param("id_" + candidate); raw != "" {
 				kind = candidate
 				resourceID, err = strconv.ParseInt(raw, 10, 64)

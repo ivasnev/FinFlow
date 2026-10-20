@@ -12,6 +12,7 @@ import (
 	category_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/category"
 	event_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/event"
 	icon_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/icon"
+	settlement_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/settlement"
 	task_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/task"
 	transaction_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/transaction"
 	user_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/user"
@@ -19,6 +20,7 @@ import (
 	category_service "github.com/ivasnev/FinFlow/ff-split/internal/service/category"
 	event_service "github.com/ivasnev/FinFlow/ff-split/internal/service/event"
 	icon_service "github.com/ivasnev/FinFlow/ff-split/internal/service/icon"
+	settlement_service "github.com/ivasnev/FinFlow/ff-split/internal/service/settlement"
 	task_service "github.com/ivasnev/FinFlow/ff-split/internal/service/task"
 	transaction_service "github.com/ivasnev/FinFlow/ff-split/internal/service/transaction"
 	user_service "github.com/ivasnev/FinFlow/ff-split/internal/service/user"
@@ -54,6 +56,7 @@ func createTestContainer(t *testing.T, cfg *config.Config, router *gin.Engine, d
 	c.ActivityService = activity_service.NewActivityService(c.ActivityRepository)
 	c.IconService = icon_service.NewIconService(c.IconRepository)
 	c.TaskService = task_service.NewTaskService(c.TaskRepository, c.UserService)
+	c.SettlementService = settlement_service.NewService(settlement_repository.NewRepository(c.DB))
 	c.TransactionService = transaction_service.NewTransactionService(c.DB, c.TransactionRepository, c.UserService, c.EventService)
 
 	return c, nil

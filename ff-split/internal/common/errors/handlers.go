@@ -36,6 +36,9 @@ func HTTPErrorHandler(c *gin.Context, err error) {
 	var logicError *LogicError
 
 	switch {
+	case errors.Is(err, ErrForbidden):
+		errorResponse = NewErrorResponse(c.Request, "forbidden", err.Error())
+		code = http.StatusForbidden
 	case errors.Is(err, ErrOptimizationBusy):
 		c.Header("Retry-After", "1")
 		errorResponse = NewErrorResponse(c.Request, "busy", err.Error())
@@ -44,7 +47,7 @@ func HTTPErrorHandler(c *gin.Context, err error) {
 		errorResponse = NewErrorResponse(c.Request, "conflict", err.Error())
 		code = http.StatusConflict
 	case errors.As(err, &validationError):
-		errorResponse = NewValidationErrorResponse(c.Request, validationError.Error())
+		errorResponse = NewValidationErrorResponse(c.Request, validationError.Message)
 		code = http.StatusBadRequest
 	case errors.As(err, &alreadyExistsError):
 		errorResponse = NewAlreadyExistsErrorResponse(c.Request, alreadyExistsError.Error())

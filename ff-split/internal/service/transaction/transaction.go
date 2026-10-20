@@ -354,7 +354,7 @@ func (s *TransactionService) GetDebtsByEventID(ctx context.Context, eventID int6
 			return nil, err
 		}
 		// Преобразуем в DTO
-		for _, debt := range eventDebts {
+		for _, debt := range models.OutstandingDebts(eventDebts) {
 			debtDTO := service.DebtDTO{
 				ID:            debt.ID,
 				FromUserID:    debt.FromUserID,
