@@ -54,8 +54,11 @@ func (c *Client) fetchPublicKey() (ed25519.PublicKey, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		// Небольшое тело ошибки дочитываем для повторного использования соединения.
+		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
 		return nil, errors.New("failed to get public key")
 	}
 
