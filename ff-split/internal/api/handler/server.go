@@ -6,6 +6,7 @@ import (
 
 // ServerHandler реализует сгенерированный интерфейс api.ServerInterface
 type ServerHandler struct {
+	invitationService  service.Invitation
 	historyService     service.History
 	settlementService  service.Settlement
 	eventService       service.Event
@@ -46,3 +47,8 @@ func (s *ServerHandler) SetSettlementService(ledger service.Settlement) { s.sett
 
 // SetHistoryService подключает доступ только для чтения журнала.
 func (s *ServerHandler) SetHistoryService(history service.History) { s.historyService = history }
+
+// SetInvitationService подключает создание ссылок и явное вступление.
+func (s *ServerHandler) SetInvitationService(invitations service.Invitation) {
+	s.invitationService = invitations
+}

@@ -140,6 +140,15 @@ type ClientInterface interface {
 	// ListHistory request
 	ListHistory(ctx context.Context, idEvent int64, params *ListHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListInvitations request
+	ListInvitations(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateInvitation request
+	CreateInvitation(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RevokeInvitation request
+	RevokeInvitation(ctx context.Context, idEvent int64, idInvitation int64, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetOptimizedDebtsByEventID request
 	GetOptimizedDebtsByEventID(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -222,6 +231,16 @@ type ClientInterface interface {
 
 	// GetIconFileURL request
 	GetIconFileURL(ctx context.Context, fileId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AcceptInvitationWithBody request with any body
+	AcceptInvitationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AcceptInvitation(ctx context.Context, body AcceptInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PreviewInvitationWithBody request with any body
+	PreviewInvitationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PreviewInvitation(ctx context.Context, body PreviewInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateCategoryWithBody request with any body
 	CreateCategoryWithBody(ctx context.Context, params *CreateCategoryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -473,6 +492,42 @@ func (c *Client) GetDebtsByEventID(ctx context.Context, idEvent int64, reqEditor
 
 func (c *Client) ListHistory(ctx context.Context, idEvent int64, params *ListHistoryParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListHistoryRequest(c.Server, idEvent, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListInvitations(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListInvitationsRequest(c.Server, idEvent)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateInvitation(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateInvitationRequest(c.Server, idEvent)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RevokeInvitation(ctx context.Context, idEvent int64, idInvitation int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRevokeInvitationRequest(c.Server, idEvent, idInvitation)
 	if err != nil {
 		return nil, err
 	}
@@ -833,6 +888,54 @@ func (c *Client) UploadIconFileWithBody(ctx context.Context, contentType string,
 
 func (c *Client) GetIconFileURL(ctx context.Context, fileId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetIconFileURLRequest(c.Server, fileId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AcceptInvitationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAcceptInvitationRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AcceptInvitation(ctx context.Context, body AcceptInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAcceptInvitationRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PreviewInvitationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPreviewInvitationRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PreviewInvitation(ctx context.Context, body PreviewInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPreviewInvitationRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1614,6 +1717,115 @@ func NewListHistoryRequest(server string, idEvent int64, params *ListHistoryPara
 	}
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListInvitationsRequest generates requests for ListInvitations
+func NewListInvitationsRequest(server string, idEvent int64) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_event", runtime.ParamLocationPath, idEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/event/%s/invitations", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateInvitationRequest generates requests for CreateInvitation
+func NewCreateInvitationRequest(server string, idEvent int64) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_event", runtime.ParamLocationPath, idEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/event/%s/invitations", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRevokeInvitationRequest generates requests for RevokeInvitation
+func NewRevokeInvitationRequest(server string, idEvent int64, idInvitation int64) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_event", runtime.ParamLocationPath, idEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "id_invitation", runtime.ParamLocationPath, idInvitation)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/event/%s/invitations/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2574,6 +2786,86 @@ func NewGetIconFileURLRequest(server string, fileId openapi_types.UUID) (*http.R
 	return req, nil
 }
 
+// NewAcceptInvitationRequest calls the generic AcceptInvitation builder with application/json body
+func NewAcceptInvitationRequest(server string, body AcceptInvitationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAcceptInvitationRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewAcceptInvitationRequestWithBody generates requests for AcceptInvitation with any type of body
+func NewAcceptInvitationRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/invitation/accept")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPreviewInvitationRequest calls the generic PreviewInvitation builder with application/json body
+func NewPreviewInvitationRequest(server string, body PreviewInvitationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPreviewInvitationRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPreviewInvitationRequestWithBody generates requests for PreviewInvitation with any type of body
+func NewPreviewInvitationRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/invitation/preview")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewCreateCategoryRequest calls the generic CreateCategory builder with application/json body
 func NewCreateCategoryRequest(server string, params *CreateCategoryParams, body CreateCategoryJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -3143,6 +3435,15 @@ type ClientWithResponsesInterface interface {
 	// ListHistoryWithResponse request
 	ListHistoryWithResponse(ctx context.Context, idEvent int64, params *ListHistoryParams, reqEditors ...RequestEditorFn) (*ListHistoryResponse, error)
 
+	// ListInvitationsWithResponse request
+	ListInvitationsWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*ListInvitationsResponse, error)
+
+	// CreateInvitationWithResponse request
+	CreateInvitationWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*CreateInvitationResponse, error)
+
+	// RevokeInvitationWithResponse request
+	RevokeInvitationWithResponse(ctx context.Context, idEvent int64, idInvitation int64, reqEditors ...RequestEditorFn) (*RevokeInvitationResponse, error)
+
 	// GetOptimizedDebtsByEventIDWithResponse request
 	GetOptimizedDebtsByEventIDWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*GetOptimizedDebtsByEventIDResponse, error)
 
@@ -3225,6 +3526,16 @@ type ClientWithResponsesInterface interface {
 
 	// GetIconFileURLWithResponse request
 	GetIconFileURLWithResponse(ctx context.Context, fileId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetIconFileURLResponse, error)
+
+	// AcceptInvitationWithBodyWithResponse request with any body
+	AcceptInvitationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AcceptInvitationResponse, error)
+
+	AcceptInvitationWithResponse(ctx context.Context, body AcceptInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*AcceptInvitationResponse, error)
+
+	// PreviewInvitationWithBodyWithResponse request with any body
+	PreviewInvitationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PreviewInvitationResponse, error)
+
+	PreviewInvitationWithResponse(ctx context.Context, body PreviewInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewInvitationResponse, error)
 
 	// CreateCategoryWithBodyWithResponse request with any body
 	CreateCategoryWithBodyWithResponse(ctx context.Context, params *CreateCategoryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCategoryResponse, error)
@@ -3596,6 +3907,72 @@ func (r ListHistoryResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r ListHistoryResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListInvitationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InvitationListResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListInvitationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListInvitationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateInvitationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *InvitationCreatedResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateInvitationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateInvitationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RevokeInvitationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SuccessResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RevokeInvitationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RevokeInvitationResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -4150,6 +4527,50 @@ func (r GetIconFileURLResponse) StatusCode() int {
 	return 0
 }
 
+type AcceptInvitationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InvitationAcceptedResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r AcceptInvitationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AcceptInvitationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PreviewInvitationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InvitationPreviewResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PreviewInvitationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PreviewInvitationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type CreateCategoryResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -4573,6 +4994,33 @@ func (c *ClientWithResponses) ListHistoryWithResponse(ctx context.Context, idEve
 	return ParseListHistoryResponse(rsp)
 }
 
+// ListInvitationsWithResponse request returning *ListInvitationsResponse
+func (c *ClientWithResponses) ListInvitationsWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*ListInvitationsResponse, error) {
+	rsp, err := c.ListInvitations(ctx, idEvent, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListInvitationsResponse(rsp)
+}
+
+// CreateInvitationWithResponse request returning *CreateInvitationResponse
+func (c *ClientWithResponses) CreateInvitationWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*CreateInvitationResponse, error) {
+	rsp, err := c.CreateInvitation(ctx, idEvent, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateInvitationResponse(rsp)
+}
+
+// RevokeInvitationWithResponse request returning *RevokeInvitationResponse
+func (c *ClientWithResponses) RevokeInvitationWithResponse(ctx context.Context, idEvent int64, idInvitation int64, reqEditors ...RequestEditorFn) (*RevokeInvitationResponse, error) {
+	rsp, err := c.RevokeInvitation(ctx, idEvent, idInvitation, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRevokeInvitationResponse(rsp)
+}
+
 // GetOptimizedDebtsByEventIDWithResponse request returning *GetOptimizedDebtsByEventIDResponse
 func (c *ClientWithResponses) GetOptimizedDebtsByEventIDWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*GetOptimizedDebtsByEventIDResponse, error) {
 	rsp, err := c.GetOptimizedDebtsByEventID(ctx, idEvent, reqEditors...)
@@ -4834,6 +5282,40 @@ func (c *ClientWithResponses) GetIconFileURLWithResponse(ctx context.Context, fi
 		return nil, err
 	}
 	return ParseGetIconFileURLResponse(rsp)
+}
+
+// AcceptInvitationWithBodyWithResponse request with arbitrary body returning *AcceptInvitationResponse
+func (c *ClientWithResponses) AcceptInvitationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AcceptInvitationResponse, error) {
+	rsp, err := c.AcceptInvitationWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAcceptInvitationResponse(rsp)
+}
+
+func (c *ClientWithResponses) AcceptInvitationWithResponse(ctx context.Context, body AcceptInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*AcceptInvitationResponse, error) {
+	rsp, err := c.AcceptInvitation(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAcceptInvitationResponse(rsp)
+}
+
+// PreviewInvitationWithBodyWithResponse request with arbitrary body returning *PreviewInvitationResponse
+func (c *ClientWithResponses) PreviewInvitationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PreviewInvitationResponse, error) {
+	rsp, err := c.PreviewInvitationWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePreviewInvitationResponse(rsp)
+}
+
+func (c *ClientWithResponses) PreviewInvitationWithResponse(ctx context.Context, body PreviewInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewInvitationResponse, error) {
+	rsp, err := c.PreviewInvitation(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePreviewInvitationResponse(rsp)
 }
 
 // CreateCategoryWithBodyWithResponse request with arbitrary body returning *CreateCategoryResponse
@@ -5497,6 +5979,84 @@ func ParseListHistoryResponse(rsp *http.Response) (*ListHistoryResponse, error) 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest HistoryListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListInvitationsResponse parses an HTTP response from a ListInvitationsWithResponse call
+func ParseListInvitationsResponse(rsp *http.Response) (*ListInvitationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListInvitationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InvitationListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateInvitationResponse parses an HTTP response from a CreateInvitationWithResponse call
+func ParseCreateInvitationResponse(rsp *http.Response) (*CreateInvitationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateInvitationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest InvitationCreatedResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRevokeInvitationResponse parses an HTTP response from a RevokeInvitationWithResponse call
+func ParseRevokeInvitationResponse(rsp *http.Response) (*RevokeInvitationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RevokeInvitationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SuccessResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -6350,6 +6910,58 @@ func ParseGetIconFileURLResponse(rsp *http.Response) (*GetIconFileURLResponse, e
 		var dest struct {
 			Data string `json:"data"`
 		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAcceptInvitationResponse parses an HTTP response from a AcceptInvitationWithResponse call
+func ParseAcceptInvitationResponse(rsp *http.Response) (*AcceptInvitationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AcceptInvitationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InvitationAcceptedResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePreviewInvitationResponse parses an HTTP response from a PreviewInvitationWithResponse call
+func ParsePreviewInvitationResponse(rsp *http.Response) (*PreviewInvitationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PreviewInvitationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InvitationPreviewResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

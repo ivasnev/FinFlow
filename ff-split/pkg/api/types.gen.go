@@ -236,6 +236,44 @@ type IconRequest struct {
 	Name string `json:"name"`
 }
 
+// InvitationAcceptedResponse defines model for InvitationAcceptedResponse.
+type InvitationAcceptedResponse struct {
+	EventId int64 `json:"event_id"`
+}
+
+// InvitationCreatedResponse defines model for InvitationCreatedResponse.
+type InvitationCreatedResponse struct {
+	Invitation InvitationResponse `json:"invitation"`
+	Token      string             `json:"token"`
+}
+
+// InvitationListResponse defines model for InvitationListResponse.
+type InvitationListResponse struct {
+	Invitations []InvitationResponse `json:"invitations"`
+}
+
+// InvitationPreviewResponse defines model for InvitationPreviewResponse.
+type InvitationPreviewResponse struct {
+	EventId   int64     `json:"event_id"`
+	EventName string    `json:"event_name"`
+	ExpiresAt time.Time `json:"expires_at"`
+	IsMember  bool      `json:"is_member"`
+}
+
+// InvitationResponse defines model for InvitationResponse.
+type InvitationResponse struct {
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy int64     `json:"created_by"`
+	EventId   int64     `json:"event_id"`
+	ExpiresAt time.Time `json:"expires_at"`
+	Id        int64     `json:"id"`
+}
+
+// InvitationTokenRequest defines model for InvitationTokenRequest.
+type InvitationTokenRequest struct {
+	Token string `json:"token"`
+}
+
 // OptimizedDebtDTO defines model for OptimizedDebtDTO.
 type OptimizedDebtDTO struct {
 	// Amount Размер долга
@@ -535,6 +573,12 @@ type CreateDummyUserJSONRequestBody = DummyUserRequest
 
 // UploadIconFileMultipartRequestBody defines body for UploadIconFile for multipart/form-data ContentType.
 type UploadIconFileMultipartRequestBody UploadIconFileMultipartBody
+
+// AcceptInvitationJSONRequestBody defines body for AcceptInvitation for application/json ContentType.
+type AcceptInvitationJSONRequestBody = InvitationTokenRequest
+
+// PreviewInvitationJSONRequestBody defines body for PreviewInvitation for application/json ContentType.
+type PreviewInvitationJSONRequestBody = InvitationTokenRequest
 
 // CreateCategoryJSONRequestBody defines body for CreateCategory for application/json ContentType.
 type CreateCategoryJSONRequestBody = CategoryRequest

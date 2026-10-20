@@ -24,6 +24,7 @@ import (
 	event_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/event"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/history"
 	icon_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/icon"
+	invitation_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/invitation"
 	settlement_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/settlement"
 	task_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/task"
 	transaction_repository "github.com/ivasnev/FinFlow/ff-split/internal/repository/postgres/transaction"
@@ -34,6 +35,7 @@ import (
 	category_service "github.com/ivasnev/FinFlow/ff-split/internal/service/category"
 	event_service "github.com/ivasnev/FinFlow/ff-split/internal/service/event"
 	icon_service "github.com/ivasnev/FinFlow/ff-split/internal/service/icon"
+	invitation_service "github.com/ivasnev/FinFlow/ff-split/internal/service/invitation"
 	settlement_service "github.com/ivasnev/FinFlow/ff-split/internal/service/settlement"
 	task_service "github.com/ivasnev/FinFlow/ff-split/internal/service/task"
 	transaction_service "github.com/ivasnev/FinFlow/ff-split/internal/service/transaction"
@@ -236,6 +238,7 @@ func (c *Container) initDB() error {
 func (c *Container) RegisterRoutes() {
 	c.ServerHandler.SetSettlementService(c.SettlementService)
 	c.ServerHandler.SetHistoryService(history.NewRepository(c.DB))
+	c.ServerHandler.SetInvitationService(invitation_service.NewService(invitation_repository.NewRepository(c.DB), c.UserService))
 	// Добавляем CORS middleware глобально для всех маршрутов
 	c.Router.Use(middleware.CORSMiddleware())
 

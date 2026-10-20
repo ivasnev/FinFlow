@@ -193,6 +193,17 @@ func (r *UserRepository) changeMembership(ctx context.Context, ids []int64, even
 				return result.Error
 			}
 			if result.RowsAffected > 0 {
+				if !added {
+					var links []struct{ ID int64 }
+					if err := tx.Raw("UPDATE event_invitations SET revoked_at=CURRENT_TIMESTAMP WHERE event_id=? AND created_by=(SELECT user_id FROM users WHERE id=? AND NOT is_dummy) AND revoked_at IS NULL RETURNING id", eventID, id).Scan(&links).Error; err != nil {
+						return err
+					}
+					for _, link := range links {
+						if err := history.Record(ctx, tx, eventID, "invitation.revoked", link.ID, map[string]string{"Приглашение": "Действует"}, map[string]string{"Приглашение": "Создатель больше не участвует в событии"}); err != nil {
+							return err
+						}
+					}
+				}
 				if err := history.Member(ctx, tx, eventID, id, added); err != nil {
 					return err
 				}

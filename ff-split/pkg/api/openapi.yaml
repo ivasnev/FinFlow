@@ -47,6 +47,74 @@ security:
   - BearerAuth: []
 
 paths:
+  /api/v1/event/{id_event}/invitations:
+    get:
+      operationId: listInvitations
+      tags: [events]
+      parameters:
+        - {name: id_event, in: path, required: true, schema: {type: integer, format: int64}}
+      responses:
+        '200':
+          description: Собственные действующие приглашения
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InvitationListResponse'}
+    post:
+      operationId: createInvitation
+      tags: [events]
+      parameters:
+        - {name: id_event, in: path, required: true, schema: {type: integer, format: int64}}
+      responses:
+        '201':
+          description: Приглашение с однократно выдаваемым секретом
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InvitationCreatedResponse'}
+  /api/v1/event/{id_event}/invitations/{id_invitation}:
+    delete:
+      operationId: revokeInvitation
+      tags: [events]
+      parameters:
+        - {name: id_event, in: path, required: true, schema: {type: integer, format: int64}}
+        - {name: id_invitation, in: path, required: true, schema: {type: integer, format: int64}}
+      responses:
+        '200':
+          description: Приглашение отозвано
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SuccessResponse'}
+  /api/v1/invitation/preview:
+    post:
+      operationId: previewInvitation
+      tags: [events]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/InvitationTokenRequest'}
+      responses:
+        '200':
+          description: Предпросмотр до вступления
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InvitationPreviewResponse'}
+        '410': {description: Ссылка недействительна}
+  /api/v1/invitation/accept:
+    post:
+      operationId: acceptInvitation
+      tags: [events]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/InvitationTokenRequest'}
+      responses:
+        '200':
+          description: Пользователь присоединился
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/InvitationAcceptedResponse'}
+        '410': {description: Ссылка недействительна}
   /api/v1/event/{id_event}/history:
     get:
       operationId: listHistory
@@ -1739,6 +1807,45 @@ components:
       description: Авторизация через Bearer токен
 
   schemas:
+    InvitationResponse:
+      type: object
+      required: [id, event_id, created_by, created_at, expires_at]
+      properties:
+        id: {type: integer, format: int64}
+        event_id: {type: integer, format: int64}
+        created_by: {type: integer, format: int64}
+        created_at: {type: string, format: date-time}
+        expires_at: {type: string, format: date-time}
+    InvitationListResponse:
+      type: object
+      required: [invitations]
+      properties:
+        invitations: {type: array, items: {$ref: '#/components/schemas/InvitationResponse'}}
+    InvitationCreatedResponse:
+      type: object
+      required: [invitation, token]
+      properties:
+        invitation: {$ref: '#/components/schemas/InvitationResponse'}
+        token: {type: string}
+    InvitationTokenRequest:
+      type: object
+      required: [token]
+      additionalProperties: false
+      properties:
+        token: {type: string, minLength: 43, maxLength: 43}
+    InvitationPreviewResponse:
+      type: object
+      required: [event_id, event_name, expires_at, is_member]
+      properties:
+        event_id: {type: integer, format: int64}
+        event_name: {type: string}
+        expires_at: {type: string, format: date-time}
+        is_member: {type: boolean}
+    InvitationAcceptedResponse:
+      type: object
+      required: [event_id]
+      properties:
+        event_id: {type: integer, format: int64}
     HistoryEntry:
       type: object
       required: [id, event_id, actor_id, actor_name, kind, entity_id, before, after, created_at]

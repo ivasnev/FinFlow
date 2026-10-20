@@ -56,6 +56,15 @@ type ServerInterface interface {
 	// История изменений события
 	// (GET /api/v1/event/{id_event}/history)
 	ListHistory(c *gin.Context, idEvent int64, params ListHistoryParams)
+
+	// (GET /api/v1/event/{id_event}/invitations)
+	ListInvitations(c *gin.Context, idEvent int64)
+
+	// (POST /api/v1/event/{id_event}/invitations)
+	CreateInvitation(c *gin.Context, idEvent int64)
+
+	// (DELETE /api/v1/event/{id_event}/invitations/{id_invitation})
+	RevokeInvitation(c *gin.Context, idEvent int64, idInvitation int64)
 	// Получить оптимизированные долги
 	// (GET /api/v1/event/{id_event}/optimized-debts)
 	GetOptimizedDebtsByEventID(c *gin.Context, idEvent int64)
@@ -125,6 +134,12 @@ type ServerInterface interface {
 	// Получить ссылку на файл зарегистрированной иконки
 	// (GET /api/v1/icon-files/{file_id})
 	GetIconFileURL(c *gin.Context, fileId openapi_types.UUID)
+
+	// (POST /api/v1/invitation/accept)
+	AcceptInvitation(c *gin.Context)
+
+	// (POST /api/v1/invitation/preview)
+	PreviewInvitation(c *gin.Context)
 	// Создать категорию
 	// (POST /api/v1/manage/category)
 	CreateCategory(c *gin.Context, params CreateCategoryParams)
@@ -574,6 +589,93 @@ func (siw *ServerInterfaceWrapper) ListHistory(c *gin.Context) {
 	}
 
 	siw.Handler.ListHistory(c, idEvent, params)
+}
+
+// ListInvitations operation middleware
+func (siw *ServerInterfaceWrapper) ListInvitations(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id_event" -------------
+	var idEvent int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_event", c.Param("id_event"), &idEvent, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_event: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListInvitations(c, idEvent)
+}
+
+// CreateInvitation operation middleware
+func (siw *ServerInterfaceWrapper) CreateInvitation(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id_event" -------------
+	var idEvent int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_event", c.Param("id_event"), &idEvent, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_event: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateInvitation(c, idEvent)
+}
+
+// RevokeInvitation operation middleware
+func (siw *ServerInterfaceWrapper) RevokeInvitation(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id_event" -------------
+	var idEvent int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_event", c.Param("id_event"), &idEvent, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_event: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "id_invitation" -------------
+	var idInvitation int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_invitation", c.Param("id_invitation"), &idInvitation, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_invitation: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.RevokeInvitation(c, idEvent, idInvitation)
 }
 
 // GetOptimizedDebtsByEventID operation middleware
@@ -1255,6 +1357,36 @@ func (siw *ServerInterfaceWrapper) GetIconFileURL(c *gin.Context) {
 	siw.Handler.GetIconFileURL(c, fileId)
 }
 
+// AcceptInvitation operation middleware
+func (siw *ServerInterfaceWrapper) AcceptInvitation(c *gin.Context) {
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.AcceptInvitation(c)
+}
+
+// PreviewInvitation operation middleware
+func (siw *ServerInterfaceWrapper) PreviewInvitation(c *gin.Context) {
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PreviewInvitation(c)
+}
+
 // CreateCategory operation middleware
 func (siw *ServerInterfaceWrapper) CreateCategory(c *gin.Context) {
 
@@ -1603,6 +1735,9 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.PUT(options.BaseURL+"/api/v1/event/:id_event/activity/:id_activity", wrapper.UpdateActivity)
 	router.GET(options.BaseURL+"/api/v1/event/:id_event/debts", wrapper.GetDebtsByEventID)
 	router.GET(options.BaseURL+"/api/v1/event/:id_event/history", wrapper.ListHistory)
+	router.GET(options.BaseURL+"/api/v1/event/:id_event/invitations", wrapper.ListInvitations)
+	router.POST(options.BaseURL+"/api/v1/event/:id_event/invitations", wrapper.CreateInvitation)
+	router.DELETE(options.BaseURL+"/api/v1/event/:id_event/invitations/:id_invitation", wrapper.RevokeInvitation)
 	router.GET(options.BaseURL+"/api/v1/event/:id_event/optimized-debts", wrapper.GetOptimizedDebtsByEventID)
 	router.POST(options.BaseURL+"/api/v1/event/:id_event/optimized-debts", wrapper.OptimizeDebts)
 	router.GET(options.BaseURL+"/api/v1/event/:id_event/settlements", wrapper.ListSettlements)
@@ -1626,6 +1761,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/api/v1/event/:id_event/user/:id_user/optimized-debts", wrapper.GetOptimizedDebtsByUserID)
 	router.POST(options.BaseURL+"/api/v1/icon-files", wrapper.UploadIconFile)
 	router.GET(options.BaseURL+"/api/v1/icon-files/:file_id", wrapper.GetIconFileURL)
+	router.POST(options.BaseURL+"/api/v1/invitation/accept", wrapper.AcceptInvitation)
+	router.POST(options.BaseURL+"/api/v1/invitation/preview", wrapper.PreviewInvitation)
 	router.POST(options.BaseURL+"/api/v1/manage/category", wrapper.CreateCategory)
 	router.DELETE(options.BaseURL+"/api/v1/manage/category/:id", wrapper.DeleteCategory)
 	router.PUT(options.BaseURL+"/api/v1/manage/category/:id", wrapper.UpdateCategory)

@@ -36,6 +36,9 @@ func HTTPErrorHandler(c *gin.Context, err error) {
 	var logicError *LogicError
 
 	switch {
+	case errors.Is(err, ErrInvitationUnavailable):
+		errorResponse = NewErrorResponse(c.Request, "invitation_unavailable", err.Error())
+		code = http.StatusGone
 	case errors.Is(err, ErrForbidden):
 		errorResponse = NewErrorResponse(c.Request, "forbidden", err.Error())
 		code = http.StatusForbidden
