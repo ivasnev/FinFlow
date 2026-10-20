@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 
 	"github.com/gin-gonic/gin"
+	"github.com/ivasnev/FinFlow/ff-auth/pkg/auth"
 	"github.com/ivasnev/FinFlow/ff-split/internal/api/handler"
 	"github.com/ivasnev/FinFlow/ff-split/internal/common/config"
 	"github.com/ivasnev/FinFlow/ff-split/internal/container"
@@ -86,10 +87,9 @@ func (s *BaseSuite) SetupSuite() {
 		s.Container.IconService,
 	)
 
-	// 10. Тестовый middleware для установки user_id
+	// 10. Тестовые данные авторизации имеют тот же формат, что и штатный middleware.
 	testAuthMiddleware := func(c *gin.Context) {
-		// Устанавливаем тестовый user_id для всех запросов
-		c.Set("user_id", TestUserID1)
+		c.Set(string(auth.UserContextKey()), auth.UserData{UserID: TestUserID1, Roles: []string{"user"}})
 		c.Next()
 	}
 

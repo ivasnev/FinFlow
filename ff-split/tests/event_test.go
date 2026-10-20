@@ -125,7 +125,7 @@ func (s *EventSuite) TestGetEventByID_Success() {
 
 	// Assert - проверка
 	s.Require().NoError(err, "запрос должен выполниться успешно")
-	
+
 	// Если 401, значит проблема с авторизацией, проверяем в БД напрямую
 	if resp.StatusCode() == 401 {
 		var count int64
@@ -134,7 +134,7 @@ func (s *EventSuite) TestGetEventByID_Success() {
 		s.Equal(int64(1), count, "мероприятие должно существовать в БД")
 		return
 	}
-	
+
 	s.Require().Equal(200, resp.StatusCode(), "должен быть статус 200")
 	s.Require().NotNil(resp.JSON200, "мероприятие должно быть возвращено")
 	if resp.JSON200.Id != nil {
@@ -147,6 +147,7 @@ func (s *EventSuite) TestGetEventByID_Success() {
 
 // TestGetEventByID_NotFound тестирует получение несуществующего мероприятия
 func (s *EventSuite) TestGetEventByID_NotFound() {
+	s.createTestUser(TestUserID1, TestUserID1, TestNickname1, TestName1)
 	// Arrange - подготовка
 	nonExistentID := int64(999)
 
@@ -154,10 +155,8 @@ func (s *EventSuite) TestGetEventByID_NotFound() {
 	resp, err := s.APIClient.GetEventByIDWithResponse(s.Ctx, nonExistentID)
 
 	// Assert - проверка
-	// Может быть ошибка десериализации или 401 из-за авторизации, но статус код должен быть 404 или 401
-	if err == nil {
-		s.Require().True(resp.StatusCode() == 404 || resp.StatusCode() == 401, "должен быть статус 404 или 401")
-	}
+	s.Require().NoError(err)
+	s.Equal(404, resp.StatusCode(), "авторизованный пользователь должен получить 404")
 }
 
 // TestGetEvents_Success тестирует успешное получение списка мероприятий
@@ -180,18 +179,18 @@ func (s *EventSuite) TestGetEvents_Success() {
 
 	// Assert - проверка
 	s.Require().NoError(err, "запрос должен выполниться успешно")
-	
+
 	// Проверяем в БД напрямую
 	var eventCount int64
 	err = s.GetDB().Table("events").Count(&eventCount).Error
 	s.NoError(err)
 	s.GreaterOrEqual(int(eventCount), 2, "должно быть минимум 2 мероприятия в БД")
-	
+
 	// Если 401, значит проблема с авторизацией, но данные в БД есть
 	if resp.StatusCode() == 401 {
 		return
 	}
-	
+
 	s.Require().Equal(200, resp.StatusCode(), "должен быть статус 200")
 	s.Require().NotNil(resp.JSON200, "список мероприятий должен быть возвращен")
 }
@@ -287,4 +286,3 @@ func (s *EventSuite) TestDeleteEvent_NotFound() {
 		s.Require().Equal(404, resp.StatusCode(), "должен быть статус 404")
 	}
 }
-

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -118,5 +119,50 @@ func TestEventAccessHTTP(t *testing.T) {
 		if count != 1 {
 			t.Fatalf("foreign %s was changed", table)
 		}
+	}
+	// Сценарии: создатель автоматически включён, даже если members отсутствует или содержит только другого пользователя.
+	if err := database.DB.Exec("SELECT setval('events_id_seq', 2)").Error; err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name, body string
+		members    int64
+	}{
+		{"noMembers", `{"name":"created"}`, 1},
+		{"otherMember", `{"name":"created","members":{"user_ids":[200]}}`, 2},
+		{"creatorAlreadyPresent", `{"name":"created","members":{"user_ids":[100]}}`, 1},
+	} {
+		t.Run("creator/"+tc.name, func(t *testing.T) {
+			req := httptest.NewRequest("POST", "/api/v1/event", strings.NewReader(tc.body))
+			req.Header.Set("Authorization", bearer)
+			req.Header.Set("Content-Type", "application/json")
+			res := httptest.NewRecorder()
+			c.Router.ServeHTTP(res, req)
+			if res.Code != 201 {
+				t.Fatalf("create: status=%d body=%s", res.Code, res.Body)
+			}
+			var created struct {
+				ID int64 `json:"id"`
+			}
+			if err := json.Unmarshal(res.Body.Bytes(), &created); err != nil {
+				t.Fatal(err)
+			}
+			var count int64
+			if err := database.DB.Table("user_event").Where("event_id = ? AND user_id = ?", created.ID, 10).Count(&count).Error; err != nil {
+				t.Fatal(err)
+			}
+			if count != 1 {
+				t.Fatalf("creator membership count=%d want=1", count)
+			}
+			if err := database.DB.Table("user_event").Where("event_id = ?", created.ID).Count(&count).Error; err != nil {
+				t.Fatal(err)
+			}
+			if count != tc.members {
+				t.Fatalf("members=%d want=%d", count, tc.members)
+			}
+			if access := request("GET", fmt.Sprintf("/api/v1/event/%d/task", created.ID)); access.Code != 200 {
+				t.Fatalf("creator cannot access event: status=%d body=%s", access.Code, access.Body)
+			}
+		})
 	}
 }

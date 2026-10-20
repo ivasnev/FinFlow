@@ -128,6 +128,14 @@ func (s *ServerHandler) GetEventByID(c *gin.Context, idEvent int64) {
 // CreateEvent обрабатывает запрос на создание нового мероприятия
 func (s *ServerHandler) CreateEvent(c *gin.Context) {
 	ctx := c.Request.Context()
+	creator, exists := auth.GetUserData(c)
+	if !exists || creator.UserID <= 0 {
+		c.JSON(http.StatusUnauthorized, api.ErrorResponse{
+			Id:    c.GetHeader("X-Request-ID"),
+			Error: api.ErrorResponseDetail{Code: "unauthorized", Message: "пользователь не авторизован"},
+		})
+		return
+	}
 
 	// Получаем данные запроса
 	var apiRequest api.EventRequest
@@ -162,10 +170,8 @@ func (s *ServerHandler) CreateEvent(c *gin.Context) {
 	}
 
 	// Добавляем текущего пользователя к members, если его там нет
-	if rawID, ok := c.Get("user_id"); ok {
-		if idInt, ok := rawID.(int64); ok && !slices.Contains(dtoRequest.Members.UserIDs, idInt) {
-			dtoRequest.Members.UserIDs = append(dtoRequest.Members.UserIDs, idInt)
-		}
+	if !slices.Contains(dtoRequest.Members.UserIDs, creator.UserID) {
+		dtoRequest.Members.UserIDs = append(dtoRequest.Members.UserIDs, creator.UserID)
 	}
 
 	eventResponse, err := s.eventService.CreateEvent(ctx, &dtoRequest)
