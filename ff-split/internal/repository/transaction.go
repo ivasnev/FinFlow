@@ -2,10 +2,13 @@ package repository
 
 import (
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
+	"gorm.io/gorm"
 )
 
 // Transaction определяет методы для работы с транзакциями
 type Transaction interface {
+	// WithTx возвращает независимый репозиторий на соединении переданной SQL-транзакции.
+	WithTx(tx *gorm.DB) Transaction
 	// Получение транзакций
 	GetTransactionsByEventID(eventID int64) ([]models.Transaction, error)
 	GetTransactionByID(id int) (*models.Transaction, error)
@@ -36,4 +39,3 @@ type Transaction interface {
 	SaveOptimizedDebts(eventID int64, debts []models.OptimizedDebt) error
 	DeleteOptimizedDebtsByEventID(eventID int64) error
 }
-

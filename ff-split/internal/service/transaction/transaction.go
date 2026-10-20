@@ -108,7 +108,8 @@ func (s *TransactionService) GetTransactionByID(ctx context.Context, id int) (*s
 func (s *TransactionService) CreateTransaction(ctx context.Context, eventID int64, req *service.TransactionRequest) (*service.TransactionResponse, error) {
 	// Начинаем транзакцию в базе данных
 	var result *service.TransactionResponse
-	err := s.db.Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		repo := s.repo.WithTx(tx)
 		// Проверяем существование мероприятия
 		_, err := s.eventService.GetEventByID(ctx, eventID)
 		if err != nil {
@@ -132,7 +133,7 @@ func (s *TransactionService) CreateTransaction(ctx context.Context, eventID int6
 			SplitType:             s.getSplitTypeID(req.Type),
 		}
 
-		if err := s.repo.CreateTransaction(transaction); err != nil {
+		if err := repo.CreateTransaction(transaction); err != nil {
 			return err
 		}
 
@@ -158,7 +159,7 @@ func (s *TransactionService) CreateTransaction(ctx context.Context, eventID int6
 		}
 
 		// Сохраняем доли в базе
-		if err := s.repo.CreateTransactionShares(dbShares); err != nil {
+		if err := repo.CreateTransactionShares(dbShares); err != nil {
 			return err
 		}
 
@@ -174,7 +175,7 @@ func (s *TransactionService) CreateTransaction(ctx context.Context, eventID int6
 		}
 
 		// Сохраняем долги в базе
-		if err := s.repo.CreateDebts(dbDebts); err != nil {
+		if err := repo.CreateDebts(dbDebts); err != nil {
 			return err
 		}
 
@@ -199,9 +200,10 @@ func (s *TransactionService) CreateTransaction(ctx context.Context, eventID int6
 func (s *TransactionService) UpdateTransaction(ctx context.Context, id int, req *service.TransactionRequest) (*service.TransactionResponse, error) {
 	// Начинаем транзакцию в базе данных
 	var result *service.TransactionResponse
-	err := s.db.Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		repo := s.repo.WithTx(tx)
 		// Получаем транзакцию
-		transaction, err := s.repo.GetTransactionByID(id)
+		transaction, err := repo.GetTransactionByID(id)
 		if err != nil {
 			return err
 		}
@@ -219,16 +221,16 @@ func (s *TransactionService) UpdateTransaction(ctx context.Context, id int, req 
 		transaction.PayerID = &payer.ID
 		transaction.SplitType = s.getSplitTypeID(req.Type)
 
-		if err := s.repo.UpdateTransaction(transaction); err != nil {
+		if err := repo.UpdateTransaction(transaction); err != nil {
 			return err
 		}
 
 		// Удаляем старые доли и долги
-		if err := s.repo.DeleteSharesByTransactionID(id); err != nil {
+		if err := repo.DeleteSharesByTransactionID(id); err != nil {
 			return err
 		}
 
-		if err := s.repo.DeleteDebtsByTransactionID(id); err != nil {
+		if err := repo.DeleteDebtsByTransactionID(id); err != nil {
 			return err
 		}
 
@@ -255,7 +257,7 @@ func (s *TransactionService) UpdateTransaction(ctx context.Context, id int, req 
 		}
 
 		// Сохраняем доли в базе
-		if err := s.repo.CreateTransactionShares(dbShares); err != nil {
+		if err := repo.CreateTransactionShares(dbShares); err != nil {
 			return err
 		}
 
@@ -271,7 +273,7 @@ func (s *TransactionService) UpdateTransaction(ctx context.Context, id int, req 
 		}
 
 		// Сохраняем долги в базе
-		if err := s.repo.CreateDebts(dbDebts); err != nil {
+		if err := repo.CreateDebts(dbDebts); err != nil {
 			return err
 		}
 

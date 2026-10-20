@@ -9,6 +9,8 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	models "github.com/ivasnev/FinFlow/ff-split/internal/models"
+	repository "github.com/ivasnev/FinFlow/ff-split/internal/repository"
+	gorm "gorm.io/gorm"
 )
 
 // MockTransaction is a mock of Transaction interface.
@@ -323,4 +325,18 @@ func (m *MockTransaction) UpdateTransaction(tx *models.Transaction) error {
 func (mr *MockTransactionMockRecorder) UpdateTransaction(tx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTransaction", reflect.TypeOf((*MockTransaction)(nil).UpdateTransaction), tx)
+}
+
+// WithTx mocks base method.
+func (m *MockTransaction) WithTx(tx *gorm.DB) repository.Transaction {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithTx", tx)
+	ret0, _ := ret[0].(repository.Transaction)
+	return ret0
+}
+
+// WithTx indicates an expected call of WithTx.
+func (mr *MockTransactionMockRecorder) WithTx(tx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTx", reflect.TypeOf((*MockTransaction)(nil).WithTx), tx)
 }

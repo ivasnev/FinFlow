@@ -6,6 +6,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
+	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
 )
 
 // TransactionRepository репозиторий для работы с транзакциями
@@ -16,6 +17,11 @@ type TransactionRepository struct {
 // NewTransactionRepository создает новый репозиторий транзакций
 func NewTransactionRepository(db *gorm.DB) *TransactionRepository {
 	return &TransactionRepository{db: db}
+}
+
+// WithTx привязывает новый экземпляр к транзакции, не меняя общий репозиторий.
+func (r *TransactionRepository) WithTx(tx *gorm.DB) repository.Transaction {
+	return NewTransactionRepository(tx)
 }
 
 // GetTransactionsByEventID возвращает список транзакций мероприятия
