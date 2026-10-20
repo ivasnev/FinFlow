@@ -1,40 +1,30 @@
-# FinFlow Backend Root Makefile
+# Проверки всех самостоятельных Go-модулей репозитория.
+MODULES := ff-auth ff-files ff-id ff-split ff-tvm ff-common
+GO ?= go
+GO_TEST_FLAGS ?= -count=1 -timeout=180s
 
-.PHONY: test test-cov help
+.PHONY: test test-cov test-runner help
 
-# Default target
 help:
 	@echo "Available targets:"
-	@echo "  test        - Run tests in all services"
-	@echo "  test-cov    - Run tests with coverage in all services"
+	@echo "  test         - Run tests in all six modules"
+	@echo "  test-cov     - Run all module tests with coverage"
+	@echo "  test-runner  - Check failure propagation and module coverage"
 
-# Run tests in all services
+# Подоболочка сохраняет рабочий каталог; ошибка Go или cd немедленно завершает команду.
 test:
-	@echo "=== Running tests in all services ==="
-	@for dir in ff-auth ff-files ff-id ff-split ff-tvm; do \
-		echo ""; \
-		echo "📦 Testing $$dir..."; \
-		if [ -f "$$dir/Makefile" ]; then \
-			cd $$dir && make test && cd ..; \
-		else \
-			echo "  ⚠️  No Makefile found in $$dir"; \
-		fi; \
+	@for dir in $(MODULES); do \
+		echo "Testing $$dir..."; \
+		(cd "$$dir" && $(GO) test $(GO_TEST_FLAGS) ./...) || exit $$?; \
 	done
-	@echo ""
-	@echo "✅ All tests completed!"
+	@echo "All module tests passed."
 
-# Run tests with coverage in all services
 test-cov:
-	@echo "=== Running tests with coverage in all services ==="
-	@for dir in ff-auth ff-files ff-id ff-split ff-tvm; do \
-		echo ""; \
-		echo "📦 Testing $$dir with coverage..."; \
-		if [ -f "$$dir/Makefile" ]; then \
-			cd $$dir && make test-cov && cd ..; \
-		else \
-			echo "  ⚠️  No Makefile found in $$dir"; \
-		fi; \
+	@for dir in $(MODULES); do \
+		echo "Testing $$dir with coverage..."; \
+		(cd "$$dir" && $(GO) test $(GO_TEST_FLAGS) -coverprofile=coverage.out ./...) || exit $$?; \
 	done
-	@echo ""
-	@echo "✅ All coverage tests completed!"
+	@echo "All coverage tests passed; profiles are saved in each module."
 
+test-runner:
+	python3 scripts/tests/test_makefile.py
