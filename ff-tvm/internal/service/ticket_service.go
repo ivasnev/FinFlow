@@ -81,6 +81,9 @@ func ValidateTicketSignature(ticket *Ticket, publicKey string) error {
 	if err != nil {
 		return err
 	}
+	if len(pubKey) != ed25519.PublicKeySize {
+		return ErrInvalidSignature
+	}
 
 	// Декодируем подпись
 	signature, err := base64.StdEncoding.DecodeString(ticket.Signature)

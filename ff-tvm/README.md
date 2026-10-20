@@ -265,7 +265,7 @@ import "github.com/ivasnev/FinFlow/ff-tvm/pkg/middleware"
 tvmClient := client.NewTVMClient("http://tvm-service:8081", "")
 
 // Создаем middleware
-tvmMiddleware := middleware.NewTVMMiddleware(tvmClient)
+tvmMiddleware := middleware.NewTVMMiddleware(tvmClient, 2) // ID принимающего сервиса
 
 // Используем в роутере
 router.Use(tvmMiddleware.ValidateTicket())

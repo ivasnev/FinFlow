@@ -73,8 +73,8 @@ services:
 
   ff-id:
     build:
-      context: ./ff-id
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ff-id/Dockerfile
     ports:
       - "8081:8081"
     environment:

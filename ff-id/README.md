@@ -475,3 +475,5 @@ X-TVM-Ticket: {ticket}
 ## Лицензия
 
 MIT
+
+Docker-образ собирается из корня репозитория: `docker build -f ff-id/Dockerfile -t ff-id .`. Это включает локальные версии ff-auth и ff-tvm.

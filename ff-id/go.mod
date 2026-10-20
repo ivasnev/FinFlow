@@ -126,4 +126,6 @@ require (
 
 replace github.com/ivasnev/FinFlow/ff-auth => ../ff-auth
 
+replace github.com/ivasnev/FinFlow/ff-tvm => ../ff-tvm
+
 tool github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen

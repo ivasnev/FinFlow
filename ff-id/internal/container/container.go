@@ -166,7 +166,7 @@ func (c *Container) RegisterRoutes() {
 	authMiddleware := auth.AuthMiddleware(c.AuthClient)
 
 	// Middleware для TVM
-	tvmMiddleware := tvmmiddleware.NewTVMMiddleware(c.TVMClient)
+	tvmMiddleware := tvmmiddleware.NewTVMMiddleware(c.TVMClient, c.Config.TVM.ServiceID)
 
 	// Регистрируем маршруты с помощью сгенерированного сервера
 	api.RegisterHandlersWithOptions(v1, c.ServerHandler, api.GinServerOptions{

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ivasnev/FinFlow/ff-tvm/internal/service"
@@ -20,16 +21,21 @@ type TVMClient interface {
 	GetPublicKey(serviceID int) (string, error)
 }
 
+// TVMMiddleware проверяет подпись и назначение билета принимающего сервиса.
 type TVMMiddleware struct {
-	client TVMClient
+	client      TVMClient
+	recipientID int
 }
 
-func NewTVMMiddleware(client TVMClient) *TVMMiddleware {
+// NewTVMMiddleware создаёт проверку для явно указанного получателя.
+func NewTVMMiddleware(client TVMClient, recipientID int) *TVMMiddleware {
 	return &TVMMiddleware{
-		client: client,
+		client:      client,
+		recipientID: recipientID,
 	}
 }
 
+// ValidateTicket допускает только действующий билет для этого сервиса.
 func (m *TVMMiddleware) ValidateTicket() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Получаем тикет из заголовка
@@ -76,6 +82,12 @@ func (m *TVMMiddleware) ValidateTicket() gin.HandlerFunc {
 		if err := json.Unmarshal(ticketData, &ticket); err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid ticket data"})
 			c.Abort()
+			return
+		}
+
+		if m.recipientID <= 0 || fromID <= 0 || ticket.Payload.From != fromID ||
+			ticket.Payload.To != m.recipientID || ticket.Payload.TTL <= time.Now().Unix() {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid ticket claims"})
 			return
 		}
 
