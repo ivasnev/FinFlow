@@ -16,7 +16,7 @@ WORKDIR /src/ff-split
 RUN go mod download
 
 # Собираем приложение
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server ./cmd/app
+RUN CGO_ENABLED=0 GOOS=linux GOMAXPROCS=2 GOGC=50 go build -p 1 -o /app/server ./cmd/app
 
 # Финальный этап
 FROM alpine:latest

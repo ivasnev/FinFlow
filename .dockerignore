@@ -1,0 +1,15 @@
+.git
+.venv
+.DS_Store
+.env
+.env.*
+**/coverage.out
+**/*.log
+**/__pycache__
+docs/reviews
+**/bin
+**/*.test
+ff-auth/app
+ff-id/app
+ff-split/main
+ff-common/optimizers/tests/analitic

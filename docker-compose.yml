@@ -1,99 +1,165 @@
-version: '3.8'
+x-application: &application
+  restart: unless-stopped
+  entrypoint: ["/bin/sh", "/stack/service-entrypoint.sh"]
+  command: []
+  environment: &application-env
+    POSTGRES_HOST: postgres
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    TVM_BASE_URL: http://ff-tvm:8081
+    AUTH_CLIENT_HOST: http://ff-auth
+    AUTH_CLIENT_PORT: "8084"
+  depends_on:
+    bootstrap:
+      condition: service_completed_successfully
 
 services:
   postgres:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_MULTIPLE_DATABASES: ff_id,ff_tvm,ff_files
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_MULTIPLE_DATABASES: ff_tvm,ff_id,ff_auth,ff_split,ff_files
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh
+      - ./init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh:ro
+      - ./ff-tvm/internal/repository/migrations:/migrations/ff_tvm:ro
+      - ./ff-id/internal/repository/migrations:/migrations/ff_id:ro
+      - ./ff-auth/internal/repository/migrations:/migrations/ff_auth:ro
+      - ./ff-split/internal/repository/migrations:/migrations/ff_split:ro
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
 
-  redis:
-    image: redis:7-alpine
+  minio:
+    build:
+      context: ./scripts/stack
+      dockerfile: Dockerfile.minio
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     ports:
-      - "6379:6379"
+      - "127.0.0.1:${MINIO_PORT:-9000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      - minio_data:/data
 
   ff-tvm:
     build:
       context: ./ff-tvm
       dockerfile: Dockerfile
-    ports:
-      - "8083:8083"
+    restart: unless-stopped
     environment:
-      - TVM_DB_HOST=postgres
-      - TVM_DB_PORT=5432
-      - TVM_DB_USER=postgres
-      - TVM_DB_PASSWORD=postgres
-      - TVM_DB_NAME=ff_tvm
-      - TVM_REDIS_HOST=redis
-      - TVM_REDIS_PORT=6379
+      SERVER_PORT: "8081"
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/ff_tvm?sslmode=disable
+      TVM_ADMIN_TOKEN: ${TVM_ADMIN_TOKEN:?Set TVM_ADMIN_TOKEN before starting the stack}
+      DEV_MODE: "false"
+    ports:
+      - "127.0.0.1:${TVM_PORT:-8081}:8081"
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+
+  bootstrap:
+    image: python:3.13-alpine
+    command: ["python3", "/stack/bootstrap.py"]
+    environment:
+      TVM_BASE_URL: http://ff-tvm:8081
+      TVM_ADMIN_TOKEN: ${TVM_ADMIN_TOKEN:?Set TVM_ADMIN_TOKEN before starting the stack}
+    volumes:
+      - ./scripts/stack:/stack:ro
+      - tvm_manifest:/state/manifest
+      - split_credentials:/state/ff-split
+      - id_credentials:/state/ff-id
+      - files_credentials:/state/ff-files
+      - auth_credentials:/state/ff-auth
+    depends_on:
+      ff-tvm:
+        condition: service_started
+      minio:
+        condition: service_started
 
   ff-files:
+    <<: *application
     build:
       context: .
       dockerfile: ff-files/Dockerfile
-    ports:
-      - "8082:8082"
     environment:
-      - FILES_DB_HOST=postgres
-      - FILES_DB_PORT=5432
-      - FILES_DB_USER=postgres
-      - FILES_DB_PASSWORD=postgres
-      - FILES_DB_NAME=ff_files
-      - FILES_TVM_URL=http://ff-tvm:8083
+      SERVER_PORT: "8082"
+      TVM_BASE_URL: http://ff-tvm:8081
+      MINIO_ENDPOINT: localhost:${MINIO_PORT:-9000}
+      MINIO_INTERNAL_ENDPOINT: http://minio:9000
+      MINIO_BUCKET: ff-files
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_USE_SSL: "false"
+      FILE_TIME_EXPIRATION: "300"
+    ports:
+      - "127.0.0.1:${FILES_PORT:-8082}:8082"
     volumes:
-      - files_storage:/app/storage
-    depends_on:
-      ff-tvm:
-        condition: service_started
-      postgres:
-        condition: service_healthy
+      - ./scripts/stack:/stack:ro
+      - files_credentials:/run/tvm:ro
 
   ff-id:
+    <<: *application
     build:
       context: .
       dockerfile: ff-id/Dockerfile
-    ports:
-      - "8081:8081"
     environment:
-      - ID_DB_HOST=postgres
-      - ID_DB_PORT=5432
-      - ID_DB_USER=postgres
-      - ID_DB_PASSWORD=postgres
-      - ID_DB_NAME=ff_id
-      - ID_TVM_URL=http://ff-tvm:8083
-      - ID_FILES_URL=http://ff-files:8082
-    depends_on:
-      ff-tvm:
-        condition: service_started
-      ff-files:
-        condition: service_started
-      postgres:
-        condition: service_healthy
+      <<: *application-env
+      SERVER_PORT: "8083"
+      POSTGRES_DB: ff_id
+      FILE_SERVICE_BASE_URL: http://ff-files:8082
+    ports:
+      - "127.0.0.1:${ID_PORT:-8083}:8083"
+    volumes:
+      - ./scripts/stack:/stack:ro
+      - id_credentials:/run/tvm:ro
+
+  ff-auth:
+    <<: *application
+    build:
+      context: .
+      dockerfile: ff-auth/Dockerfile
+    environment:
+      <<: *application-env
+      SERVER_PORT: "8084"
+      POSTGRES_DB: ff_auth
+      ID_BASE_URL: http://ff-id:8083
+    ports:
+      - "127.0.0.1:${AUTH_PORT:-8084}:8084"
+    volumes:
+      - ./scripts/stack:/stack:ro
+      - auth_credentials:/run/tvm:ro
+
+  ff-split:
+    <<: *application
+    build:
+      context: .
+      dockerfile: ff-split/Dockerfile
+    environment:
+      <<: *application-env
+      SERVER_PORT: "8085"
+      POSTGRES_DB: ff_split
+      ID_SERVICE_BASE_URL: http://ff-id:8083
+      FILE_SERVICE_BASE_URL: http://ff-files:8082
+    ports:
+      - "127.0.0.1:${SPLIT_PORT:-8085}:8085"
+    volumes:
+      - ./scripts/stack:/stack:ro
+      - split_credentials:/run/tvm:ro
 
 volumes:
   postgres_data:
-  redis_data:
-  files_storage: 
+  minio_data:
+  tvm_manifest:
+  split_credentials:
+  id_credentials:
+  files_credentials:
+  auth_credentials:

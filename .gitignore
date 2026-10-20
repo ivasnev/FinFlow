@@ -117,3 +117,9 @@ fabric.properties
 *.log
 
 .DS_Store
+
+# Локальная конфигурация Compose и Python-кэш.
+.env
+.env.*
+!.env.example
+**/__pycache__/

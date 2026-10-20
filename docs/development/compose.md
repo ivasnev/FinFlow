@@ -1,0 +1,78 @@
+# Локальный запуск через Compose
+
+Нужны Docker с Compose v2, свободные порты и доступ к публичным образам и Go-модулям.
+Команды выполняются из корня репозитория:
+
+```sh
+export TVM_ADMIN_TOKEN="$(openssl rand -hex 32)"
+export POSTGRES_PASSWORD="$(openssl rand -hex 16)"
+export MINIO_ROOT_USER=finflow
+export MINIO_ROOT_PASSWORD="$(openssl rand -hex 16)"
+export COMPOSE_PARALLEL_LIMIT=1
+docker compose up --build -d
+docker compose ps -a
+```
+
+Сохраните значения в локальном `.env` или менеджере секретов и используйте их при
+следующих запусках. `.env` исключён из Git. Для `POSTGRES_PASSWORD` используйте
+сгенерированное шестнадцатеричное значение: оно подставляется в URL подключения TVM.
+Переменная `TVM_ADMIN_TOKEN` обязательна; другие пароли имеют локальные значения
+по умолчанию, которые лучше заменить командами выше.
+
+На первом запуске PostgreSQL создаёт отдельные базы и применяет все `*.up.sql`
+по порядку. Затем `bootstrap` регистрирует четыре TVM-сервиса, выдаёт разрешения
+между ними и завершается с кодом 0. После этого запускаются приложения. Секреты
+создаются автоматически, сохраняются в именованных томах и не попадают в Git.
+Каждое приложение получает только собственный секрет и ID зависимостей.
+
+| Сервис | Адрес на хосте | Переменная порта |
+| --- | --- | --- |
+| ff-tvm | http://localhost:8081 | `TVM_PORT` |
+| ff-files | http://localhost:8082 | `FILES_PORT` |
+| ff-id | http://localhost:8083 | `ID_PORT` |
+| ff-auth | http://localhost:8084 | `AUTH_PORT` |
+| ff-split | http://localhost:8085 | `SPLIT_PORT` |
+| PostgreSQL | localhost:5432 | `POSTGRES_PORT` |
+| MinIO S3 | http://localhost:9000 | `MINIO_PORT` |
+| MinIO Console | http://localhost:9001 | `MINIO_CONSOLE_PORT` |
+
+Все порты опубликованы только на loopback-интерфейсе. `MINIO_PORT` также входит
+в подписанные ссылки, которые ff-files возвращает клиенту на этой машине.
+Сервисы внутри Compose обращаются друг к другу по именам контейнеров.
+
+MinIO собирается из закреплённого [официального релиза с исправлением безопасности](https://github.com/minio/minio/releases/tag/RELEASE.2025-10-15T17-29-55Z).
+Первая сборка скачивает зависимости и может занять несколько минут. Параллелизм
+его компиляции ограничен, чтобы уменьшить потребление памяти.
+`COMPOSE_PARALLEL_LIMIT=1` последовательно собирает сервисы и позволяет запустить
+сборку в локальной виртуальной машине Docker с небольшим объёмом памяти.
+
+Проверка HTTP-сценария после запуска (регистрация, вход, профиль, мероприятие,
+расход, долги, файл в MinIO):
+
+```sh
+python3 scripts/tests/smoke_stack.py
+```
+
+Скрипт использует те же переменные портов и `COMPOSE_PROJECT_NAME`, что Compose,
+и создаёт отдельного тестового пользователя и мероприятие. Для проверки
+сохранности данных можно повторить его с сохранённым состоянием:
+
+```sh
+python3 scripts/tests/smoke_stack.py --state /tmp/finflow-smoke.json
+docker compose down
+docker compose up -d
+python3 scripts/tests/smoke_stack.py --state /tmp/finflow-smoke.json --verify
+```
+
+Файл состояния содержит тестовые учётные данные и создаётся с правами 0600.
+Удалите его после проверки. Обычный `down` сохраняет базы, файлы MinIO и TVM-ключи.
+Для резервной копии сохраняйте тома базы и TVM-состояния вместе. Если сохранённые
+ключи не соответствуют базе TVM, bootstrap завершится с ошибкой и не заменит их.
+
+Инициализация SQL выполняется только на новом томе PostgreSQL. При обновлении
+существующего окружения применяйте новые миграции отдельно; повторный `up` их
+автоматически не запускает. Команда `docker compose down -v` удаляет все данные
+этого Compose-проекта и подходит только для намеренного сброса локального стенда.
+
+Логи запуска: `docker compose logs bootstrap ff-tvm ff-files ff-id ff-auth ff-split`.
+Тесты bootstrap: `python3 -m unittest discover -s scripts/tests -p test_stack_bootstrap.py`.

@@ -1,5 +1,5 @@
 # Этап сборки
-FROM golang:1.23-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 # Устанавливаем git для скачивания Go модулей
 RUN apk add --no-cache git
@@ -22,7 +22,7 @@ COPY pkg/ ./pkg
 COPY config/ ./config
 
 # Собираем приложение
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux GOMAXPROCS=2 GOGC=50 go build -p 1 -o /app/server ./cmd/server
 
 # Финальный этап
 FROM alpine:latest
@@ -37,7 +37,7 @@ COPY internal/repository/migrations ./migrations
 COPY config/ ./config
 
 # Открываем порт
-EXPOSE 8080
+EXPOSE 8081
 
 # Запускаем приложение
 CMD ["./server"] 
