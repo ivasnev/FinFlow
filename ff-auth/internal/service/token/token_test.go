@@ -279,7 +279,7 @@ func TestED25519TokenManager_GenerateTokenPair(t *testing.T) {
 		accessTTL := time.Hour
 		refreshTTL := 24 * time.Hour
 
-		accessToken, refreshToken, accessExpiresAt, err := manager.GenerateTokenPair(
+		accessToken, refreshToken, accessExpiresAt, refreshExpiresAt, err := manager.GenerateTokenPair(
 			userID, roles, accessTTL, refreshTTL,
 		)
 
@@ -288,6 +288,7 @@ func TestED25519TokenManager_GenerateTokenPair(t *testing.T) {
 		assert.NotEmpty(t, refreshToken)
 		assert.Greater(t, accessExpiresAt, time.Now().Unix())
 		assert.NotEqual(t, accessToken, refreshToken)
+		assert.Greater(t, refreshExpiresAt, accessExpiresAt)
 
 		// Проверяем валидность access токена
 		accessPayload, err := manager.ValidateToken(accessToken)

@@ -26,7 +26,7 @@ func TestTokenPurpose(t *testing.T) {
 	}))
 	t.Cleanup(keys.Close)
 	client := auth.NewClient(keys.URL, time.Hour)
-	access, refresh, _, err := manager.GenerateTokenPair(1, []string{"user"}, time.Minute, time.Hour)
+	access, refresh, _, refreshExpiresAt, err := manager.GenerateTokenPair(1, []string{"user"}, time.Minute, time.Hour)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +81,7 @@ func TestTokenPurpose(t *testing.T) {
 	if err := json.Unmarshal(envelope.Payload, &payload); err != nil {
 		t.Fatal(err)
 	}
-	if payload.Purpose != "refresh" || payload.Exp <= time.Now().Add(50*time.Minute).Unix() {
+	if payload.Exp != refreshExpiresAt || payload.Purpose != "refresh" || payload.Exp <= time.Now().Add(50*time.Minute).Unix() {
 		t.Fatal("invalid refresh claims")
 	}
 }

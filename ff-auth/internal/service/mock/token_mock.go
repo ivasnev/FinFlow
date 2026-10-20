@@ -52,14 +52,15 @@ func (mr *MockTokenManagerMockRecorder) GenerateToken(payload interface{}) *gomo
 }
 
 // GenerateTokenPair mocks base method.
-func (m *MockTokenManager) GenerateTokenPair(userID int64, roles []string, accessTTL, refreshTTL time.Duration) (string, string, int64, error) {
+func (m *MockTokenManager) GenerateTokenPair(userID int64, roles []string, accessTTL, refreshTTL time.Duration) (string, string, int64, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GenerateTokenPair", userID, roles, accessTTL, refreshTTL)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(string)
 	ret2, _ := ret[2].(int64)
-	ret3, _ := ret[3].(error)
-	return ret0, ret1, ret2, ret3
+	ret3, _ := ret[3].(int64)
+	ret4, _ := ret[4].(error)
+	return ret0, ret1, ret2, ret3, ret4
 }
 
 // GenerateTokenPair indicates an expected call of GenerateTokenPair.

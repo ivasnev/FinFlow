@@ -209,7 +209,7 @@ func (m *ED25519TokenManager) ValidateToken(tokenStr string) (*service.TokenPayl
 }
 
 // GenerateTokenPair генерирует пару токенов: access и refresh
-func (m *ED25519TokenManager) GenerateTokenPair(userID int64, roles []string, accessTTL, refreshTTL time.Duration) (accessToken, refreshToken string, accessExpiresAt int64, err error) {
+func (m *ED25519TokenManager) GenerateTokenPair(userID int64, roles []string, accessTTL, refreshTTL time.Duration) (accessToken, refreshToken string, accessExpiresAt, refreshExpiresAt int64, err error) {
 	// Создаем payload для access токена
 	now := time.Now()
 	accessExpiresAt = now.Add(accessTTL).Unix()
@@ -225,11 +225,11 @@ func (m *ED25519TokenManager) GenerateTokenPair(userID int64, roles []string, ac
 	// Генерируем access токен
 	accessToken, err = m.GenerateToken(accessPayload)
 	if err != nil {
-		return "", "", 0, err
+		return "", "", 0, 0, err
 	}
 
 	// Создаем payload для refresh токена
-	refreshExpiresAt := now.Add(refreshTTL).Unix()
+	refreshExpiresAt = now.Add(refreshTTL).Unix()
 	refreshPayload := &service.TokenPayload{
 		Purpose: "refresh",
 		UserID:  userID,
@@ -241,8 +241,8 @@ func (m *ED25519TokenManager) GenerateTokenPair(userID int64, roles []string, ac
 	// Генерируем refresh токен
 	refreshToken, err = m.GenerateToken(refreshPayload)
 	if err != nil {
-		return "", "", 0, err
+		return "", "", 0, 0, err
 	}
 
-	return accessToken, refreshToken, accessExpiresAt, nil
+	return accessToken, refreshToken, accessExpiresAt, refreshExpiresAt, nil
 }

@@ -33,5 +33,5 @@ type TokenManager interface {
 	// ValidateToken проверяет подпись, срок и назначение access-токена.
 	ValidateToken(tokenStr string) (*TokenPayload, error)
 	// GenerateTokenPair генерирует пару токенов: access и refresh
-	GenerateTokenPair(userID int64, roles []string, accessTTL, refreshTTL time.Duration) (accessToken, refreshToken string, accessExpiresAt int64, err error)
+	GenerateTokenPair(userID int64, roles []string, accessTTL, refreshTTL time.Duration) (accessToken, refreshToken string, accessExpiresAt, refreshExpiresAt int64, err error)
 }

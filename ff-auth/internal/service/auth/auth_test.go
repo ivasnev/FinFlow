@@ -167,7 +167,7 @@ func TestAuthService_GenerateTokenPair(t *testing.T) {
 
 		mockTokenManager.EXPECT().
 			GenerateTokenPair(userID, roles, 15*time.Minute, 10080*time.Minute).
-			Return(accessToken, refreshToken, expiresAt, nil).
+			Return(accessToken, refreshToken, expiresAt, expiresAt+7*24*3600, nil).
 			Times(1)
 
 		resultAccess, resultRefresh, resultExpiresAt, err := authService.GenerateTokenPair(ctx, userID, roles)
@@ -183,7 +183,7 @@ func TestAuthService_GenerateTokenPair(t *testing.T) {
 
 		mockTokenManager.EXPECT().
 			GenerateTokenPair(userID, roles, 15*time.Minute, 10080*time.Minute).
-			Return("", "", int64(0), expectedErr).
+			Return("", "", int64(0), int64(0), expectedErr).
 			Times(1)
 
 		resultAccess, resultRefresh, resultExpiresAt, err := authService.GenerateTokenPair(ctx, userID, roles)
@@ -320,7 +320,7 @@ func TestAuthService_Login(t *testing.T) {
 
 		mockTokenManager.EXPECT().
 			GenerateTokenPair(userID, []string{"user"}, 15*time.Minute, 10080*time.Minute).
-			Return(accessToken, refreshToken, expiresAt, nil).
+			Return(accessToken, refreshToken, expiresAt, expiresAt+7*24*3600, nil).
 			Times(1)
 
 		mockDeviceService.EXPECT().
@@ -391,7 +391,7 @@ func TestAuthService_Login(t *testing.T) {
 
 		mockTokenManager.EXPECT().
 			GenerateTokenPair(userID, []string{"user"}, 15*time.Minute, 10080*time.Minute).
-			Return(accessToken, refreshToken, expiresAt, nil).
+			Return(accessToken, refreshToken, expiresAt, expiresAt+7*24*3600, nil).
 			Times(1)
 
 		mockDeviceService.EXPECT().
@@ -549,7 +549,7 @@ func TestAuthService_RefreshToken(t *testing.T) {
 
 		mockTokenManager.EXPECT().
 			GenerateTokenPair(userID, []string{"user"}, 15*time.Minute, 10080*time.Minute).
-			Return(newAccessToken, newRefreshToken, expiresAt, nil).
+			Return(newAccessToken, newRefreshToken, expiresAt, expiresAt+7*24*3600, nil).
 			Times(1)
 
 		mockSessionRepo.EXPECT().

@@ -113,7 +113,7 @@ func (s *AuthService) Register(ctx context.Context, params service.RegisterParam
 	}
 
 	// Создаем пару токенов для пользователя
-	accessToken, refreshToken, expiresAt, err := s.GenerateTokenPair(ctx, user.ID, []string{string(models.RoleUser)})
+	accessToken, refreshToken, expiresAt, refreshExpiresAt, err := s.generateTokenPair(user.ID, []string{string(models.RoleUser)})
 	if err != nil {
 		return nil, fmt.Errorf("ошибка генерации токенов: %w", err)
 	}
@@ -123,7 +123,7 @@ func (s *AuthService) Register(ctx context.Context, params service.RegisterParam
 		ID:           uuid.New(),
 		UserID:       user.ID,
 		RefreshToken: refreshToken,
-		ExpiresAt:    time.Unix(expiresAt, 0),
+		ExpiresAt:    time.Unix(refreshExpiresAt, 0),
 		CreatedAt:    time.Now(),
 	}
 
@@ -179,7 +179,7 @@ func (s *AuthService) Login(ctx context.Context, params service.LoginParams) (*s
 	}
 
 	// Создаем пару токенов для пользователя
-	accessToken, refreshToken, expiresAt, err := s.GenerateTokenPair(ctx, user.ID, roleStrings)
+	accessToken, refreshToken, expiresAt, refreshExpiresAt, err := s.generateTokenPair(user.ID, roleStrings)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка генерации токенов: %w", err)
 	}
@@ -199,7 +199,7 @@ func (s *AuthService) Login(ctx context.Context, params service.LoginParams) (*s
 		ID:           uuid.New(),
 		UserID:       user.ID,
 		RefreshToken: refreshToken,
-		ExpiresAt:    time.Unix(expiresAt, 0),
+		ExpiresAt:    time.Unix(refreshExpiresAt, 0),
 		CreatedAt:    time.Now(),
 	}
 
@@ -264,14 +264,14 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*s
 	}
 
 	// Создаем новую пару токенов
-	accessToken, newRefreshToken, expiresAt, err := s.GenerateTokenPair(ctx, user.ID, roleStrings)
+	accessToken, newRefreshToken, expiresAt, refreshExpiresAt, err := s.generateTokenPair(user.ID, roleStrings)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка генерации токенов: %w", err)
 	}
 
 	// Обновляем сессию с новым refresh-токеном
 	session.RefreshToken = newRefreshToken
-	session.ExpiresAt = time.Unix(expiresAt, 0)
+	session.ExpiresAt = time.Unix(refreshExpiresAt, 0)
 
 	if err := s.sessionRepository.Delete(ctx, session.ID); err != nil {
 		return nil, fmt.Errorf("ошибка удаления старой сессии: %w", err)
@@ -282,7 +282,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (*s
 		ID:           uuid.New(),
 		UserID:       user.ID,
 		RefreshToken: newRefreshToken,
-		ExpiresAt:    time.Unix(expiresAt, 0),
+		ExpiresAt:    time.Unix(refreshExpiresAt, 0),
 		CreatedAt:    time.Now(),
 	}
 
@@ -321,10 +321,14 @@ func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
 
 // GenerateTokenPair генерирует пару токенов (access и refresh)
 func (s *AuthService) GenerateTokenPair(ctx context.Context, userID int64, roles []string) (accessToken, refreshToken string, expiresAt int64, err error) {
-	// Генерируем токены с помощью tokenManager
-	accessTTL := time.Duration(s.config.Auth.AccessTokenDuration) * time.Minute
-	refreshTTL := time.Duration(s.config.Auth.RefreshTokenDuration) * time.Minute // В минутах как в конфиге
+	accessToken, refreshToken, expiresAt, _, err = s.generateTokenPair(userID, roles)
+	return
+}
 
+// generateTokenPair возвращает отдельный срок каждого подписанного токена.
+func (s *AuthService) generateTokenPair(userID int64, roles []string) (accessToken, refreshToken string, accessExpiresAt, refreshExpiresAt int64, err error) {
+	accessTTL := time.Duration(s.config.Auth.AccessTokenDuration) * time.Minute
+	refreshTTL := time.Duration(s.config.Auth.RefreshTokenDuration) * time.Minute
 	return s.tokenManager.GenerateTokenPair(userID, roles, accessTTL, refreshTTL)
 }
 

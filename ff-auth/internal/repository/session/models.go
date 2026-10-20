@@ -13,7 +13,7 @@ type Session struct {
 	UserID       int64          `gorm:"type:bigint;not null;column:user_id" json:"user_id"`
 	RefreshToken string         `gorm:"type:text;unique;not null;column:refresh_token" json:"-"`
 	IPAddress    pq.StringArray `gorm:"type:inet;column:ip_address" json:"ip_address"`
-	ExpiresAt    time.Time      `gorm:"type:timestamp;not null;column:expires_at" json:"expires_at"`
+	ExpiresAt    time.Time      `gorm:"type:timestamptz;not null;column:expires_at" json:"expires_at"`
 	CreatedAt    time.Time      `gorm:"type:timestamp;not null;default:now();column:created_at" json:"created_at"`
 }
 

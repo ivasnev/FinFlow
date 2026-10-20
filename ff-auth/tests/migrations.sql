@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 	user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 	refresh_token TEXT NOT NULL UNIQUE,
 	ip_address TEXT[],
-	expires_at TIMESTAMP NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
 	created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
