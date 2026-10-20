@@ -1,10 +1,12 @@
 package debt_calculator
 
 import (
-	"errors"
 	"fmt"
 	"math"
+	"math/big"
+	"sort"
 
+	"github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
 )
 
@@ -44,7 +46,7 @@ func GetCalculator(calculationType string) (DebtCalculator, error) {
 	case UnitsType:
 		return &UnitsStrategy{}, nil
 	default:
-		return nil, fmt.Errorf("неизвестный тип расчета долгов: %s", calculationType)
+		return nil, errors.NewValidationError("type", "неизвестный тип расчета долгов")
 	}
 }
 
@@ -53,14 +55,18 @@ type PercentStrategy struct{}
 
 // Calculate рассчитывает доли и долги по процентам
 func (s *PercentStrategy) Calculate(req *service.TransactionRequest, eventID int64) ([]Share, []Debt, error) {
+	totalCents, err := validateRequest(req)
+	if err != nil {
+		return nil, nil, err
+	}
 	// Проверка суммы процентов (должно быть 100%)
 	var totalPercent float64
 	for _, p := range req.Portion {
 		totalPercent += p
 	}
 
-	if math.Abs(totalPercent-100.0) > 0.01 {
-		return nil, nil, errors.New("сумма процентов должна быть равна 100")
+	if math.IsInf(totalPercent, 0) || math.Abs(totalPercent-100.0) > 0.0100000001 {
+		return nil, nil, errors.NewValidationError("portion", "сумма процентов должна быть равна 100")
 	}
 
 	// Расчет долей на основе процентов
@@ -71,12 +77,12 @@ func (s *PercentStrategy) Calculate(req *service.TransactionRequest, eventID int
 			return nil, nil, err
 		}
 
-		value := req.Amount * percent / 100.0
 		shares = append(shares, Share{
 			UserID: userID,
-			Value:  value,
+			Value:  percent,
 		})
 	}
+	shares = allocateCents(totalCents, shares)
 
 	// Расчет долгов
 	debts := calculateDebts(shares, req.FromUser)
@@ -88,19 +94,24 @@ type AmountStrategy struct{}
 
 // Calculate рассчитывает доли и долги по фиксированным суммам
 func (s *AmountStrategy) Calculate(req *service.TransactionRequest, eventID int64) ([]Share, []Debt, error) {
-	// Проверка общей суммы
-	var totalAmount float64
-	for _, amount := range req.Portion {
-		totalAmount += amount
-	}
-
-	if math.Abs(totalAmount-req.Amount) > 0.01 {
-		return nil, nil, errors.New("сумма распределенных долей должна быть равна общей сумме")
+	totalCents, err := validateRequest(req)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// Расчет долей
 	shares := make([]Share, 0, len(req.Portion))
+	var allocated int64
 	for userIDStr, amount := range req.Portion {
+		cents, err := moneyCents(amount, "portion")
+		if err != nil {
+			return nil, nil, err
+		}
+		// Каждая доля ограничена суммой расхода, поэтому накопление не переполнится.
+		if cents > totalCents-allocated {
+			return nil, nil, errors.NewValidationError("portion", "сумма долей превышает расход")
+		}
+		allocated += cents
 		userID, err := parseUserID(userIDStr)
 		if err != nil {
 			return nil, nil, err
@@ -108,9 +119,13 @@ func (s *AmountStrategy) Calculate(req *service.TransactionRequest, eventID int6
 
 		shares = append(shares, Share{
 			UserID: userID,
-			Value:  amount,
+			Value:  float64(cents) / 100,
 		})
 	}
+	if allocated != totalCents {
+		return nil, nil, errors.NewValidationError("portion", "сумма долей должна совпадать с расходом до копейки")
+	}
+	sort.Slice(shares, func(i, j int) bool { return shares[i].UserID < shares[j].UserID })
 
 	// Расчет долгов
 	debts := calculateDebts(shares, req.FromUser)
@@ -122,9 +137,14 @@ type UnitsStrategy struct{}
 
 // Calculate рассчитывает доли и долги по единицам долей
 func (s *UnitsStrategy) Calculate(req *service.TransactionRequest, eventID int64) ([]Share, []Debt, error) {
+	totalCents, err := validateRequest(req)
+	if err != nil {
+		return nil, nil, err
+	}
 	// Подготовка карты долей
 	unitMap := make(map[int64]float64)
 	redistributeValue := 0.0
+	redistribute := false
 	redistributeCount := 0
 
 	// Сначала заполняем карту долей для всех пользователей значением 1.0
@@ -137,6 +157,7 @@ func (s *UnitsStrategy) Calculate(req *service.TransactionRequest, eventID int64
 		// Проверка на распределение остатка (-1)
 		if userIDStr == "-1" {
 			redistributeValue = units
+			redistribute = true
 			continue
 		}
 
@@ -157,7 +178,7 @@ func (s *UnitsStrategy) Calculate(req *service.TransactionRequest, eventID int64
 	}
 
 	// Распределение остатка, если указан параметр -1
-	if redistributeValue > 0 && redistributeCount > 0 {
+	if redistribute && redistributeCount > 0 {
 		valuePerUser := redistributeValue / float64(redistributeCount)
 		for _, userID := range req.Users {
 			_, exists := req.Portion[fmt.Sprintf("%d", userID)]
@@ -172,26 +193,85 @@ func (s *UnitsStrategy) Calculate(req *service.TransactionRequest, eventID int64
 	for _, units := range unitMap {
 		totalUnits += units
 	}
-
-	// Рассчитываем стоимость одной доли
-	unitCost := req.Amount / totalUnits
+	if totalUnits <= 0 || math.IsInf(totalUnits, 0) {
+		return nil, nil, errors.NewValidationError("portion", "сумма долей должна быть положительной и конечной")
+	}
 
 	// Создаем итоговый список долей
 	shares := make([]Share, 0, len(unitMap))
 	for userID, units := range unitMap {
-		value := units * unitCost
 		shares = append(shares, Share{
 			UserID: userID,
-			Value:  value,
+			Value:  units,
 		})
 	}
+	shares = allocateCents(totalCents, shares)
 
 	// Расчет долгов
 	debts := calculateDebts(shares, req.FromUser)
 	return shares, debts, nil
 }
 
-// Вспомогательные функции
+// validateRequest проверяет денежную сумму и допустимость весов до расчета.
+func validateRequest(req *service.TransactionRequest) (int64, error) {
+	if req == nil {
+		return 0, errors.NewValidationError("transaction", "запрос отсутствует")
+	}
+	cents, err := moneyCents(req.Amount, "amount")
+	if err != nil {
+		return 0, err
+	}
+	if cents <= 0 {
+		return 0, errors.NewValidationError("amount", "сумма должна быть положительной")
+	}
+	for _, value := range req.Portion {
+		if math.IsNaN(value) || math.IsInf(value, 0) || value < 0 {
+			return 0, errors.NewValidationError("portion", "доли должны быть конечными и неотрицательными")
+		}
+	}
+	return cents, nil
+}
+
+// moneyCents принимает суммы в пределах numeric(10,2) без дробных копеек.
+func moneyCents(value float64, field string) (int64, error) {
+	if math.IsNaN(value) || math.IsInf(value, 0) || value < 0 || value > 99999999.99 {
+		return 0, errors.NewValidationError(field, "сумма должна быть конечной и находиться в диапазоне 0..99999999.99")
+	}
+	scaled := value * 100
+	if math.Abs(scaled-math.Round(scaled)) > 0.00001 {
+		return 0, errors.NewValidationError(field, "дробные копейки недопустимы")
+	}
+	return int64(math.Round(scaled)), nil
+}
+
+// allocateCents распределяет целые копейки методом наибольших остатков.
+// Рациональные числа исключают потерю копеек при крайних весах; равные остатки
+// разрешаются по ID, поэтому порядок обхода map не влияет на результат.
+func allocateCents(totalCents int64, shares []Share) []Share {
+	sort.Slice(shares, func(i, j int) bool { return shares[i].UserID < shares[j].UserID })
+	totalWeight := new(big.Rat)
+	for _, share := range shares {
+		totalWeight.Add(totalWeight, new(big.Rat).SetFloat64(share.Value))
+	}
+	remainders := make([]*big.Rat, len(shares))
+	order := make([]int, len(shares))
+	remaining := totalCents
+	for i := range shares {
+		quota := new(big.Rat).SetFloat64(shares[i].Value)
+		quota.Mul(quota, new(big.Rat).SetInt64(totalCents))
+		quota.Quo(quota, totalWeight)
+		cents := new(big.Int).Quo(quota.Num(), quota.Denom()).Int64()
+		remainders[i] = new(big.Rat).Sub(quota, new(big.Rat).SetInt64(cents))
+		shares[i].Value = float64(cents) / 100
+		remaining -= cents
+		order[i] = i
+	}
+	sort.SliceStable(order, func(i, j int) bool { return remainders[order[i]].Cmp(remainders[order[j]]) > 0 })
+	for _, index := range order[:int(remaining)] {
+		shares[index].Value = float64(int64(math.Round(shares[index].Value*100))+1) / 100
+	}
+	return shares
+}
 
 // parseUserID преобразует строковый ID пользователя в int64
 func parseUserID(userIDStr string) (int64, error) {

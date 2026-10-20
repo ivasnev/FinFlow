@@ -10,6 +10,7 @@ import (
 
 	"github.com/ivasnev/FinFlow/ff-common/optimizers"
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/dinic"
+	commonerrors "github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
@@ -108,9 +109,21 @@ func (s *TransactionService) GetTransactionByID(ctx context.Context, id int) (*s
 
 // CreateTransaction создает новую транзакцию
 func (s *TransactionService) CreateTransaction(ctx context.Context, eventID int64, req *service.TransactionRequest) (*service.TransactionResponse, error) {
+	// Проверяем и рассчитываем суммы до обращения к хранилищу.
+	if req == nil {
+		return nil, commonerrors.NewValidationError("transaction", "запрос отсутствует")
+	}
+	calculator, err := debt_calculator.GetCalculator(req.Type)
+	if err != nil {
+		return nil, err
+	}
+	shares, debts, err := calculator.Calculate(req, 0)
+	if err != nil {
+		return nil, err
+	}
 	// Начинаем транзакцию в базе данных
 	var result *service.TransactionResponse
-	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		repo := s.repo.WithTx(tx)
 		// Проверяем существование мероприятия
 		_, err := s.eventService.GetEventByID(ctx, eventID)
@@ -136,17 +149,6 @@ func (s *TransactionService) CreateTransaction(ctx context.Context, eventID int6
 		}
 
 		if err := repo.CreateTransaction(transaction); err != nil {
-			return err
-		}
-
-		// Рассчитываем доли и долги
-		calculator, err := debt_calculator.GetCalculator(req.Type)
-		if err != nil {
-			return err
-		}
-
-		shares, debts, err := calculator.Calculate(req, eventID)
-		if err != nil {
 			return err
 		}
 
@@ -203,9 +205,21 @@ func (s *TransactionService) CreateTransaction(ctx context.Context, eventID int6
 
 // UpdateTransaction обновляет существующую транзакцию
 func (s *TransactionService) UpdateTransaction(ctx context.Context, id int, req *service.TransactionRequest) (*service.TransactionResponse, error) {
+	// Проверяем и рассчитываем суммы до обращения к хранилищу.
+	if req == nil {
+		return nil, commonerrors.NewValidationError("transaction", "запрос отсутствует")
+	}
+	calculator, err := debt_calculator.GetCalculator(req.Type)
+	if err != nil {
+		return nil, err
+	}
+	shares, debts, err := calculator.Calculate(req, 0)
+	if err != nil {
+		return nil, err
+	}
 	// Начинаем транзакцию в базе данных
 	var result *service.TransactionResponse
-	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		repo := s.repo.WithTx(tx)
 		// Получаем транзакцию
 		transaction, err := repo.GetTransactionByID(id)
@@ -239,17 +253,7 @@ func (s *TransactionService) UpdateTransaction(ctx context.Context, id int, req 
 			return err
 		}
 
-		// Рассчитываем новые доли и долги
-		calculator, err := debt_calculator.GetCalculator(req.Type)
-		if err != nil {
-			return err
-		}
-
 		eventID := *transaction.EventID
-		shares, debts, err := calculator.Calculate(req, eventID)
-		if err != nil {
-			return err
-		}
 
 		// Преобразуем внутренние Share в модель TransactionShare
 		dbShares := make([]models.TransactionShare, len(shares))

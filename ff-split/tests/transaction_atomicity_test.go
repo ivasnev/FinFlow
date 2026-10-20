@@ -42,7 +42,7 @@ func TestTransactionAtomicity(t *testing.T) {
 			t.Fatalf("%s: rows=%d want=%d", table, count, want)
 		}
 	}
-	// Сценарий: ошибка калькулятора после INSERT не оставляет расхода.
+	// Сценарий: ошибка калькулятора до INSERT не оставляет расхода.
 	if _, err := c.TransactionService.CreateTransaction(ctx, 1, request(100, false)); err == nil {
 		t.Fatal("invalid create accepted")
 	}
@@ -53,7 +53,7 @@ func TestTransactionAtomicity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Сценарий: ошибка после UPDATE и удаления прежних долей/долгов сохраняет прежнее состояние.
+	// Сценарий: невалидное обновление сохраняет прежнее состояние.
 	if _, err := c.TransactionService.UpdateTransaction(ctx, created.ID, request(200, false)); err == nil {
 		t.Fatal("invalid update accepted")
 	}
