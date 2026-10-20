@@ -113,8 +113,7 @@ func (s *ServerHandler) GetEventByID(c *gin.Context, idEvent int64) {
 		return
 	}
 
-	balanceFloat := balances
-	balanceInt := int(balanceFloat)
+	balance := balances
 
 	c.JSON(http.StatusOK, api.EventResponse{
 		Id:          &event.ID,
@@ -122,7 +121,7 @@ func (s *ServerHandler) GetEventByID(c *gin.Context, idEvent int64) {
 		Description: &event.Description,
 		CategoryId:  event.CategoryID,
 		PhotoId:     &event.ImageID,
-		Balance:     &balanceInt,
+		Balance:     &balance,
 	})
 }
 

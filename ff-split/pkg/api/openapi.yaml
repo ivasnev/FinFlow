@@ -1765,8 +1765,9 @@ components:
           type: string
           description: UUID фото
         balance:
-          type: integer
-          description: Баланс мероприятия
+          type: number
+          format: double
+          description: Баланс пользователя в рублях с точностью до копейки
 
     EventListResponse:
       type: object

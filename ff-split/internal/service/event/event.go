@@ -62,15 +62,14 @@ func (s *EventService) GetEventsByUserID(ctx context.Context, userID int64) ([]s
 	// Преобразуем события в ответы с балансами
 	responses := make([]service.EventResponse, len(events))
 	for i, event := range events {
-		balanceFloat := balances[event.ID]
-		balanceInt := int(balanceFloat)
+		balance := balances[event.ID]
 		responses[i] = service.EventResponse{
 			ID:          event.ID,
 			Name:        event.Name,
 			Description: event.Description,
 			CategoryID:  event.CategoryID,
 			PhotoID:     event.ImageID,
-			Balance:     &balanceInt,
+			Balance:     &balance,
 		}
 	}
 
@@ -165,7 +164,7 @@ func (s *EventService) CreateEvent(ctx context.Context, request *service.EventRe
 	}
 
 	// Заглушка для баланса
-	var balance *int = nil
+	var balance *float64
 	// Здесь будет расчет баланса в будущем
 
 	return &service.EventResponse{
@@ -207,7 +206,7 @@ func (s *EventService) UpdateEvent(ctx context.Context, id int64, request *servi
 	}
 
 	// Заглушка для баланса
-	var balance *int = nil
+	var balance *float64
 	// Здесь будет расчет баланса в будущем
 
 	return &service.EventResponse{

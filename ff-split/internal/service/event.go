@@ -27,12 +27,12 @@ type EventMembersDTO struct {
 
 // EventResponse представляет DTO для ответа с данными мероприятия
 type EventResponse struct {
-	ID          int64  `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	CategoryID  *int   `json:"category_id,omitempty"`
-	PhotoID     string `json:"photo_id,omitempty"`
-	Balance     *int   `json:"balance,omitempty"`
+	ID          int64    `json:"id"`
+	Name        string   `json:"name"`
+	Description string   `json:"description,omitempty"`
+	CategoryID  *int     `json:"category_id,omitempty"`
+	PhotoID     string   `json:"photo_id,omitempty"`
+	Balance     *float64 `json:"balance,omitempty"`
 }
 
 // EventListResponse представляет DTO для ответа со списком мероприятий

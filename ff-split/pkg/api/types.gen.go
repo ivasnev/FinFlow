@@ -174,8 +174,8 @@ type EventRequest struct {
 
 // EventResponse defines model for EventResponse.
 type EventResponse struct {
-	// Balance Баланс мероприятия
-	Balance *int `json:"balance,omitempty"`
+	// Balance Баланс пользователя в рублях с точностью до копейки
+	Balance *float64 `json:"balance,omitempty"`
 
 	// CategoryId ID категории
 	CategoryId *int `json:"category_id,omitempty"`
