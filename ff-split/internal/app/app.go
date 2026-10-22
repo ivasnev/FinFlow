@@ -26,8 +26,13 @@ func New(router *gin.Engine, config interface{}) *App {
 
 func (a *App) Run(addr string) error {
 	server := &http.Server{
-		Addr:    addr,
-		Handler: a.Router,
+		Addr:              addr,
+		Handler:           a.Router,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    32 << 10,
 	}
 
 	// Запуск сервера в горутине

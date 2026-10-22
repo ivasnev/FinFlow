@@ -1,0 +1,10 @@
+DROP TRIGGER receipt_admit_upload ON receipts;
+DROP FUNCTION receipt_admit_upload();
+DROP TABLE receipt_admissions;
+DELETE FROM receipts WHERE deleted_at IS NOT NULL;
+DROP INDEX receipts_active_hash;
+ALTER TABLE receipts ADD CONSTRAINT receipts_event_id_image_sha256_key UNIQUE(event_id,image_sha256);
+DROP INDEX receipts_pending;
+CREATE INDEX receipts_pending ON receipts(created_by,event_id) WHERE status IN ('uploading','queued','processing');
+DROP INDEX receipts_activity;
+ALTER TABLE receipts DROP COLUMN deleted_at,DROP COLUMN image_available,DROP COLUMN queued_by,DROP COLUMN queued_at,DROP COLUMN retry_revision;

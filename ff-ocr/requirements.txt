@@ -1,0 +1,8 @@
+paddlepaddle==3.3.0; platform_system != "Linux" or platform_machine != "aarch64"
+paddlepaddle==3.2.2; platform_system == "Linux" and platform_machine == "aarch64"
+paddleocr==3.3.2
+paddlex[ocr]==3.3.13
+fastapi==0.156.3
+uvicorn==0.54.0
+Pillow==12.3.0
+python-multipart==0.0.32

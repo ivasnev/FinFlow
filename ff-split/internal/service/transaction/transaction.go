@@ -10,6 +10,7 @@ import (
 
 	"github.com/ivasnev/FinFlow/ff-common/optimizers"
 	"github.com/ivasnev/FinFlow/ff-common/optimizers/dinic"
+	dbctx "github.com/ivasnev/FinFlow/ff-split/internal/common/db"
 	commonerrors "github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
 	"github.com/ivasnev/FinFlow/ff-split/internal/models"
 	"github.com/ivasnev/FinFlow/ff-split/internal/repository"
@@ -124,7 +125,7 @@ func (s *TransactionService) CreateTransaction(ctx context.Context, eventID int6
 	}
 	// Начинаем транзакцию в базе данных
 	var result *service.TransactionResponse
-	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err = dbctx.GetTx(ctx, s.db).WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		repo := s.repo.WithTx(tx)
 		if err := history.LockEvent(tx, eventID); err != nil {
 			return err

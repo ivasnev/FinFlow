@@ -2,10 +2,12 @@ package handler
 
 import (
 	"github.com/ivasnev/FinFlow/ff-split/internal/service"
+	receipts "github.com/ivasnev/FinFlow/ff-split/internal/service/receipt"
 )
 
 // ServerHandler реализует сгенерированный интерфейс api.ServerInterface
 type ServerHandler struct {
+	receipts           *receipts.Service
 	archiveService     service.Archive
 	invitationService  service.Invitation
 	historyService     service.History

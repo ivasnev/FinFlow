@@ -19,6 +19,16 @@ const (
 	Transaction CategoryType = "transaction"
 )
 
+// Defines values for ReceiptResponseStatus.
+const (
+	Confirmed  ReceiptResponseStatus = "confirmed"
+	Failed     ReceiptResponseStatus = "failed"
+	Processing ReceiptResponseStatus = "processing"
+	Queued     ReceiptResponseStatus = "queued"
+	Ready      ReceiptResponseStatus = "ready"
+	Uploading  ReceiptResponseStatus = "uploading"
+)
+
 // Defines values for TransactionRequestType.
 const (
 	Amount  TransactionRequestType = "amount"
@@ -299,6 +309,71 @@ type OptimizedDebtListResponse struct {
 	OptimizedDebts *[]OptimizedDebtDTO `json:"optimized_debts,omitempty"`
 }
 
+// ReceiptDraft defines model for ReceiptDraft.
+type ReceiptDraft struct {
+	AcknowledgeDifference bool               `json:"acknowledge_difference"`
+	Items                 []ReceiptDraftItem `json:"items"`
+	Merge                 bool               `json:"merge"`
+	PayerId               int64              `json:"payer_id"`
+	Revision              int                `json:"revision"`
+}
+
+// ReceiptDraftItem defines model for ReceiptDraftItem.
+type ReceiptDraftItem struct {
+	AmountCents int64   `json:"amount_cents"`
+	Name        string  `json:"name"`
+	Selected    bool    `json:"selected"`
+	Users       []int64 `json:"users"`
+}
+
+// ReceiptItem defines model for ReceiptItem.
+type ReceiptItem struct {
+	AmountCents int64   `json:"amount_cents"`
+	Confidence  float32 `json:"confidence"`
+	Name        string  `json:"name"`
+	Quantity    *string `json:"quantity,omitempty"`
+	SourceText  *string `json:"source_text,omitempty"`
+}
+
+// ReceiptListResponse defines model for ReceiptListResponse.
+type ReceiptListResponse struct {
+	NextBefore *int64            `json:"next_before,omitempty"`
+	Receipts   []ReceiptResponse `json:"receipts"`
+}
+
+// ReceiptResponse defines model for ReceiptResponse.
+type ReceiptResponse struct {
+	CreatedAt      time.Time             `json:"created_at"`
+	CreatedBy      int64                 `json:"created_by"`
+	Draft          ReceiptDraft          `json:"draft"`
+	Error          string                `json:"error"`
+	EventId        int64                 `json:"event_id"`
+	Id             openapi_types.UUID    `json:"id"`
+	Result         ReceiptResult         `json:"result"`
+	Revision       int                   `json:"revision"`
+	Sequence       int64                 `json:"sequence"`
+	Status         ReceiptResponseStatus `json:"status"`
+	TransactionIds []int                 `json:"transaction_ids"`
+	UpdatedAt      time.Time             `json:"updated_at"`
+}
+
+// ReceiptResponseStatus defines model for ReceiptResponse.Status.
+type ReceiptResponseStatus string
+
+// ReceiptResult defines model for ReceiptResult.
+type ReceiptResult struct {
+	Engine     string        `json:"engine"`
+	Items      []ReceiptItem `json:"items"`
+	RawText    string        `json:"raw_text"`
+	TotalCents *int64        `json:"total_cents"`
+	Warnings   []string      `json:"warnings"`
+}
+
+// ReceiptRevision defines model for ReceiptRevision.
+type ReceiptRevision struct {
+	Revision int `json:"revision"`
+}
+
 // SettlementListResponse defines model for SettlementListResponse.
 type SettlementListResponse struct {
 	NextBefore  *int64               `json:"next_before,omitempty"`
@@ -506,6 +581,11 @@ type ListHistoryParams struct {
 	Before *int64 `form:"before,omitempty" json:"before,omitempty"`
 }
 
+// ListReceiptsParams defines parameters for ListReceipts.
+type ListReceiptsParams struct {
+	Before *int64 `form:"before,omitempty" json:"before,omitempty"`
+}
+
 // ListSettlementsParams defines parameters for ListSettlements.
 type ListSettlementsParams struct {
 	Before *int64 `form:"before,omitempty" json:"before,omitempty"`
@@ -551,6 +631,18 @@ type CreateActivityJSONRequestBody = ActivityRequest
 
 // UpdateActivityJSONRequestBody defines body for UpdateActivity for application/json ContentType.
 type UpdateActivityJSONRequestBody = ActivityRequest
+
+// DeleteReceiptJSONRequestBody defines body for DeleteReceipt for application/json ContentType.
+type DeleteReceiptJSONRequestBody = ReceiptRevision
+
+// EditReceiptJSONRequestBody defines body for EditReceipt for application/json ContentType.
+type EditReceiptJSONRequestBody = ReceiptDraft
+
+// ConfirmReceiptJSONRequestBody defines body for ConfirmReceipt for application/json ContentType.
+type ConfirmReceiptJSONRequestBody = ReceiptDraft
+
+// RetryReceiptJSONRequestBody defines body for RetryReceipt for application/json ContentType.
+type RetryReceiptJSONRequestBody = ReceiptRevision
 
 // ReceiveSettlementJSONRequestBody defines body for ReceiveSettlement for application/json ContentType.
 type ReceiveSettlementJSONRequestBody = SettlementRequest

@@ -1,0 +1,370 @@
+{
+  "date": "2026-10-22",
+  "selection_manifest_sha256": "37b637493a6e65b117bc476f3b9433ffe4c7b4ee1cb2584c36f1e5b321f2ab75",
+  "selection": "24 unseen images selected before execution from train rows100..199; excluded all prior ids and hashes; no parser changes based on this selection",
+  "engine": "PaddleOCR3.3.2/PaddlePaddle3.3.0/PaddleX3.3.13 native macOS arm64;CPUthreads2",
+  "source": "https://huggingface.co/datasets/cdek-ocr/receipt-ocr-ru",
+  "license": "MIT (dataset card)",
+  "interpretation": "Arithmetic consistency and dataset label agreement are not OCR accuracy; dataset annotations are known to be noisy",
+  "summary": {
+    "images": 24,
+    "nonempty": 23,
+    "total_found": 20,
+    "arithmetic_consistent": 10,
+    "all_have_warnings": true,
+    "seconds_min": 4.267,
+    "seconds_median": 7.574,
+    "seconds_max": 21.499
+  },
+  "results": [
+    {
+      "file": "IMG_1963_enh.jpg",
+      "sha256": "dbc877464ac8bc7cdb7d243f2e51aa54877d9497de70f37de664e9483a5f5b8e",
+      "row_index": 106,
+      "elapsed_seconds": 12.402,
+      "dataset_total_unverified": "429.96",
+      "total_cents": 42996,
+      "item_sum_cents": 36522,
+      "warnings": [
+        "Строка итога со скидками может относиться к позиции или всему чеку. Проверьте суммы по фото.",
+        "Сумма позиций не совпадает с итогом чека. Проверьте скидки, весовые товары и пропущенные строки.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 4
+    },
+    {
+      "file": "IMG_3093_enh.jpg",
+      "sha256": "274958d05c8db49f3d437b08cd0c26d10b3b93eb0d4b8165a2b0a872f722847b",
+      "row_index": 110,
+      "elapsed_seconds": 13.389,
+      "dataset_total_unverified": "213.00",
+      "total_cents": 21300,
+      "item_sum_cents": 63740,
+      "warnings": [
+        "Сумма позиций не совпадает с итогом чека. Проверьте скидки, весовые товары и пропущенные строки.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 14
+    },
+    {
+      "file": "IMG_0795_enh.jpg",
+      "sha256": "6701e5c2c247a963ac5cca48008d5c4f6ae1748cd9bc44c6493f4152491b1d94",
+      "row_index": 111,
+      "elapsed_seconds": 9.384,
+      "dataset_total_unverified": "1263.12",
+      "total_cents": 126312,
+      "item_sum_cents": 126312,
+      "warnings": [
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 8
+    },
+    {
+      "file": "IMG_2099_enh.jpg",
+      "sha256": "807938c04a9f860be842d3e052300147bf7376e1453cdc9e680d3a4e4faaf70d",
+      "row_index": 112,
+      "elapsed_seconds": 15.599,
+      "dataset_total_unverified": "369.00",
+      "total_cents": null,
+      "item_sum_cents": 62032698,
+      "warnings": [
+        "Итог чека не найден. Сверьте сумму с фотографией.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 4
+    },
+    {
+      "file": "IMG_0999_enh.jpg",
+      "sha256": "0e22fd6a20e06ccbdcb8a9df29b03712ff69755cb3841fe6b062b6cd623809aa",
+      "row_index": 113,
+      "elapsed_seconds": 18.605,
+      "dataset_total_unverified": "219.99",
+      "total_cents": null,
+      "item_sum_cents": 48208,
+      "warnings": [
+        "Итог чека не найден. Сверьте сумму с фотографией.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 3
+    },
+    {
+      "file": "IMG_1213_enh.jpg",
+      "sha256": "d470e942605a7db1a34ac2b1cb10808cd29890d141d2b211b2d90b827c7d1d6a",
+      "row_index": 115,
+      "elapsed_seconds": 7.889,
+      "dataset_total_unverified": "1038.60",
+      "total_cents": 4945,
+      "item_sum_cents": 115400,
+      "warnings": [
+        "Сумма позиций не совпадает с итогом чека. Проверьте скидки, весовые товары и пропущенные строки.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 8
+    },
+    {
+      "file": "IMG_2041_enh.jpg",
+      "sha256": "1dc70fb49875fbdb6256689e2a977a6573eb965d308e47110560d71d2ac404b3",
+      "row_index": 118,
+      "elapsed_seconds": 10.767,
+      "dataset_total_unverified": "265.00",
+      "total_cents": null,
+      "item_sum_cents": 53195,
+      "warnings": [
+        "Итог чека не найден. Сверьте сумму с фотографией.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 4
+    },
+    {
+      "file": "IMG_1934_enh.jpg",
+      "sha256": "4843a8ef709cccb1bc3d663eaa8fc3ff8248fc62b643ea8178ba0aaceda406aa",
+      "row_index": 121,
+      "elapsed_seconds": 7.976,
+      "dataset_total_unverified": "89.99",
+      "total_cents": 9999,
+      "item_sum_cents": 8999,
+      "warnings": [
+        "Сумма позиций не совпадает с итогом чека. Проверьте скидки, весовые товары и пропущенные строки.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 1
+    },
+    {
+      "file": "IMG_0791_enh.jpg",
+      "sha256": "ac8434b366404cc417a8cbfd5f07f6e6f28f157c66fd207c20c901f69b56e52e",
+      "row_index": 122,
+      "elapsed_seconds": 6.159,
+      "dataset_total_unverified": "503.48",
+      "total_cents": 50348,
+      "item_sum_cents": 100696,
+      "warnings": [
+        "Сумма позиций не совпадает с итогом чека. Проверьте скидки, весовые товары и пропущенные строки.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 2
+    },
+    {
+      "file": "IMG_1945_enh.jpg",
+      "sha256": "102e2a1ad2f5a0e033c5b48b8d3bb112d0168cb46a1b8874ea714c999b1bf83f",
+      "row_index": 128,
+      "elapsed_seconds": 9.026,
+      "dataset_total_unverified": "264.98",
+      "total_cents": 26498,
+      "item_sum_cents": 26498,
+      "warnings": [
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 2
+    },
+    {
+      "file": "IMG_2036_enh.jpg",
+      "sha256": "eddeb76411ffcfed6a59982d05cc3ad16f2d3514e32860e5790a6696869578ac",
+      "row_index": 130,
+      "elapsed_seconds": 15.961,
+      "dataset_total_unverified": "1906.00",
+      "total_cents": 190600,
+      "item_sum_cents": 0,
+      "warnings": [
+        "Не удалось уверенно выделить покупки. Добавьте позиции вручную или загрузите более чёткое фото.",
+        "Сумма позиций не совпадает с итогом чека. Проверьте скидки, весовые товары и пропущенные строки."
+      ],
+      "error": null,
+      "item_count": 0
+    },
+    {
+      "file": "IMG_1094_enh.jpg",
+      "sha256": "d86bd54e54a6c0fde2441ec58ef7f3b3ff5016cf0fd64fe70ceae5a090cb6fe4",
+      "row_index": 132,
+      "elapsed_seconds": 5.746,
+      "dataset_total_unverified": "549.00",
+      "total_cents": 54900,
+      "item_sum_cents": 54900,
+      "warnings": [
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 5
+    },
+    {
+      "file": "IMG_0882_enh.jpg",
+      "sha256": "a76a560007f246abbddf5b69a5a644482880b55ac447117515d1be057304a428",
+      "row_index": 141,
+      "elapsed_seconds": 21.499,
+      "dataset_total_unverified": "29 194,00",
+      "total_cents": null,
+      "item_sum_cents": 205734455,
+      "warnings": [
+        "Итог чека не найден. Сверьте сумму с фотографией.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 20
+    },
+    {
+      "file": "IMG_1168_enh.jpg",
+      "sha256": "aeefca0a7ae278f250d1e780863396eeabbea6d2f28e7e0c9bddd61f3ea219e1",
+      "row_index": 144,
+      "elapsed_seconds": 5.649,
+      "dataset_total_unverified": "606.00",
+      "total_cents": 60600,
+      "item_sum_cents": 60600,
+      "warnings": [
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 6
+    },
+    {
+      "file": "IMG_0977_enh.jpg",
+      "sha256": "19a6c7c6bb85b461a39cc6b0b0b7442098ed54fb2ad6a518a0596b48ab7a1bac",
+      "row_index": 146,
+      "elapsed_seconds": 8.08,
+      "dataset_total_unverified": "832.00",
+      "total_cents": 83200,
+      "item_sum_cents": 48300,
+      "warnings": [
+        "Сумма позиций не совпадает с итогом чека. Проверьте скидки, весовые товары и пропущенные строки.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 3
+    },
+    {
+      "file": "IMG_1100_enh.jpg",
+      "sha256": "3855028543a09fe6aa14e25633329b639af21a01aa24a85d4cdd38902f6d6c6d",
+      "row_index": 148,
+      "elapsed_seconds": 4.402,
+      "dataset_total_unverified": "667.00",
+      "total_cents": 66700,
+      "item_sum_cents": 47800,
+      "warnings": [
+        "Сумма позиций не совпадает с итогом чека. Проверьте скидки, весовые товары и пропущенные строки."
+      ],
+      "error": null,
+      "item_count": 2
+    },
+    {
+      "file": "IMG_1186_enh.jpg",
+      "sha256": "f7206bc44c93fb12414c39f3dcf30d7c8c613c067f46cfc3239a99d263dd991b",
+      "row_index": 155,
+      "elapsed_seconds": 5.587,
+      "dataset_total_unverified": "964.00",
+      "total_cents": 96400,
+      "item_sum_cents": 96400,
+      "warnings": [
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 5
+    },
+    {
+      "file": "IMG_0778_enh.jpg",
+      "sha256": "a7ec4f51499459c4b885a51eb48e33ed4c9d8546258b6905a98ee08bd32b6f0e",
+      "row_index": 156,
+      "elapsed_seconds": 6.667,
+      "dataset_total_unverified": "475.24",
+      "total_cents": 47524,
+      "item_sum_cents": 47524,
+      "warnings": [
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 3
+    },
+    {
+      "file": "IMG_1089_enh.jpg",
+      "sha256": "66b3ddbac5ea0e01d82b44c5fe83cdb094a90bb17f6dc0dfb3b4a3829c7f906c",
+      "row_index": 157,
+      "elapsed_seconds": 4.766,
+      "dataset_total_unverified": "809.00",
+      "total_cents": 80900,
+      "item_sum_cents": 80900,
+      "warnings": [
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 3
+    },
+    {
+      "file": "IMG_1044_enh.jpg",
+      "sha256": "2f161419242b5ae7e194f0870ccea85e59d3d90dbe245bd5261c8628f1d244d4",
+      "row_index": 164,
+      "elapsed_seconds": 5.112,
+      "dataset_total_unverified": "512.00",
+      "total_cents": 51200,
+      "item_sum_cents": 51200,
+      "warnings": [
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 5
+    },
+    {
+      "file": "IMG_1006_enh.jpg",
+      "sha256": "b28625b3c0ae09eee8d19ff25bdc1ace4265e509bc1fbca25535872dc0a9be33",
+      "row_index": 165,
+      "elapsed_seconds": 5.285,
+      "dataset_total_unverified": "85.00",
+      "total_cents": 8500,
+      "item_sum_cents": 8500,
+      "warnings": [
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 1
+    },
+    {
+      "file": "IMG_1521_enh 2.jpg",
+      "sha256": "d7926b7521701d7df5d500e3762116054b73d83600d2bcf1923e029be71d3c45",
+      "row_index": 167,
+      "elapsed_seconds": 4.267,
+      "dataset_total_unverified": "339.00",
+      "total_cents": 33900,
+      "item_sum_cents": 33400,
+      "warnings": [
+        "Сумма позиций не совпадает с итогом чека. Проверьте скидки, весовые товары и пропущенные строки."
+      ],
+      "error": null,
+      "item_count": 2
+    },
+    {
+      "file": "IMG_0731_enh.jpg",
+      "sha256": "7d81366e39b9a92ba775d6577eb9c9e99ea41ae510089bbbc011efb15c3a42a5",
+      "row_index": 171,
+      "elapsed_seconds": 7.259,
+      "dataset_total_unverified": "1206.00",
+      "total_cents": 120600,
+      "item_sum_cents": 120600,
+      "warnings": [
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 4
+    },
+    {
+      "file": "IMG_1170_enh.jpg",
+      "sha256": "441bfc0d498e4ee24432810be2029c3d85c075d61b3a013f75221249a8764acc",
+      "row_index": 173,
+      "elapsed_seconds": 4.79,
+      "dataset_total_unverified": "626.00",
+      "total_cents": 62600,
+      "item_sum_cents": 85500,
+      "warnings": [
+        "Сумма позиций не совпадает с итогом чека. Проверьте скидки, весовые товары и пропущенные строки.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "error": null,
+      "item_count": 5
+    }
+  ]
+}

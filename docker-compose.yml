@@ -15,6 +15,39 @@ x-application: &application
       condition: service_completed_successfully
 
 services:
+  ff-ocr:
+    profiles: [receipts]
+    build:
+      context: .
+      dockerfile: ff-ocr/Dockerfile
+    restart: unless-stopped
+    environment:
+      OCR_TOKEN: ${OCR_TOKEN:-}
+      OCR_CPU_THREADS: "2"
+    volumes:
+      - ocr_models:/models
+    healthcheck:
+      test: ["CMD", "python", "/app/healthcheck.py"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 600s
+    mem_limit: 2g
+    cpus: 2
+    stop_grace_period: 100s
+
+  ocr-gateway:
+    profiles: [receipts]
+    build:
+      context: .
+      dockerfile: ff-ocr/gateway/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      ff-ocr:
+        condition: service_started
+    mem_limit: 64m
+    cpus: 0.25
+
   cleanup-events:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -59,6 +92,7 @@ services:
       retries: 30
 
   minio:
+    restart: unless-stopped
     build:
       context: ./scripts/stack
       dockerfile: Dockerfile.minio
@@ -169,6 +203,13 @@ services:
       <<: *application-env
       SERVER_PORT: "8085"
       POSTGRES_DB: ff_split
+      OCR_BASE_URL: ${OCR_BASE_URL:-}
+      OCR_TOKEN: ${OCR_TOKEN:-}
+      OCR_WORKERS: ${OCR_WORKERS:-1}
+      RECEIPTS_S3_ENDPOINT: minio:9000
+      RECEIPTS_S3_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      RECEIPTS_S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      RECEIPTS_S3_BUCKET: finflow-receipts
       ID_SERVICE_BASE_URL: http://ff-id:8083
       FILE_SERVICE_BASE_URL: http://ff-files:8082
     ports:
@@ -178,6 +219,7 @@ services:
       - split_credentials:/run/tvm:ro
 
 volumes:
+  ocr_models:
   postgres_data:
   minio_data:
   tvm_manifest:

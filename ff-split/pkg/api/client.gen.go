@@ -158,6 +158,38 @@ type ClientInterface interface {
 	// OptimizeDebts request
 	OptimizeDebts(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListReceipts request
+	ListReceipts(ctx context.Context, idEvent int64, params *ListReceiptsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UploadReceiptWithBody request with any body
+	UploadReceiptWithBody(ctx context.Context, idEvent int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteReceiptWithBody request with any body
+	DeleteReceiptWithBody(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	DeleteReceipt(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, body DeleteReceiptJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetReceipt request
+	GetReceipt(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EditReceiptWithBody request with any body
+	EditReceiptWithBody(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	EditReceipt(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, body EditReceiptJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ConfirmReceiptWithBody request with any body
+	ConfirmReceiptWithBody(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ConfirmReceipt(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, body ConfirmReceiptJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetReceiptImage request
+	GetReceiptImage(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RetryReceiptWithBody request with any body
+	RetryReceiptWithBody(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RetryReceipt(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, body RetryReceiptJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// RestoreEvent request
 	RestoreEvent(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -570,6 +602,150 @@ func (c *Client) GetOptimizedDebtsByEventID(ctx context.Context, idEvent int64, 
 
 func (c *Client) OptimizeDebts(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewOptimizeDebtsRequest(c.Server, idEvent)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListReceipts(ctx context.Context, idEvent int64, params *ListReceiptsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListReceiptsRequest(c.Server, idEvent, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UploadReceiptWithBody(ctx context.Context, idEvent int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUploadReceiptRequestWithBody(c.Server, idEvent, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteReceiptWithBody(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteReceiptRequestWithBody(c.Server, idEvent, idReceipt, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteReceipt(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, body DeleteReceiptJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteReceiptRequest(c.Server, idEvent, idReceipt, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetReceipt(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetReceiptRequest(c.Server, idEvent, idReceipt)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) EditReceiptWithBody(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEditReceiptRequestWithBody(c.Server, idEvent, idReceipt, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) EditReceipt(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, body EditReceiptJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEditReceiptRequest(c.Server, idEvent, idReceipt, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ConfirmReceiptWithBody(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewConfirmReceiptRequestWithBody(c.Server, idEvent, idReceipt, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ConfirmReceipt(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, body ConfirmReceiptJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewConfirmReceiptRequest(c.Server, idEvent, idReceipt, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetReceiptImage(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetReceiptImageRequest(c.Server, idEvent, idReceipt)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RetryReceiptWithBody(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRetryReceiptRequestWithBody(c.Server, idEvent, idReceipt, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RetryReceipt(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, body RetryReceiptJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRetryReceiptRequest(c.Server, idEvent, idReceipt, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1954,6 +2130,396 @@ func NewOptimizeDebtsRequest(server string, idEvent int64) (*http.Request, error
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewListReceiptsRequest generates requests for ListReceipts
+func NewListReceiptsRequest(server string, idEvent int64, params *ListReceiptsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_event", runtime.ParamLocationPath, idEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/event/%s/receipts", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Before != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "before", runtime.ParamLocationQuery, *params.Before); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUploadReceiptRequestWithBody generates requests for UploadReceipt with any type of body
+func NewUploadReceiptRequestWithBody(server string, idEvent int64, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_event", runtime.ParamLocationPath, idEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/event/%s/receipts", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteReceiptRequest calls the generic DeleteReceipt builder with application/json body
+func NewDeleteReceiptRequest(server string, idEvent int64, idReceipt openapi_types.UUID, body DeleteReceiptJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewDeleteReceiptRequestWithBody(server, idEvent, idReceipt, "application/json", bodyReader)
+}
+
+// NewDeleteReceiptRequestWithBody generates requests for DeleteReceipt with any type of body
+func NewDeleteReceiptRequestWithBody(server string, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_event", runtime.ParamLocationPath, idEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "id_receipt", runtime.ParamLocationPath, idReceipt)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/event/%s/receipts/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetReceiptRequest generates requests for GetReceipt
+func NewGetReceiptRequest(server string, idEvent int64, idReceipt openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_event", runtime.ParamLocationPath, idEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "id_receipt", runtime.ParamLocationPath, idReceipt)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/event/%s/receipts/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewEditReceiptRequest calls the generic EditReceipt builder with application/json body
+func NewEditReceiptRequest(server string, idEvent int64, idReceipt openapi_types.UUID, body EditReceiptJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewEditReceiptRequestWithBody(server, idEvent, idReceipt, "application/json", bodyReader)
+}
+
+// NewEditReceiptRequestWithBody generates requests for EditReceipt with any type of body
+func NewEditReceiptRequestWithBody(server string, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_event", runtime.ParamLocationPath, idEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "id_receipt", runtime.ParamLocationPath, idReceipt)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/event/%s/receipts/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewConfirmReceiptRequest calls the generic ConfirmReceipt builder with application/json body
+func NewConfirmReceiptRequest(server string, idEvent int64, idReceipt openapi_types.UUID, body ConfirmReceiptJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewConfirmReceiptRequestWithBody(server, idEvent, idReceipt, "application/json", bodyReader)
+}
+
+// NewConfirmReceiptRequestWithBody generates requests for ConfirmReceipt with any type of body
+func NewConfirmReceiptRequestWithBody(server string, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_event", runtime.ParamLocationPath, idEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "id_receipt", runtime.ParamLocationPath, idReceipt)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/event/%s/receipts/%s/confirm", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetReceiptImageRequest generates requests for GetReceiptImage
+func NewGetReceiptImageRequest(server string, idEvent int64, idReceipt openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_event", runtime.ParamLocationPath, idEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "id_receipt", runtime.ParamLocationPath, idReceipt)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/event/%s/receipts/%s/image", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRetryReceiptRequest calls the generic RetryReceipt builder with application/json body
+func NewRetryReceiptRequest(server string, idEvent int64, idReceipt openapi_types.UUID, body RetryReceiptJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRetryReceiptRequestWithBody(server, idEvent, idReceipt, "application/json", bodyReader)
+}
+
+// NewRetryReceiptRequestWithBody generates requests for RetryReceipt with any type of body
+func NewRetryReceiptRequestWithBody(server string, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id_event", runtime.ParamLocationPath, idEvent)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "id_receipt", runtime.ParamLocationPath, idReceipt)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/event/%s/receipts/%s/retry", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -3544,6 +4110,38 @@ type ClientWithResponsesInterface interface {
 	// OptimizeDebtsWithResponse request
 	OptimizeDebtsWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*OptimizeDebtsResponse, error)
 
+	// ListReceiptsWithResponse request
+	ListReceiptsWithResponse(ctx context.Context, idEvent int64, params *ListReceiptsParams, reqEditors ...RequestEditorFn) (*ListReceiptsResponse, error)
+
+	// UploadReceiptWithBodyWithResponse request with any body
+	UploadReceiptWithBodyWithResponse(ctx context.Context, idEvent int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadReceiptResponse, error)
+
+	// DeleteReceiptWithBodyWithResponse request with any body
+	DeleteReceiptWithBodyWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteReceiptResponse, error)
+
+	DeleteReceiptWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, body DeleteReceiptJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteReceiptResponse, error)
+
+	// GetReceiptWithResponse request
+	GetReceiptWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReceiptResponse, error)
+
+	// EditReceiptWithBodyWithResponse request with any body
+	EditReceiptWithBodyWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EditReceiptResponse, error)
+
+	EditReceiptWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, body EditReceiptJSONRequestBody, reqEditors ...RequestEditorFn) (*EditReceiptResponse, error)
+
+	// ConfirmReceiptWithBodyWithResponse request with any body
+	ConfirmReceiptWithBodyWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ConfirmReceiptResponse, error)
+
+	ConfirmReceiptWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, body ConfirmReceiptJSONRequestBody, reqEditors ...RequestEditorFn) (*ConfirmReceiptResponse, error)
+
+	// GetReceiptImageWithResponse request
+	GetReceiptImageWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReceiptImageResponse, error)
+
+	// RetryReceiptWithBodyWithResponse request with any body
+	RetryReceiptWithBodyWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RetryReceiptResponse, error)
+
+	RetryReceiptWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, body RetryReceiptJSONRequestBody, reqEditors ...RequestEditorFn) (*RetryReceiptResponse, error)
+
 	// RestoreEventWithResponse request
 	RestoreEventWithResponse(ctx context.Context, idEvent int64, reqEditors ...RequestEditorFn) (*RestoreEventResponse, error)
 
@@ -4142,6 +4740,188 @@ func (r OptimizeDebtsResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r OptimizeDebtsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListReceiptsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ReceiptListResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListReceiptsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListReceiptsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UploadReceiptResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *ReceiptResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r UploadReceiptResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UploadReceiptResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteReceiptResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteReceiptResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteReceiptResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetReceiptResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ReceiptResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetReceiptResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetReceiptResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type EditReceiptResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ReceiptResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r EditReceiptResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EditReceiptResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ConfirmReceiptResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ReceiptResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ConfirmReceiptResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ConfirmReceiptResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetReceiptImageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetReceiptImageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetReceiptImageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RetryReceiptResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *ReceiptResponse
+	JSONDefault  *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r RetryReceiptResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RetryReceiptResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -5187,6 +5967,110 @@ func (c *ClientWithResponses) OptimizeDebtsWithResponse(ctx context.Context, idE
 		return nil, err
 	}
 	return ParseOptimizeDebtsResponse(rsp)
+}
+
+// ListReceiptsWithResponse request returning *ListReceiptsResponse
+func (c *ClientWithResponses) ListReceiptsWithResponse(ctx context.Context, idEvent int64, params *ListReceiptsParams, reqEditors ...RequestEditorFn) (*ListReceiptsResponse, error) {
+	rsp, err := c.ListReceipts(ctx, idEvent, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListReceiptsResponse(rsp)
+}
+
+// UploadReceiptWithBodyWithResponse request with arbitrary body returning *UploadReceiptResponse
+func (c *ClientWithResponses) UploadReceiptWithBodyWithResponse(ctx context.Context, idEvent int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadReceiptResponse, error) {
+	rsp, err := c.UploadReceiptWithBody(ctx, idEvent, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUploadReceiptResponse(rsp)
+}
+
+// DeleteReceiptWithBodyWithResponse request with arbitrary body returning *DeleteReceiptResponse
+func (c *ClientWithResponses) DeleteReceiptWithBodyWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteReceiptResponse, error) {
+	rsp, err := c.DeleteReceiptWithBody(ctx, idEvent, idReceipt, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteReceiptResponse(rsp)
+}
+
+func (c *ClientWithResponses) DeleteReceiptWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, body DeleteReceiptJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteReceiptResponse, error) {
+	rsp, err := c.DeleteReceipt(ctx, idEvent, idReceipt, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteReceiptResponse(rsp)
+}
+
+// GetReceiptWithResponse request returning *GetReceiptResponse
+func (c *ClientWithResponses) GetReceiptWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReceiptResponse, error) {
+	rsp, err := c.GetReceipt(ctx, idEvent, idReceipt, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetReceiptResponse(rsp)
+}
+
+// EditReceiptWithBodyWithResponse request with arbitrary body returning *EditReceiptResponse
+func (c *ClientWithResponses) EditReceiptWithBodyWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EditReceiptResponse, error) {
+	rsp, err := c.EditReceiptWithBody(ctx, idEvent, idReceipt, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEditReceiptResponse(rsp)
+}
+
+func (c *ClientWithResponses) EditReceiptWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, body EditReceiptJSONRequestBody, reqEditors ...RequestEditorFn) (*EditReceiptResponse, error) {
+	rsp, err := c.EditReceipt(ctx, idEvent, idReceipt, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEditReceiptResponse(rsp)
+}
+
+// ConfirmReceiptWithBodyWithResponse request with arbitrary body returning *ConfirmReceiptResponse
+func (c *ClientWithResponses) ConfirmReceiptWithBodyWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ConfirmReceiptResponse, error) {
+	rsp, err := c.ConfirmReceiptWithBody(ctx, idEvent, idReceipt, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseConfirmReceiptResponse(rsp)
+}
+
+func (c *ClientWithResponses) ConfirmReceiptWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, body ConfirmReceiptJSONRequestBody, reqEditors ...RequestEditorFn) (*ConfirmReceiptResponse, error) {
+	rsp, err := c.ConfirmReceipt(ctx, idEvent, idReceipt, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseConfirmReceiptResponse(rsp)
+}
+
+// GetReceiptImageWithResponse request returning *GetReceiptImageResponse
+func (c *ClientWithResponses) GetReceiptImageWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReceiptImageResponse, error) {
+	rsp, err := c.GetReceiptImage(ctx, idEvent, idReceipt, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetReceiptImageResponse(rsp)
+}
+
+// RetryReceiptWithBodyWithResponse request with arbitrary body returning *RetryReceiptResponse
+func (c *ClientWithResponses) RetryReceiptWithBodyWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RetryReceiptResponse, error) {
+	rsp, err := c.RetryReceiptWithBody(ctx, idEvent, idReceipt, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRetryReceiptResponse(rsp)
+}
+
+func (c *ClientWithResponses) RetryReceiptWithResponse(ctx context.Context, idEvent int64, idReceipt openapi_types.UUID, body RetryReceiptJSONRequestBody, reqEditors ...RequestEditorFn) (*RetryReceiptResponse, error) {
+	rsp, err := c.RetryReceipt(ctx, idEvent, idReceipt, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRetryReceiptResponse(rsp)
 }
 
 // RestoreEventWithResponse request returning *RestoreEventResponse
@@ -6340,6 +7224,256 @@ func ParseOptimizeDebtsResponse(rsp *http.Response) (*OptimizeDebtsResponse, err
 			return nil, err
 		}
 		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListReceiptsResponse parses an HTTP response from a ListReceiptsWithResponse call
+func ParseListReceiptsResponse(rsp *http.Response) (*ListReceiptsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListReceiptsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ReceiptListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUploadReceiptResponse parses an HTTP response from a UploadReceiptWithResponse call
+func ParseUploadReceiptResponse(rsp *http.Response) (*UploadReceiptResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UploadReceiptResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest ReceiptResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteReceiptResponse parses an HTTP response from a DeleteReceiptWithResponse call
+func ParseDeleteReceiptResponse(rsp *http.Response) (*DeleteReceiptResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteReceiptResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetReceiptResponse parses an HTTP response from a GetReceiptWithResponse call
+func ParseGetReceiptResponse(rsp *http.Response) (*GetReceiptResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetReceiptResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ReceiptResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEditReceiptResponse parses an HTTP response from a EditReceiptWithResponse call
+func ParseEditReceiptResponse(rsp *http.Response) (*EditReceiptResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EditReceiptResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ReceiptResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseConfirmReceiptResponse parses an HTTP response from a ConfirmReceiptWithResponse call
+func ParseConfirmReceiptResponse(rsp *http.Response) (*ConfirmReceiptResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ConfirmReceiptResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ReceiptResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetReceiptImageResponse parses an HTTP response from a GetReceiptImageWithResponse call
+func ParseGetReceiptImageResponse(rsp *http.Response) (*GetReceiptImageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetReceiptImageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRetryReceiptResponse parses an HTTP response from a RetryReceiptWithResponse call
+func ParseRetryReceiptResponse(rsp *http.Response) (*RetryReceiptResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RetryReceiptResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest ReceiptResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 

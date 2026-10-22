@@ -1822,6 +1822,290 @@ paths:
         '200': {description: Возврат отменён, запись сохранена}
         '403': {description: Нет доступа}
 
+  /api/v1/event/{id_event}/receipts:
+    get:
+      operationId: ListReceipts
+      tags:
+      - receipts
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id_event
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: before
+        in: query
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: Результат обработки чека
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptListResponse'
+        default:
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      operationId: UploadReceipt
+      tags:
+      - receipts
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id_event
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '202':
+          description: Результат обработки чека
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptResponse'
+        default:
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+  /api/v1/event/{id_event}/receipts/{id_receipt}:
+    get:
+      operationId: GetReceipt
+      tags:
+      - receipts
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id_event
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: id_receipt
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Результат обработки чека
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptResponse'
+        default:
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      operationId: EditReceipt
+      tags:
+      - receipts
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id_event
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: id_receipt
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Результат обработки чека
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptResponse'
+        default:
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiptDraft'
+    delete:
+      operationId: DeleteReceipt
+      tags:
+      - receipts
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id_event
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: id_receipt
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiptRevision'
+      responses:
+        '204':
+          description: Черновик удалён
+        default:
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/event/{id_event}/receipts/{id_receipt}/confirm:
+    post:
+      operationId: ConfirmReceipt
+      tags:
+      - receipts
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id_event
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: id_receipt
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Результат обработки чека
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptResponse'
+        default:
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiptDraft'
+  /api/v1/event/{id_event}/receipts/{id_receipt}/image:
+    get:
+      operationId: GetReceiptImage
+      tags:
+      - receipts
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id_event
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: id_receipt
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Приватная фотография чека
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/event/{id_event}/receipts/{id_receipt}/retry:
+    post:
+      operationId: RetryReceipt
+      tags:
+      - receipts
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id_event
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: id_receipt
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiptRevision'
+      responses:
+        '202':
+          description: Повторное распознавание принято
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptResponse'
+        default:
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   securitySchemes:
     BearerAuth:
@@ -1831,6 +2115,166 @@ components:
       description: Авторизация через Bearer токен
 
   schemas:
+    ReceiptRevision:
+      type: object
+      additionalProperties: false
+      required: [revision]
+      properties:
+        revision:
+          type: integer
+          minimum: 1
+    ReceiptItem:
+      type: object
+      properties:
+        name:
+          type: string
+        amount_cents:
+          type: integer
+          format: int64
+        confidence:
+          type: number
+        quantity:
+          type: string
+        source_text:
+          type: string
+      required:
+      - name
+      - amount_cents
+      - confidence
+    ReceiptResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReceiptItem'
+        total_cents:
+          type: integer
+          format: int64
+          nullable: true
+        warnings:
+          type: array
+          items:
+            type: string
+        raw_text:
+          type: string
+        engine:
+          type: string
+      required:
+      - items
+      - warnings
+      - raw_text
+      - engine
+    ReceiptDraftItem:
+      type: object
+      properties:
+        name:
+          type: string
+        amount_cents:
+          type: integer
+          format: int64
+        users:
+          type: array
+          items:
+            type: integer
+            format: int64
+        selected:
+          type: boolean
+      required:
+      - name
+      - amount_cents
+      - users
+      - selected
+    ReceiptDraft:
+      type: object
+      properties:
+        revision:
+          type: integer
+        payer_id:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReceiptDraftItem'
+        merge:
+          type: boolean
+        acknowledge_difference:
+          type: boolean
+      required:
+      - revision
+      - payer_id
+      - items
+      - merge
+      - acknowledge_difference
+      additionalProperties: false
+    ReceiptResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_id:
+          type: integer
+          format: int64
+        created_by:
+          type: integer
+          format: int64
+        sequence:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum:
+          - uploading
+          - queued
+          - processing
+          - ready
+          - failed
+          - confirmed
+        revision:
+          type: integer
+        result:
+          $ref: '#/components/schemas/ReceiptResult'
+        draft:
+          $ref: '#/components/schemas/ReceiptDraft'
+        transaction_ids:
+          type: array
+          items:
+            type: integer
+        error:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - event_id
+      - created_by
+      - sequence
+      - status
+      - revision
+      - result
+      - draft
+      - transaction_ids
+      - error
+      - created_at
+      - updated_at
+    ReceiptListResponse:
+      type: object
+      properties:
+        receipts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReceiptResponse'
+        next_before:
+          type: integer
+          format: int64
+      required:
+      - receipts
     InvitationResponse:
       type: object
       required: [id, event_id, created_by, created_at, expires_at]

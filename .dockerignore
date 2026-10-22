@@ -13,3 +13,7 @@ ff-auth/app
 ff-id/app
 ff-split/main
 ff-common/optimizers/tests/analitic
+
+ff-ocr/.venv
+ff-ocr/models
+ff-ocr/.pytest_cache

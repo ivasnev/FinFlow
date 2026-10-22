@@ -74,6 +74,30 @@ type ServerInterface interface {
 	// Оптимизировать долги
 	// (POST /api/v1/event/{id_event}/optimized-debts)
 	OptimizeDebts(c *gin.Context, idEvent int64)
+
+	// (GET /api/v1/event/{id_event}/receipts)
+	ListReceipts(c *gin.Context, idEvent int64, params ListReceiptsParams)
+
+	// (POST /api/v1/event/{id_event}/receipts)
+	UploadReceipt(c *gin.Context, idEvent int64)
+
+	// (DELETE /api/v1/event/{id_event}/receipts/{id_receipt})
+	DeleteReceipt(c *gin.Context, idEvent int64, idReceipt openapi_types.UUID)
+
+	// (GET /api/v1/event/{id_event}/receipts/{id_receipt})
+	GetReceipt(c *gin.Context, idEvent int64, idReceipt openapi_types.UUID)
+
+	// (PUT /api/v1/event/{id_event}/receipts/{id_receipt})
+	EditReceipt(c *gin.Context, idEvent int64, idReceipt openapi_types.UUID)
+
+	// (POST /api/v1/event/{id_event}/receipts/{id_receipt}/confirm)
+	ConfirmReceipt(c *gin.Context, idEvent int64, idReceipt openapi_types.UUID)
+
+	// (GET /api/v1/event/{id_event}/receipts/{id_receipt}/image)
+	GetReceiptImage(c *gin.Context, idEvent int64, idReceipt openapi_types.UUID)
+
+	// (POST /api/v1/event/{id_event}/receipts/{id_receipt}/retry)
+	RetryReceipt(c *gin.Context, idEvent int64, idReceipt openapi_types.UUID)
 	// Восстановить событие из архива
 	// (POST /api/v1/event/{id_event}/restore)
 	RestoreEvent(c *gin.Context, idEvent int64)
@@ -749,6 +773,279 @@ func (siw *ServerInterfaceWrapper) OptimizeDebts(c *gin.Context) {
 	}
 
 	siw.Handler.OptimizeDebts(c, idEvent)
+}
+
+// ListReceipts operation middleware
+func (siw *ServerInterfaceWrapper) ListReceipts(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id_event" -------------
+	var idEvent int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_event", c.Param("id_event"), &idEvent, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_event: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListReceiptsParams
+
+	// ------------- Optional query parameter "before" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "before", c.Request.URL.Query(), &params.Before)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter before: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListReceipts(c, idEvent, params)
+}
+
+// UploadReceipt operation middleware
+func (siw *ServerInterfaceWrapper) UploadReceipt(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id_event" -------------
+	var idEvent int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_event", c.Param("id_event"), &idEvent, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_event: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UploadReceipt(c, idEvent)
+}
+
+// DeleteReceipt operation middleware
+func (siw *ServerInterfaceWrapper) DeleteReceipt(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id_event" -------------
+	var idEvent int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_event", c.Param("id_event"), &idEvent, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_event: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "id_receipt" -------------
+	var idReceipt openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_receipt", c.Param("id_receipt"), &idReceipt, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_receipt: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteReceipt(c, idEvent, idReceipt)
+}
+
+// GetReceipt operation middleware
+func (siw *ServerInterfaceWrapper) GetReceipt(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id_event" -------------
+	var idEvent int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_event", c.Param("id_event"), &idEvent, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_event: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "id_receipt" -------------
+	var idReceipt openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_receipt", c.Param("id_receipt"), &idReceipt, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_receipt: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetReceipt(c, idEvent, idReceipt)
+}
+
+// EditReceipt operation middleware
+func (siw *ServerInterfaceWrapper) EditReceipt(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id_event" -------------
+	var idEvent int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_event", c.Param("id_event"), &idEvent, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_event: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "id_receipt" -------------
+	var idReceipt openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_receipt", c.Param("id_receipt"), &idReceipt, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_receipt: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.EditReceipt(c, idEvent, idReceipt)
+}
+
+// ConfirmReceipt operation middleware
+func (siw *ServerInterfaceWrapper) ConfirmReceipt(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id_event" -------------
+	var idEvent int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_event", c.Param("id_event"), &idEvent, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_event: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "id_receipt" -------------
+	var idReceipt openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_receipt", c.Param("id_receipt"), &idReceipt, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_receipt: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ConfirmReceipt(c, idEvent, idReceipt)
+}
+
+// GetReceiptImage operation middleware
+func (siw *ServerInterfaceWrapper) GetReceiptImage(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id_event" -------------
+	var idEvent int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_event", c.Param("id_event"), &idEvent, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_event: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "id_receipt" -------------
+	var idReceipt openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_receipt", c.Param("id_receipt"), &idReceipt, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_receipt: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetReceiptImage(c, idEvent, idReceipt)
+}
+
+// RetryReceipt operation middleware
+func (siw *ServerInterfaceWrapper) RetryReceipt(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "id_event" -------------
+	var idEvent int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_event", c.Param("id_event"), &idEvent, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_event: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "id_receipt" -------------
+	var idReceipt openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id_receipt", c.Param("id_receipt"), &idReceipt, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter id_receipt: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	c.Set(BearerAuthScopes, []string{})
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.RetryReceipt(c, idEvent, idReceipt)
 }
 
 // RestoreEvent operation middleware
@@ -1788,6 +2085,14 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.DELETE(options.BaseURL+"/api/v1/event/:id_event/invitations/:id_invitation", wrapper.RevokeInvitation)
 	router.GET(options.BaseURL+"/api/v1/event/:id_event/optimized-debts", wrapper.GetOptimizedDebtsByEventID)
 	router.POST(options.BaseURL+"/api/v1/event/:id_event/optimized-debts", wrapper.OptimizeDebts)
+	router.GET(options.BaseURL+"/api/v1/event/:id_event/receipts", wrapper.ListReceipts)
+	router.POST(options.BaseURL+"/api/v1/event/:id_event/receipts", wrapper.UploadReceipt)
+	router.DELETE(options.BaseURL+"/api/v1/event/:id_event/receipts/:id_receipt", wrapper.DeleteReceipt)
+	router.GET(options.BaseURL+"/api/v1/event/:id_event/receipts/:id_receipt", wrapper.GetReceipt)
+	router.PUT(options.BaseURL+"/api/v1/event/:id_event/receipts/:id_receipt", wrapper.EditReceipt)
+	router.POST(options.BaseURL+"/api/v1/event/:id_event/receipts/:id_receipt/confirm", wrapper.ConfirmReceipt)
+	router.GET(options.BaseURL+"/api/v1/event/:id_event/receipts/:id_receipt/image", wrapper.GetReceiptImage)
+	router.POST(options.BaseURL+"/api/v1/event/:id_event/receipts/:id_receipt/retry", wrapper.RetryReceipt)
 	router.POST(options.BaseURL+"/api/v1/event/:id_event/restore", wrapper.RestoreEvent)
 	router.GET(options.BaseURL+"/api/v1/event/:id_event/settlements", wrapper.ListSettlements)
 	router.POST(options.BaseURL+"/api/v1/event/:id_event/settlements", wrapper.ReceiveSettlement)

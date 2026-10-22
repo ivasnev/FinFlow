@@ -1,0 +1,742 @@
+{
+  "date": "2026-10-22",
+  "source": "https://huggingface.co/datasets/cdek-ocr/receipt-ocr-ru",
+  "license": "MIT (dataset card)",
+  "scope": "Local short experiments, not sustained capacity or an SLA. No expenses created by admission benchmarks.",
+  "container_runtime": {
+    "platform": "Linux arm64 / Python 3.11 / PaddlePaddle 3.2.2",
+    "vm_memory_mib": 2048,
+    "temporary_stack_memory_limit_mib": 1100,
+    "empty_postgres_and_minio_volumes": true,
+    "bootstrap_exit_code": 0,
+    "linux_replicas_ready": 2,
+    "healthcheck": "python /app/healthcheck.py passes for both replicas",
+    "build_limits": [
+      "The unchanged project-built MinIO image was reused; source rebuilding exceeded the VM budget.",
+      "Five Go images were initially built in Docker. Current ff-split recovery code was cross-compiled on the host with Go1.26.3 for Linux arm64 and packaged into the runtime image. Its standard Go1.24 Dockerfile rebuild did not fit the isolated 768MiB build cap.",
+      "The OCR image was built from its Dockerfile and downloaded all three models from official Paddle BOS. A later healthcheck-only layer was packaged on that image; a complete second dependency rebuild was not repeated.",
+      "The temporary Podman image store required local SELinux labels for the shared public model cache and a manual invocation of PostgreSQL healthcheck to release compose startup waiting. No global policies were disabled."
+    ],
+    "warmup": {
+      "mode": "ocr",
+      "samples": 1,
+      "concurrency": 1,
+      "payload_bytes": 610721,
+      "seconds": 11.053,
+      "responses": {
+        "200": 1
+      },
+      "transport_errors": 0,
+      "all_completed": true,
+      "accepted_per_second": 0.09,
+      "accepted_latency": {
+        "p50_ms": 11053.09,
+        "p95_ms": 11053.09
+      },
+      "all_latency": {
+        "p50_ms": 11053.09,
+        "p95_ms": 11053.09
+      },
+      "results": [
+        {
+          "file": "IMG_1963_enh.jpg",
+          "sha256": "dbc877464ac8bc7cdb7d243f2e51aa54877d9497de70f37de664e9483a5f5b8e",
+          "status": 200,
+          "seconds": 11.053088,
+          "items": 4
+        }
+      ],
+      "sessions_revoked": 0,
+      "session_revocation_errors": []
+    },
+    "incomplete_one_worker": {
+      "mode": "ocr",
+      "samples": 6,
+      "concurrency": 1,
+      "payload_bytes": 2396003,
+      "seconds": 39.534,
+      "responses": {
+        "200": 2,
+        "503": 2
+      },
+      "transport_errors": 2,
+      "all_completed": false,
+      "accepted_per_second": 0.051,
+      "accepted_latency": {
+        "p50_ms": 11685.87,
+        "p95_ms": 12661.5
+      },
+      "all_latency": {
+        "p50_ms": 7025.28,
+        "p95_ms": 12661.5
+      },
+      "results": [
+        {
+          "file": "IMG_1963_enh.jpg",
+          "sha256": "dbc877464ac8bc7cdb7d243f2e51aa54877d9497de70f37de664e9483a5f5b8e",
+          "status": 200,
+          "seconds": 10.710239,
+          "items": 4
+        },
+        {
+          "file": "IMG_3093_enh.jpg",
+          "sha256": "274958d05c8db49f3d437b08cd0c26d10b3b93eb0d4b8165a2b0a872f722847b",
+          "status": 0,
+          "transport_error": "RemoteProtocolError",
+          "seconds": 1.213497
+        },
+        {
+          "file": "IMG_0795_enh.jpg",
+          "sha256": "6701e5c2c247a963ac5cca48008d5c4f6ae1748cd9bc44c6493f4152491b1d94",
+          "status": 503,
+          "seconds": 7.035809
+        },
+        {
+          "file": "IMG_2099_enh.jpg",
+          "sha256": "807938c04a9f860be842d3e052300147bf7376e1453cdc9e680d3a4e4faaf70d",
+          "status": 200,
+          "seconds": 12.661498,
+          "items": 4
+        },
+        {
+          "file": "IMG_0999_enh.jpg",
+          "sha256": "0e22fd6a20e06ccbdcb8a9df29b03712ff69755cb3841fe6b062b6cd623809aa",
+          "status": 0,
+          "transport_error": "RemoteProtocolError",
+          "seconds": 0.897644
+        },
+        {
+          "file": "IMG_1213_enh.jpg",
+          "sha256": "d470e942605a7db1a34ac2b1cb10808cd29890d141d2b211b2d90b827c7d1d6a",
+          "status": 503,
+          "seconds": 7.014744
+        }
+      ],
+      "sessions_revoked": 0,
+      "session_revocation_errors": []
+    },
+    "incomplete_two_worker_smoke": {
+      "mode": "ocr",
+      "samples": 2,
+      "concurrency": 2,
+      "payload_bytes": 674683,
+      "seconds": 8.194,
+      "responses": {
+        "502": 1,
+        "503": 1
+      },
+      "transport_errors": 0,
+      "all_completed": false,
+      "accepted_per_second": 0.0,
+      "accepted_latency": {},
+      "all_latency": {
+        "p50_ms": 4675.97,
+        "p95_ms": 8177.08
+      },
+      "results": [
+        {
+          "file": "IMG_1104_enh.jpg",
+          "sha256": "37f7b955f81667dd5e53f9ee0c2b00b5aec0d27c847704123be00beb2e67ffd3",
+          "status": 502,
+          "seconds": 1.174865
+        },
+        {
+          "file": "IMG_0794_enh.jpg",
+          "sha256": "0ffda16ba05b8beef254423b3c4e57cb01b388489692209478308d6f4b2438fb",
+          "status": 503,
+          "seconds": 8.177077
+        }
+      ],
+      "sessions_revoked": 0,
+      "session_revocation_errors": []
+    },
+    "limitation": "Model workloads exceeded the temporary group memory limit. Container throughput and two-worker OCR completion are not established by these attempts."
+  },
+  "native_comparison": {
+    "platform": "macOS arm64 / Python 3.13 / PaddlePaddle 3.3.0 / cpu_threads=2 per process",
+    "routing": "Same HAProxy limits as compose, with two explicit local native backend addresses in a disposable gateway config. Linux OCR containers stopped.",
+    "warmup_excluded": true,
+    "same_six_verified_hashes": true,
+    "one": {
+      "mode": "ocr",
+      "samples": 6,
+      "concurrency": 1,
+      "payload_bytes": 2396003,
+      "seconds": 74.819,
+      "responses": {
+        "200": 6
+      },
+      "transport_errors": 0,
+      "all_completed": true,
+      "accepted_per_second": 0.08,
+      "accepted_latency": {
+        "p50_ms": 12478.33,
+        "p95_ms": 18479.74
+      },
+      "all_latency": {
+        "p50_ms": 12478.33,
+        "p95_ms": 18479.74
+      },
+      "results": [
+        {
+          "file": "IMG_1963_enh.jpg",
+          "sha256": "dbc877464ac8bc7cdb7d243f2e51aa54877d9497de70f37de664e9483a5f5b8e",
+          "status": 200,
+          "seconds": 11.779397,
+          "items": 4
+        },
+        {
+          "file": "IMG_3093_enh.jpg",
+          "sha256": "274958d05c8db49f3d437b08cd0c26d10b3b93eb0d4b8165a2b0a872f722847b",
+          "status": 200,
+          "seconds": 13.177258,
+          "items": 14
+        },
+        {
+          "file": "IMG_0795_enh.jpg",
+          "sha256": "6701e5c2c247a963ac5cca48008d5c4f6ae1748cd9bc44c6493f4152491b1d94",
+          "status": 200,
+          "seconds": 9.614356,
+          "items": 8
+        },
+        {
+          "file": "IMG_2099_enh.jpg",
+          "sha256": "807938c04a9f860be842d3e052300147bf7376e1453cdc9e680d3a4e4faaf70d",
+          "status": 200,
+          "seconds": 15.453591,
+          "items": 4
+        },
+        {
+          "file": "IMG_0999_enh.jpg",
+          "sha256": "0e22fd6a20e06ccbdcb8a9df29b03712ff69755cb3841fe6b062b6cd623809aa",
+          "status": 200,
+          "seconds": 18.479738,
+          "items": 3
+        },
+        {
+          "file": "IMG_1213_enh.jpg",
+          "sha256": "d470e942605a7db1a34ac2b1cb10808cd29890d141d2b211b2d90b827c7d1d6a",
+          "status": 200,
+          "seconds": 6.313842,
+          "items": 8
+        }
+      ],
+      "sessions_revoked": 0,
+      "session_revocation_errors": []
+    },
+    "two": {
+      "mode": "ocr",
+      "samples": 6,
+      "concurrency": 2,
+      "payload_bytes": 2396003,
+      "seconds": 41.479,
+      "responses": {
+        "200": 6
+      },
+      "transport_errors": 0,
+      "all_completed": true,
+      "accepted_per_second": 0.145,
+      "accepted_latency": {
+        "p50_ms": 13199.27,
+        "p95_ms": 19002.66
+      },
+      "all_latency": {
+        "p50_ms": 13199.27,
+        "p95_ms": 19002.66
+      },
+      "results": [
+        {
+          "file": "IMG_1963_enh.jpg",
+          "sha256": "dbc877464ac8bc7cdb7d243f2e51aa54877d9497de70f37de664e9483a5f5b8e",
+          "status": 200,
+          "seconds": 12.498773,
+          "items": 4
+        },
+        {
+          "file": "IMG_3093_enh.jpg",
+          "sha256": "274958d05c8db49f3d437b08cd0c26d10b3b93eb0d4b8165a2b0a872f722847b",
+          "status": 200,
+          "seconds": 13.899769,
+          "items": 14
+        },
+        {
+          "file": "IMG_0795_enh.jpg",
+          "sha256": "6701e5c2c247a963ac5cca48008d5c4f6ae1748cd9bc44c6493f4152491b1d94",
+          "status": 200,
+          "seconds": 9.97683,
+          "items": 8
+        },
+        {
+          "file": "IMG_2099_enh.jpg",
+          "sha256": "807938c04a9f860be842d3e052300147bf7376e1453cdc9e680d3a4e4faaf70d",
+          "status": 200,
+          "seconds": 15.958012,
+          "items": 4
+        },
+        {
+          "file": "IMG_0999_enh.jpg",
+          "sha256": "0e22fd6a20e06ccbdcb8a9df29b03712ff69755cb3841fe6b062b6cd623809aa",
+          "status": 200,
+          "seconds": 19.002661,
+          "items": 3
+        },
+        {
+          "file": "IMG_1213_enh.jpg",
+          "sha256": "d470e942605a7db1a34ac2b1cb10808cd29890d141d2b211b2d90b827c7d1d6a",
+          "status": 200,
+          "seconds": 6.705312,
+          "items": 8
+        }
+      ],
+      "sessions_revoked": 0,
+      "session_revocation_errors": []
+    },
+    "two_worker_completed_deltas": [
+      3,
+      3
+    ],
+    "discarded_gateway_startup_attempt": {
+      "mode": "ocr",
+      "samples": 6,
+      "concurrency": 2,
+      "payload_bytes": 2396003,
+      "seconds": 34.096,
+      "responses": {
+        "503": 1,
+        "200": 5
+      },
+      "transport_errors": 0,
+      "all_completed": false,
+      "accepted_per_second": 0.147,
+      "accepted_latency": {
+        "p50_ms": 13835.73,
+        "p95_ms": 19128.14
+      },
+      "all_latency": {
+        "p50_ms": 11709.99,
+        "p95_ms": 19128.14
+      },
+      "results": [
+        {
+          "file": "IMG_1963_enh.jpg",
+          "sha256": "dbc877464ac8bc7cdb7d243f2e51aa54877d9497de70f37de664e9483a5f5b8e",
+          "status": 503,
+          "seconds": 2.025254
+        },
+        {
+          "file": "IMG_3093_enh.jpg",
+          "sha256": "274958d05c8db49f3d437b08cd0c26d10b3b93eb0d4b8165a2b0a872f722847b",
+          "status": 200,
+          "seconds": 13.835728,
+          "items": 14
+        },
+        {
+          "file": "IMG_0795_enh.jpg",
+          "sha256": "6701e5c2c247a963ac5cca48008d5c4f6ae1748cd9bc44c6493f4152491b1d94",
+          "status": 200,
+          "seconds": 9.584256,
+          "items": 8
+        },
+        {
+          "file": "IMG_2099_enh.jpg",
+          "sha256": "807938c04a9f860be842d3e052300147bf7376e1453cdc9e680d3a4e4faaf70d",
+          "status": 200,
+          "seconds": 15.776243,
+          "items": 4
+        },
+        {
+          "file": "IMG_0999_enh.jpg",
+          "sha256": "0e22fd6a20e06ccbdcb8a9df29b03712ff69755cb3841fe6b062b6cd623809aa",
+          "status": 200,
+          "seconds": 19.128141,
+          "items": 3
+        },
+        {
+          "file": "IMG_1213_enh.jpg",
+          "sha256": "d470e942605a7db1a34ac2b1cb10808cd29890d141d2b211b2d90b827c7d1d6a",
+          "status": 200,
+          "seconds": 6.710259,
+          "items": 8
+        }
+      ],
+      "sessions_revoked": 0,
+      "session_revocation_errors": []
+    }
+  },
+  "new_uploads": {
+    "api": "Fresh Docker ff-split/PostgreSQL/MinIO",
+    "ocr": "Two native processes behind the disposable private gateway",
+    "fresh_accounts_and_events_per_run": true,
+    "concurrency_4": {
+      "mode": "admission",
+      "samples": 24,
+      "concurrency": 4,
+      "payload_bytes": 9938342,
+      "seconds": 0.488,
+      "responses": {
+        "202": 24
+      },
+      "transport_errors": 0,
+      "all_completed": true,
+      "accepted_per_second": 49.155,
+      "accepted_latency": {
+        "p50_ms": 68.89,
+        "p95_ms": 159.94
+      },
+      "all_latency": {
+        "p50_ms": 68.89,
+        "p95_ms": 159.94
+      },
+      "results": [
+        {
+          "file": "IMG_1963_enh.jpg",
+          "sha256": "dbc877464ac8bc7cdb7d243f2e51aa54877d9497de70f37de664e9483a5f5b8e",
+          "status": 202,
+          "seconds": 0.083343
+        },
+        {
+          "file": "IMG_3093_enh.jpg",
+          "sha256": "274958d05c8db49f3d437b08cd0c26d10b3b93eb0d4b8165a2b0a872f722847b",
+          "status": 202,
+          "seconds": 0.082796
+        },
+        {
+          "file": "IMG_0795_enh.jpg",
+          "sha256": "6701e5c2c247a963ac5cca48008d5c4f6ae1748cd9bc44c6493f4152491b1d94",
+          "status": 202,
+          "seconds": 0.080576
+        },
+        {
+          "file": "IMG_2099_enh.jpg",
+          "sha256": "807938c04a9f860be842d3e052300147bf7376e1453cdc9e680d3a4e4faaf70d",
+          "status": 202,
+          "seconds": 0.073116
+        },
+        {
+          "file": "IMG_0999_enh.jpg",
+          "sha256": "0e22fd6a20e06ccbdcb8a9df29b03712ff69755cb3841fe6b062b6cd623809aa",
+          "status": 202,
+          "seconds": 0.064656
+        },
+        {
+          "file": "IMG_1213_enh.jpg",
+          "sha256": "d470e942605a7db1a34ac2b1cb10808cd29890d141d2b211b2d90b827c7d1d6a",
+          "status": 202,
+          "seconds": 0.059673
+        },
+        {
+          "file": "IMG_2041_enh.jpg",
+          "sha256": "1dc70fb49875fbdb6256689e2a977a6573eb965d308e47110560d71d2ac404b3",
+          "status": 202,
+          "seconds": 0.058622
+        },
+        {
+          "file": "IMG_1934_enh.jpg",
+          "sha256": "4843a8ef709cccb1bc3d663eaa8fc3ff8248fc62b643ea8178ba0aaceda406aa",
+          "status": 202,
+          "seconds": 0.059777
+        },
+        {
+          "file": "IMG_0791_enh.jpg",
+          "sha256": "ac8434b366404cc417a8cbfd5f07f6e6f28f157c66fd207c20c901f69b56e52e",
+          "status": 202,
+          "seconds": 0.048484
+        },
+        {
+          "file": "IMG_1945_enh.jpg",
+          "sha256": "102e2a1ad2f5a0e033c5b48b8d3bb112d0168cb46a1b8874ea714c999b1bf83f",
+          "status": 202,
+          "seconds": 0.049728
+        },
+        {
+          "file": "IMG_2036_enh.jpg",
+          "sha256": "eddeb76411ffcfed6a59982d05cc3ad16f2d3514e32860e5790a6696869578ac",
+          "status": 202,
+          "seconds": 0.096929
+        },
+        {
+          "file": "IMG_1094_enh.jpg",
+          "sha256": "d86bd54e54a6c0fde2441ec58ef7f3b3ff5016cf0fd64fe70ceae5a090cb6fe4",
+          "status": 202,
+          "seconds": 0.087285
+        },
+        {
+          "file": "IMG_0882_enh.jpg",
+          "sha256": "a76a560007f246abbddf5b69a5a644482880b55ac447117515d1be057304a428",
+          "status": 202,
+          "seconds": 0.056515
+        },
+        {
+          "file": "IMG_1168_enh.jpg",
+          "sha256": "aeefca0a7ae278f250d1e780863396eeabbea6d2f28e7e0c9bddd61f3ea219e1",
+          "status": 202,
+          "seconds": 0.052024
+        },
+        {
+          "file": "IMG_0977_enh.jpg",
+          "sha256": "19a6c7c6bb85b461a39cc6b0b0b7442098ed54fb2ad6a518a0596b48ab7a1bac",
+          "status": 202,
+          "seconds": 0.056684
+        },
+        {
+          "file": "IMG_1100_enh.jpg",
+          "sha256": "3855028543a09fe6aa14e25633329b639af21a01aa24a85d4cdd38902f6d6c6d",
+          "status": 202,
+          "seconds": 0.055257
+        },
+        {
+          "file": "IMG_1186_enh.jpg",
+          "sha256": "f7206bc44c93fb12414c39f3dcf30d7c8c613c067f46cfc3239a99d263dd991b",
+          "status": 202,
+          "seconds": 0.058411
+        },
+        {
+          "file": "IMG_0778_enh.jpg",
+          "sha256": "a7ec4f51499459c4b885a51eb48e33ed4c9d8546258b6905a98ee08bd32b6f0e",
+          "status": 202,
+          "seconds": 0.073644
+        },
+        {
+          "file": "IMG_1089_enh.jpg",
+          "sha256": "66b3ddbac5ea0e01d82b44c5fe83cdb094a90bb17f6dc0dfb3b4a3829c7f906c",
+          "status": 202,
+          "seconds": 0.09072
+        },
+        {
+          "file": "IMG_1044_enh.jpg",
+          "sha256": "2f161419242b5ae7e194f0870ccea85e59d3d90dbe245bd5261c8628f1d244d4",
+          "status": 202,
+          "seconds": 0.159942
+        },
+        {
+          "file": "IMG_1006_enh.jpg",
+          "sha256": "b28625b3c0ae09eee8d19ff25bdc1ace4265e509bc1fbca25535872dc0a9be33",
+          "status": 202,
+          "seconds": 0.16328
+        },
+        {
+          "file": "IMG_1521_enh 2.jpg",
+          "sha256": "d7926b7521701d7df5d500e3762116054b73d83600d2bcf1923e029be71d3c45",
+          "status": 202,
+          "seconds": 0.148637
+        },
+        {
+          "file": "IMG_0731_enh.jpg",
+          "sha256": "7d81366e39b9a92ba775d6577eb9c9e99ea41ae510089bbbc011efb15c3a42a5",
+          "status": 202,
+          "seconds": 0.087809
+        },
+        {
+          "file": "IMG_1170_enh.jpg",
+          "sha256": "441bfc0d498e4ee24432810be2029c3d85c075d61b3a013f75221249a8764acc",
+          "status": 202,
+          "seconds": 0.033124
+        }
+      ],
+      "new_receipt_ids": 24,
+      "distinct_image_hashes": 24,
+      "terminal": {
+        "ready": 24
+      },
+      "unfinished": 0,
+      "end_to_end_seconds": 122.906,
+      "expenses_created": 0,
+      "sessions_revoked": 8,
+      "session_revocation_errors": []
+    },
+    "concurrency_4_worker_completed_deltas": [
+      12,
+      12
+    ],
+    "concurrency_8": {
+      "mode": "admission",
+      "samples": 24,
+      "concurrency": 8,
+      "payload_bytes": 9938342,
+      "seconds": 0.087,
+      "responses": {
+        "202": 4,
+        "429": 20
+      },
+      "transport_errors": 0,
+      "all_completed": false,
+      "accepted_per_second": 45.767,
+      "accepted_latency": {
+        "p50_ms": 86.04,
+        "p95_ms": 86.74
+      },
+      "all_latency": {
+        "p50_ms": 7.93,
+        "p95_ms": 86.24
+      },
+      "results": [
+        {
+          "file": "IMG_1963_enh.jpg",
+          "sha256": "dbc877464ac8bc7cdb7d243f2e51aa54877d9497de70f37de664e9483a5f5b8e",
+          "status": 202,
+          "seconds": 0.08624
+        },
+        {
+          "file": "IMG_3093_enh.jpg",
+          "sha256": "274958d05c8db49f3d437b08cd0c26d10b3b93eb0d4b8165a2b0a872f722847b",
+          "status": 202,
+          "seconds": 0.086743
+        },
+        {
+          "file": "IMG_0795_enh.jpg",
+          "sha256": "6701e5c2c247a963ac5cca48008d5c4f6ae1748cd9bc44c6493f4152491b1d94",
+          "status": 202,
+          "seconds": 0.085832
+        },
+        {
+          "file": "IMG_2099_enh.jpg",
+          "sha256": "807938c04a9f860be842d3e052300147bf7376e1453cdc9e680d3a4e4faaf70d",
+          "status": 202,
+          "seconds": 0.083784
+        },
+        {
+          "file": "IMG_0999_enh.jpg",
+          "sha256": "0e22fd6a20e06ccbdcb8a9df29b03712ff69755cb3841fe6b062b6cd623809aa",
+          "status": 429,
+          "seconds": 0.013956
+        },
+        {
+          "file": "IMG_1213_enh.jpg",
+          "sha256": "d470e942605a7db1a34ac2b1cb10808cd29890d141d2b211b2d90b827c7d1d6a",
+          "status": 429,
+          "seconds": 0.017252
+        },
+        {
+          "file": "IMG_2041_enh.jpg",
+          "sha256": "1dc70fb49875fbdb6256689e2a977a6573eb965d308e47110560d71d2ac404b3",
+          "status": 429,
+          "seconds": 0.015428
+        },
+        {
+          "file": "IMG_1934_enh.jpg",
+          "sha256": "4843a8ef709cccb1bc3d663eaa8fc3ff8248fc62b643ea8178ba0aaceda406aa",
+          "status": 429,
+          "seconds": 0.022104
+        },
+        {
+          "file": "IMG_0791_enh.jpg",
+          "sha256": "ac8434b366404cc417a8cbfd5f07f6e6f28f157c66fd207c20c901f69b56e52e",
+          "status": 429,
+          "seconds": 0.014356
+        },
+        {
+          "file": "IMG_1945_enh.jpg",
+          "sha256": "102e2a1ad2f5a0e033c5b48b8d3bb112d0168cb46a1b8874ea714c999b1bf83f",
+          "status": 429,
+          "seconds": 0.014555
+        },
+        {
+          "file": "IMG_2036_enh.jpg",
+          "sha256": "eddeb76411ffcfed6a59982d05cc3ad16f2d3514e32860e5790a6696869578ac",
+          "status": 429,
+          "seconds": 0.005067
+        },
+        {
+          "file": "IMG_1094_enh.jpg",
+          "sha256": "d86bd54e54a6c0fde2441ec58ef7f3b3ff5016cf0fd64fe70ceae5a090cb6fe4",
+          "status": 429,
+          "seconds": 0.005641
+        },
+        {
+          "file": "IMG_0882_enh.jpg",
+          "sha256": "a76a560007f246abbddf5b69a5a644482880b55ac447117515d1be057304a428",
+          "status": 429,
+          "seconds": 0.012528
+        },
+        {
+          "file": "IMG_1168_enh.jpg",
+          "sha256": "aeefca0a7ae278f250d1e780863396eeabbea6d2f28e7e0c9bddd61f3ea219e1",
+          "status": 429,
+          "seconds": 0.004976
+        },
+        {
+          "file": "IMG_0977_enh.jpg",
+          "sha256": "19a6c7c6bb85b461a39cc6b0b0b7442098ed54fb2ad6a518a0596b48ab7a1bac",
+          "status": 429,
+          "seconds": 0.004156
+        },
+        {
+          "file": "IMG_1100_enh.jpg",
+          "sha256": "3855028543a09fe6aa14e25633329b639af21a01aa24a85d4cdd38902f6d6c6d",
+          "status": 429,
+          "seconds": 0.005539
+        },
+        {
+          "file": "IMG_1186_enh.jpg",
+          "sha256": "f7206bc44c93fb12414c39f3dcf30d7c8c613c067f46cfc3239a99d263dd991b",
+          "status": 429,
+          "seconds": 0.003695
+        },
+        {
+          "file": "IMG_0778_enh.jpg",
+          "sha256": "a7ec4f51499459c4b885a51eb48e33ed4c9d8546258b6905a98ee08bd32b6f0e",
+          "status": 429,
+          "seconds": 0.008875
+        },
+        {
+          "file": "IMG_1089_enh.jpg",
+          "sha256": "66b3ddbac5ea0e01d82b44c5fe83cdb094a90bb17f6dc0dfb3b4a3829c7f906c",
+          "status": 429,
+          "seconds": 0.004331
+        },
+        {
+          "file": "IMG_1044_enh.jpg",
+          "sha256": "2f161419242b5ae7e194f0870ccea85e59d3d90dbe245bd5261c8628f1d244d4",
+          "status": 429,
+          "seconds": 0.006988
+        },
+        {
+          "file": "IMG_1006_enh.jpg",
+          "sha256": "b28625b3c0ae09eee8d19ff25bdc1ace4265e509bc1fbca25535872dc0a9be33",
+          "status": 429,
+          "seconds": 0.004587
+        },
+        {
+          "file": "IMG_1521_enh 2.jpg",
+          "sha256": "d7926b7521701d7df5d500e3762116054b73d83600d2bcf1923e029be71d3c45",
+          "status": 429,
+          "seconds": 0.003909
+        },
+        {
+          "file": "IMG_0731_enh.jpg",
+          "sha256": "7d81366e39b9a92ba775d6577eb9c9e99ea41ae510089bbbc011efb15c3a42a5",
+          "status": 429,
+          "seconds": 0.0065
+        },
+        {
+          "file": "IMG_1170_enh.jpg",
+          "sha256": "441bfc0d498e4ee24432810be2029c3d85c075d61b3a013f75221249a8764acc",
+          "status": 429,
+          "seconds": 0.005435
+        }
+      ],
+      "new_receipt_ids": 4,
+      "distinct_image_hashes": 4,
+      "terminal": {
+        "ready": 4
+      },
+      "unfinished": 0,
+      "end_to_end_seconds": 32.266,
+      "expenses_created": 0,
+      "sessions_revoked": 8,
+      "session_revocation_errors": []
+    }
+  },
+  "fresh_browser_flow": {
+    "synthetic_account_login": true,
+    "new_empty_event": true,
+    "public_image": "IMG_1104_enh.jpg",
+    "upload_preview": true,
+    "recognized_items": 3,
+    "grand_total_cents": 24900,
+    "saved_name_survived_real_ocr_retry": true,
+    "explicit_confirmation_created_expenses": 3,
+    "expense_total_cents": 24900,
+    "separate_from_benchmark_events": true
+  }
+}

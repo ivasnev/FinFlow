@@ -1,0 +1,522 @@
+{
+  "date": "2026-10-21",
+  "purpose": "development regression corpus, not accuracy or holdout evaluation",
+  "results": [
+    {
+      "file": "IMG_2035_enh.jpg",
+      "source": "https://huggingface.co/datasets/cdek-ocr/receipt-ocr-ru",
+      "license": "MIT (dataset card)",
+      "sha256": "13f347ad9648b3e86f6235c868d429ceccc3621a42d5ed65a47247473618d98a",
+      "elapsed_seconds": 10.712722667027265,
+      "engine": "PaddleOCR 3.3.2 / PP-OCRv5 eslav/mobile + orientation fallback",
+      "items": [],
+      "total_cents": 990,
+      "warnings": [
+        "Не удалось уверенно выделить покупки. Добавьте позиции вручную или загрузите более чёткое фото.",
+        "Сумма позиций не совпадает с итогом чека. Проверьте скидки, весовые товары и пропущенные строки."
+      ],
+      "sum_items_cents": 0
+    },
+    {
+      "file": "IMG_1051_enh.jpg",
+      "source": "https://huggingface.co/datasets/cdek-ocr/receipt-ocr-ru",
+      "license": "MIT (dataset card)",
+      "sha256": "7385b6e8ce5f783eb15d819501c7b7440ad70b4b225c699137d72410faf9882e",
+      "elapsed_seconds": 9.966936791082844,
+      "engine": "PaddleOCR 3.3.2 / PP-OCRv5 eslav/mobile + orientation fallback",
+      "items": [
+        {
+          "name": "1655БОЛ.КРУЖ.Мол.Ул/ПАСТ.2.5% 1980Г ИТого",
+          "amount_cents": 22999,
+          "quantity": "1",
+          "confidence": 0.47543248534202576
+        },
+        {
+          "name": "РОС-Ш.Д.Шок.К.С М.мол.Д.КоФев2г",
+          "amount_cents": 10499,
+          "quantity": "1",
+          "confidence": 0.8
+        }
+      ],
+      "total_cents": 433498,
+      "warnings": [
+        "Строка итога со скидками может относиться к позиции или всему чеку. Проверьте суммы по фото.",
+        "Сумма позиций не совпадает с итогом чека. Проверьте скидки, весовые товары и пропущенные строки.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "sum_items_cents": 33498
+    },
+    {
+      "file": "IMG_1309_enh.jpg",
+      "source": "https://huggingface.co/datasets/cdek-ocr/receipt-ocr-ru",
+      "license": "MIT (dataset card)",
+      "sha256": "4d358bf7d89e600d33b8955b889c2131bc5b9808108ed6d20b2f6853035bf0e2",
+      "elapsed_seconds": 3.908205125015229,
+      "engine": "PaddleOCR 3.3.2 / PP-OCRv5 eslav/mobile + orientation fallback",
+      "items": [
+        {
+          "name": "Бори УкРаИнский ПостНый",
+          "amount_cents": 9900,
+          "quantity": null,
+          "confidence": 0.498668909072876
+        },
+        {
+          "name": "Свекла с сыром 79.001",
+          "amount_cents": 7900,
+          "quantity": null,
+          "confidence": 0.883047878742218
+        }
+      ],
+      "total_cents": 18300,
+      "warnings": [
+        "Сумма позиций не совпадает с итогом чека. Проверьте скидки, весовые товары и пропущенные строки.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "sum_items_cents": 17800
+    },
+    {
+      "file": "IMG_0767_enh.jpg",
+      "source": "https://huggingface.co/datasets/cdek-ocr/receipt-ocr-ru",
+      "license": "MIT (dataset card)",
+      "sha256": "d300a85866c5e24dc3ba29ccc0f3da3dd734f77681c0bdd08f676f13333128b0",
+      "elapsed_seconds": 8.189046166138723,
+      "engine": "PaddleOCR 3.3.2 / PP-OCRv5 eslav/mobile + orientation fallback",
+      "items": [
+        {
+          "name": "Сушки ОГО! Кроха класс",
+          "amount_cents": 4999,
+          "quantity": "1",
+          "confidence": 0.9081735610961914
+        },
+        {
+          "name": "Сухари ЛЕНТА Изюмные30",
+          "amount_cents": 5999,
+          "quantity": "1",
+          "confidence": 0.8543151617050171
+        }
+      ],
+      "total_cents": 10998,
+      "warnings": [],
+      "sum_items_cents": 10998
+    },
+    {
+      "file": "IMG_0773_enh.jpg",
+      "source": "https://huggingface.co/datasets/cdek-ocr/receipt-ocr-ru",
+      "license": "MIT (dataset card)",
+      "sha256": "68aeb447042eaff6d497d21721a8fd74d6275146f7198f21053c738ebf71fe44",
+      "elapsed_seconds": 8.364265499869362,
+      "engine": "PaddleOCR 3.3.2 / PP-OCRv5 eslav/mobile + orientation fallback",
+      "items": [
+        {
+          "name": "р-Bо д/пос FAIRY Heж",
+          "amount_cents": 9999,
+          "quantity": "1",
+          "confidence": 0.6659475564956665
+        },
+        {
+          "name": "Порошок ЧИСт. ПЕМОЛЮКС",
+          "amount_cents": 6999,
+          "quantity": "1",
+          "confidence": 0.8
+        },
+        {
+          "name": "Губки д/посуды ЛЕНТА п",
+          "amount_cents": 5999,
+          "quantity": "1",
+          "confidence": 0.8
+        },
+        {
+          "name": "Хлеб ХЛЕБНЫй ДОМ Герку",
+          "amount_cents": 38997,
+          "quantity": "3",
+          "confidence": 0.7744527459144592
+        },
+        {
+          "name": "Лимоны вес 1кг",
+          "amount_cents": 15911,
+          "quantity": "0.936",
+          "confidence": 0.7329086661338806
+        }
+      ],
+      "total_cents": 77905,
+      "warnings": [
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "sum_items_cents": 77905
+    },
+    {
+      "file": "IMG_0794_enh.jpg",
+      "source": "https://huggingface.co/datasets/cdek-ocr/receipt-ocr-ru",
+      "license": "MIT (dataset card)",
+      "sha256": "0ffda16ba05b8beef254423b3c4e57cb01b388489692209478308d6f4b2438fb",
+      "elapsed_seconds": 12.377321416977793,
+      "engine": "PaddleOCR 3.3.2 / PP-OCRv5 eslav/mobile + orientation fallback",
+      "items": [
+        {
+          "name": "Заменитель сахара ЛЕНТ",
+          "amount_cents": 10999,
+          "quantity": "1",
+          "confidence": 0.9456239342689514
+        },
+        {
+          "name": "Сыр PRESIDENT творожн",
+          "amount_cents": 11999,
+          "quantity": null,
+          "confidence": 0.8429958820343018
+        },
+        {
+          "name": "Сыр PRESIDENT творОЖНы",
+          "amount_cents": 11999,
+          "quantity": "1",
+          "confidence": 0.7289775013923645
+        },
+        {
+          "name": "Сыр твор САВУШКИН с зе",
+          "amount_cents": 10999,
+          "quantity": "1",
+          "confidence": 0.0
+        },
+        {
+          "name": "Хлеб ХЛЕБНЫй ДОМ Герку",
+          "amount_cents": 12999,
+          "quantity": "1",
+          "confidence": 0.7802280187606812
+        },
+        {
+          "name": "Хлеб КАРАВАЙ АнГлий ди",
+          "amount_cents": 19497,
+          "quantity": "3",
+          "confidence": 0.7968583106994629
+        },
+        {
+          "name": "Хлеб ХЛЕБ ДОМ зернов п",
+          "amount_cents": 7499,
+          "quantity": "1",
+          "confidence": 0.8389622569084167
+        },
+        {
+          "name": "Хлеб ТЕПЛЫй ДАР ТосТОВ",
+          "amount_cents": 8999,
+          "quantity": "1",
+          "confidence": 0.8733645081520081
+        }
+      ],
+      "total_cents": 129259,
+      "warnings": [
+        "Сумма позиций не совпадает с итогом чека. Проверьте скидки, весовые товары и пропущенные строки.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "sum_items_cents": 94990
+    },
+    {
+      "file": "IMG_0763_enh.jpg",
+      "source": "https://huggingface.co/datasets/cdek-ocr/receipt-ocr-ru",
+      "license": "MIT (dataset card)",
+      "sha256": "a1dcb179ec8dd576a5d2289f3b0df670f7d54aa9b6317db3e0e7729c9c755000",
+      "elapsed_seconds": 8.91524525010027,
+      "engine": "PaddleOCR 3.3.2 / PP-OCRv5 eslav/mobile + orientation fallback",
+      "items": [
+        {
+          "name": "Лимоны  Bec  1kΓ",
+          "amount_cents": 11071,
+          "quantity": "0.692",
+          "confidence": 0.0
+        },
+        {
+          "name": "Хлеб ХЛЕБ ДОМ зернов п",
+          "amount_cents": 12998,
+          "quantity": "2",
+          "confidence": 0.8877267837524414
+        },
+        {
+          "name": "Хлеб ТЕПЛЫЙ ДАР ТоСТОВ",
+          "amount_cents": 7499,
+          "quantity": "1",
+          "confidence": 0.448103666305542
+        },
+        {
+          "name": "Сыр NАТУРА МЯГКИЙ СЛИВ",
+          "amount_cents": 11499,
+          "quantity": null,
+          "confidence": 0.331358402967453
+        },
+        {
+          "name": "Сbp NАTURА МяГКиЙ СлиВ",
+          "amount_cents": 11499,
+          "quantity": "1",
+          "confidence": 0.0
+        },
+        {
+          "name": "Сыр NATURA мягкий с зе",
+          "amount_cents": 11499,
+          "quantity": "1",
+          "confidence": 0.4058992862701416
+        },
+        {
+          "name": "Сыр NATURA мягкиЙ с зе",
+          "amount_cents": 11499,
+          "quantity": "1",
+          "confidence": 0.6280397772789001
+        }
+      ],
+      "total_cents": 77664,
+      "warnings": [
+        "Сумма позиций не совпадает с итогом чека. Проверьте скидки, весовые товары и пропущенные строки.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "sum_items_cents": 77564
+    },
+    {
+      "file": "IMG_1104_enh.jpg",
+      "source": "https://huggingface.co/datasets/cdek-ocr/receipt-ocr-ru",
+      "license": "MIT (dataset card)",
+      "sha256": "37f7b955f81667dd5e53f9ee0c2b00b5aec0d27c847704123be00beb2e67ffd3",
+      "elapsed_seconds": 4.167022125096992,
+      "engine": "PaddleOCR 3.3.2 / PP-OCRv5 eslav/mobile + orientation fallback",
+      "items": [
+        {
+          "name": "Блинчик с творожной массой",
+          "amount_cents": 8900,
+          "quantity": "1",
+          "confidence": 0.7552863955497742
+        },
+        {
+          "name": "Молоко сгущеное 50 г",
+          "amount_cents": 2500,
+          "quantity": "1",
+          "confidence": 0.7836130261421204
+        },
+        {
+          "name": "ОМЛЕТ С БРОККОЛИ ИЗ 3 ЯИЦ",
+          "amount_cents": 13500,
+          "quantity": "1",
+          "confidence": 0.7892217040061951
+        }
+      ],
+      "total_cents": 24900,
+      "warnings": [
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "sum_items_cents": 24900
+    },
+    {
+      "file": "IMG_0812_enh.jpg",
+      "source": "https://huggingface.co/datasets/cdek-ocr/receipt-ocr-ru",
+      "license": "MIT (dataset card)",
+      "sha256": "268c7a63b64d0c3936e73f5c186d5e4442925abe2436a31166c94b2434de3c8c",
+      "elapsed_seconds": 7.8642258329782635,
+      "engine": "PaddleOCR 3.3.2 / PP-OCRv5 eslav/mobile + orientation fallback",
+      "items": [
+        {
+          "name": "Хлеб КАРАВАЙ АНГЛИЙСКИ",
+          "amount_cents": 22998,
+          "quantity": null,
+          "confidence": 0.7721933722496033
+        },
+        {
+          "name": "Хлеб ХЛЕБНЫй ДОм Тосто",
+          "amount_cents": 26904,
+          "quantity": null,
+          "confidence": 0.41882598400115967
+        },
+        {
+          "name": "Сыр CREMEITALI KpeM CЫ",
+          "amount_cents": 10999,
+          "quantity": "1",
+          "confidence": 0.7613284587860107
+        },
+        {
+          "name": "Сыр ТВОР КАРАТ Виолетт",
+          "amount_cents": 11499,
+          "quantity": "1",
+          "confidence": 0.6145702600479126
+        }
+      ],
+      "total_cents": 72400,
+      "warnings": [
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "sum_items_cents": 72400
+    },
+    {
+      "file": "IMG_2108_enh.jpg",
+      "source": "https://huggingface.co/datasets/cdek-ocr/receipt-ocr-ru",
+      "license": "MIT (dataset card)",
+      "sha256": "ae0be539cf1c28190a42ff009159da96d9a5484a3ea576de20db5a892acb18f6",
+      "elapsed_seconds": 7.5085949171334505,
+      "engine": "PaddleOCR 3.3.2 / PP-OCRv5 eslav/mobile + orientation fallback",
+      "items": [
+        {
+          "name": "1:3655717 Вода TASSAY 0.5n",
+          "amount_cents": 3790,
+          "quantity": "1.000",
+          "confidence": 0.8296624422073364
+        },
+        {
+          "name": "2:3757 Бананы 1кг",
+          "amount_cents": 1378,
+          "quantity": "0.200",
+          "confidence": 0.903005063533783
+        }
+      ],
+      "total_cents": 5100,
+      "warnings": [
+        "Сумма позиций не совпадает с итогом чека. Проверьте скидки, весовые товары и пропущенные строки.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "sum_items_cents": 5168
+    },
+    {
+      "file": "IMG_0757_enh.jpg",
+      "source": "https://huggingface.co/datasets/cdek-ocr/receipt-ocr-ru",
+      "license": "MIT (dataset card)",
+      "sha256": "b8688abf41ff52938953145f8f30e2a8ef71de99a108d6e57becbefb255c3357",
+      "elapsed_seconds": 8.6863480838947,
+      "engine": "PaddleOCR 3.3.2 / PP-OCRv5 eslav/mobile + orientation fallback",
+      "items": [
+        {
+          "name": "Лимоны вес 1KΓ",
+          "amount_cents": 16999,
+          "quantity": null,
+          "confidence": 0.4326903820037842
+        },
+        {
+          "name": "Сыр PRESIDENT TBOрOЖHы",
+          "amount_cents": 8499,
+          "quantity": null,
+          "confidence": 0.7282957434654236
+        }
+      ],
+      "total_cents": 115500,
+      "warnings": [
+        "Сумма позиций не совпадает с итогом чека. Проверьте скидки, весовые товары и пропущенные строки.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "sum_items_cents": 25498
+    },
+    {
+      "file": "IMG_1947_enh.jpg",
+      "source": "https://huggingface.co/datasets/cdek-ocr/receipt-ocr-ru",
+      "license": "MIT (dataset card)",
+      "sha256": "cd66f8ef8eee614a424a274aa0321d3dbbbc0858e633667e2d3fbff9169da443",
+      "elapsed_seconds": 10.477602707920596,
+      "engine": "PaddleOCR 3.3.2 / PP-OCRv5 eslav/mobile + orientation fallback",
+      "items": [
+        {
+          "name": "РОС-Ш.Д. ШокОлад молочный 75г",
+          "amount_cents": 9999,
+          "quantity": null,
+          "confidence": 0.7452442646026611
+        }
+      ],
+      "total_cents": 9999,
+      "warnings": [
+        "Строка итога со скидками может относиться к позиции или всему чеку. Проверьте суммы по фото.",
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото."
+      ],
+      "sum_items_cents": 9999
+    },
+    {
+      "file": "IMG_1104_rotate_90.png",
+      "source": "https://huggingface.co/datasets/cdek-ocr/receipt-ocr-ru",
+      "license": "MIT (dataset card); rotation derived for local QA",
+      "sha256": "418c9e506cca5c41b926c2da5cf6174798ea14f7130fddc47c0bac4fde04fc75",
+      "elapsed_seconds": 8.875935583142564,
+      "engine": "PaddleOCR 3.3.2 / PP-OCRv5 eslav/mobile + orientation fallback",
+      "items": [
+        {
+          "name": "Блинчик с творожной массой",
+          "amount_cents": 8900,
+          "quantity": "1",
+          "confidence": 0.7327160239219666
+        },
+        {
+          "name": "Молоко сгущеное 50 г",
+          "amount_cents": 2500,
+          "quantity": "1",
+          "confidence": 0.7967929840087891
+        },
+        {
+          "name": "ОМЛЕТ С БРОККОЛИ ИЗ 3 ЯИЦ",
+          "amount_cents": 13500,
+          "quantity": "1",
+          "confidence": 0.7894876003265381
+        }
+      ],
+      "total_cents": 24900,
+      "warnings": [
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото.",
+        "Для распознавания применён автоматический поворот. Сверьте позиции с фотографией."
+      ],
+      "sum_items_cents": 24900
+    },
+    {
+      "file": "IMG_1104_rotate_180.png",
+      "source": "https://huggingface.co/datasets/cdek-ocr/receipt-ocr-ru",
+      "license": "MIT (dataset card); rotation derived for local QA",
+      "sha256": "a9c6483157aaae909fb17618453a3cad2bf8eca386fbb1247b57c8276d3618df",
+      "elapsed_seconds": 8.588821958983317,
+      "engine": "PaddleOCR 3.3.2 / PP-OCRv5 eslav/mobile + orientation fallback",
+      "items": [
+        {
+          "name": "Блинчик с творожной массой",
+          "amount_cents": 8900,
+          "quantity": "1",
+          "confidence": 0.7781558632850647
+        },
+        {
+          "name": "Молоко сгущеное 50 г",
+          "amount_cents": 2500,
+          "quantity": "1",
+          "confidence": 0.803342342376709
+        },
+        {
+          "name": "ОМЛЕТ С БРОККОЛИ ИЗ 3 ЯИЦ",
+          "amount_cents": 13500,
+          "quantity": "1",
+          "confidence": 0.7894876003265381
+        }
+      ],
+      "total_cents": 24900,
+      "warnings": [
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото.",
+        "Для распознавания применён автоматический поворот. Сверьте позиции с фотографией."
+      ],
+      "sum_items_cents": 24900
+    },
+    {
+      "file": "IMG_1104_rotate_270.png",
+      "source": "https://huggingface.co/datasets/cdek-ocr/receipt-ocr-ru",
+      "license": "MIT (dataset card); rotation derived for local QA",
+      "sha256": "eaba4925f5a0e5ec644128af2c5ff1ed4f4ce7f78e12b1c4cf5966049f413c6b",
+      "elapsed_seconds": 8.05848345789127,
+      "engine": "PaddleOCR 3.3.2 / PP-OCRv5 eslav/mobile + orientation fallback",
+      "items": [
+        {
+          "name": "Блинчик с творожной массой",
+          "amount_cents": 8900,
+          "quantity": "1",
+          "confidence": 0.764849841594696
+        },
+        {
+          "name": "Молоко сгущеное 50 г",
+          "amount_cents": 2500,
+          "quantity": "1",
+          "confidence": 0.8380993604660034
+        },
+        {
+          "name": "ОМЛЕТ С БРОККОЛИ ИЗ 3 ЯИЦ",
+          "amount_cents": 13500,
+          "quantity": "1",
+          "confidence": 0.7894876003265381
+        }
+      ],
+      "total_cents": 24900,
+      "warnings": [
+        "Есть строки с низкой уверенностью распознавания или расчётом по цене и количеству. Сверьте их с фото.",
+        "Для распознавания применён автоматический поворот. Сверьте позиции с фотографией."
+      ],
+      "sum_items_cents": 24900
+    }
+  ]
+}

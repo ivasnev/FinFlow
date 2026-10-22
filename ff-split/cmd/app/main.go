@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -26,6 +27,11 @@ func main() {
 
 	// Регистрация маршрутов
 	c.RegisterRoutes()
+	stopReceipts, err := c.StartReceipts(context.Background())
+	if err != nil {
+		log.Fatalf("Failed to initialize receipts: %v", err)
+	}
+	defer stopReceipts()
 
 	// Создание и запуск приложения
 	application := app.New(router, cfg)

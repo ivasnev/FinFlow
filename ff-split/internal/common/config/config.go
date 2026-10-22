@@ -21,6 +21,16 @@ const (
 )
 
 type Config struct {
+	Receipt struct {
+		OCRURL    string
+		Token     string
+		Workers   int
+		Endpoint  string
+		AccessKey string
+		SecretKey string
+		Bucket    string
+		Secure    bool
+	}
 	Server struct {
 		Port int `yaml:"port" env:"SERVER_PORT" env-default:"8085"`
 	} `yaml:"server"`
@@ -104,6 +114,14 @@ func loadFromYAML(cfg *Config) error {
 }
 
 func loadFromEnv(cfg *Config) {
+	cfg.Receipt.OCRURL = getEnv("OCR_BASE_URL", "")
+	cfg.Receipt.Token = getEnv("OCR_TOKEN", "")
+	cfg.Receipt.Workers = getEnvAsInt("OCR_WORKERS", 1)
+	cfg.Receipt.Endpoint = getEnv("RECEIPTS_S3_ENDPOINT", "")
+	cfg.Receipt.AccessKey = getEnv("RECEIPTS_S3_ACCESS_KEY", "")
+	cfg.Receipt.SecretKey = getEnv("RECEIPTS_S3_SECRET_KEY", "")
+	cfg.Receipt.Bucket = getEnv("RECEIPTS_S3_BUCKET", "finflow-receipts")
+	cfg.Receipt.Secure = getEnvAsBool("RECEIPTS_S3_TLS", false)
 	cfg.Server.Port = getEnvAsInt("SERVER_PORT", cfg.Server.Port)
 
 	cfg.Postgres.Host = getEnv("POSTGRES_HOST", cfg.Postgres.Host)
