@@ -11,7 +11,7 @@ require (
 	github.com/ivasnev/FinFlow/ff-id v0.0.0-20251017195907-10b567d553d4
 	github.com/ivasnev/FinFlow/ff-tvm v0.0.0-20251017195907-10b567d553d4
 	github.com/lib/pq v1.10.9
-	github.com/oapi-codegen/runtime v1.1.2
+	github.com/oapi-codegen/runtime v1.7.0
 	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go v0.44.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.44.0
