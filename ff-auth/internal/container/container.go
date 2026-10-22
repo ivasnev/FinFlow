@@ -1,8 +1,13 @@
 package container
 
 import (
+	"context"
 	"fmt"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/account"
+	"gorm.io/gorm/logger"
+	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -34,9 +39,10 @@ import (
 
 // Container - контейнер зависимостей для приложения
 type Container struct {
-	Config *config.Config
-	Router *gin.Engine
-	DB     *gorm.DB
+	Account *account.Manager
+	Config  *config.Config
+	Router  *gin.Engine
+	DB      *gorm.DB
 
 	// Репозитории
 	UserRepository         repository.User
@@ -101,8 +107,17 @@ func NewContainer(cfg *config.Config, router *gin.Engine) (*Container, error) {
 	// Инициализируем сервисы
 	container.initServices()
 
+	// The public lifecycle is mandatory in a real container; legacy unit fixtures build their services explicitly.
+	container.Account, err = account.New(container.DB, account.ConfigFromEnv(cfg.Auth.PasswordMinLength, cfg.Auth.PasswordHashCost, cfg.Auth.AccessTokenDuration, cfg.Auth.RefreshTokenDuration), container.TokenManager, container.IDClient)
+	if err != nil {
+		return nil, fmt.Errorf("account security configuration: %w", err)
+	}
+	if err = router.SetTrustedProxies(nil); err != nil {
+		return nil, err
+	}
 	// Инициализируем обработчики
 	container.initHandlers()
+	container.ServerHandler.Account = container.Account
 
 	return container, nil
 }
@@ -120,7 +135,7 @@ func (c *Container) initDB() error {
 	)
 
 	// Подключаемся к базе данных
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: logger.New(log.New(os.Stdout, "", log.LstdFlags), logger.Config{LogLevel: logger.Warn, ParameterizedQueries: true})})
 	if err != nil {
 		return err
 	}
@@ -175,9 +190,12 @@ func (c *Container) RegisterRoutes() {
 
 	// API версии v1
 	v1 := c.Router.Group("/api/v1")
+	if c.Account != nil {
+		v1.Use(c.Account.Middleware)
+	}
 
 	// Создаем адаптер для TokenManager
-	tokenAdapter := &TokenManagerAdapter{tokenManager: c.TokenManager}
+	tokenAdapter := &TokenManagerAdapter{tokenManager: c.TokenManager, account: c.Account}
 
 	// Middleware для авторизации
 	authMiddleware := auth.AuthMiddleware(tokenAdapter)
@@ -187,7 +205,7 @@ func (c *Container) RegisterRoutes() {
 		Middlewares: []api.MiddlewareFunc{
 			func(c *gin.Context) {
 				// Применяем middleware в зависимости от типа запроса
-				if scopes, ok := c.Get(api.BearerAuthScopes); ok && scopes != nil {
+				if scopes, ok := c.Get(string(api.BearerAuthScopes)); ok && scopes != nil {
 					authMiddleware(c)
 				}
 			},
@@ -198,11 +216,24 @@ func (c *Container) RegisterRoutes() {
 // TokenManagerAdapter адаптирует service.TokenManager к auth.ValidateClient
 type TokenManagerAdapter struct {
 	tokenManager service.TokenManager
+	account      *account.Manager
 }
 
 // ValidateToken реализует auth.ValidateClient
 func (a *TokenManagerAdapter) ValidateToken(tokenStr string) (*auth.TokenPayload, error) {
-	payload, err := a.tokenManager.ValidateToken(tokenStr)
+	return a.ValidateTokenContext(context.Background(), tokenStr)
+}
+func (a *TokenManagerAdapter) ValidateTokenContext(ctx context.Context, tokenStr string) (*auth.TokenPayload, error) {
+	var payload *service.TokenPayload
+	var err error
+	if a.account != nil {
+		payload, err = a.account.ValidateAccess(ctx, tokenStr)
+		if err != nil && !account.IsUnauthorized(err) {
+			return nil, fmt.Errorf("%w", auth.ErrUnavailable)
+		}
+	} else {
+		payload, err = a.tokenManager.ValidateToken(tokenStr)
+	}
 	if err != nil {
 		return nil, err
 	}

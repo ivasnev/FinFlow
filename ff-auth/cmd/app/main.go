@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -25,6 +26,9 @@ func main() {
 		log.Fatalf("Failed to initialize container: %v", err)
 	}
 
+	workerCtx, cancelWorkers := context.WithCancel(context.Background())
+	defer cancelWorkers()
+	go c.Account.Run(workerCtx)
 	// Регистрация маршрутов
 	c.RegisterRoutes()
 

@@ -22,6 +22,10 @@ func TestTokenPurpose(t *testing.T) {
 	}
 	manager := &ED25519TokenManager{publicKey: pub, privateKey: priv}
 	keys := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/auth/introspect" {
+			_ = json.NewEncoder(w).Encode(map[string]any{"active": true, "user_id": int64(1)})
+			return
+		}
 		_, _ = w.Write([]byte(base64.StdEncoding.EncodeToString(pub)))
 	}))
 	t.Cleanup(keys.Close)

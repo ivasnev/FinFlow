@@ -153,6 +153,7 @@ func (c *Container) initServices() {
 // initHandlers инициализирует обработчики
 func (c *Container) initHandlers() {
 	c.ServerHandler = handler.NewServerHandler(c.FriendService, c.UserService)
+	c.ServerHandler.AuthServiceID = c.Config.TVM.AuthServiceID
 }
 
 // RegisterRoutes - регистрирует все маршруты API
@@ -173,9 +174,9 @@ func (c *Container) RegisterRoutes() {
 		Middlewares: []api.MiddlewareFunc{
 			func(c *gin.Context) {
 				// Применяем middleware в зависимости от типа запроса
-				if scopes, ok := c.Get(api.BearerAuthScopes); ok && scopes != nil {
+				if scopes, ok := c.Get(string(api.BearerAuthScopes)); ok && scopes != nil {
 					authMiddleware(c)
-				} else if scopes, ok := c.Get(api.TVMAuthScopes); ok && scopes != nil {
+				} else if scopes, ok := c.Get(string(api.TVMAuthScopes)); ok && scopes != nil {
 					tvmMiddleware.ValidateTicket()(c)
 				}
 			},

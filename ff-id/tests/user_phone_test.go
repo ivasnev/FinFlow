@@ -66,8 +66,13 @@ func (s *UserSuite) TestPhone_OptionalAndConflict() {
 	s.Equal("Updated", *user.Name)
 	for _, body := range []map[string]any{{"email": "one@example.com"}, {"nickname": "one"}} {
 		response = s.profileWrite(2, http.MethodPatch, "/users/me", body)
-		s.Equal(http.StatusConflict, response.Code, response.Body.String())
-		s.Contains(response.Body.String(), service.ErrIdentityConflict.Error())
+		if _, emailChange := body["email"]; emailChange {
+			s.Equal(http.StatusBadRequest, response.Code, response.Body.String())
+			s.Contains(response.Body.String(), "подтверждение")
+		} else {
+			s.Equal(http.StatusConflict, response.Code, response.Body.String())
+			s.Contains(response.Body.String(), service.ErrIdentityConflict.Error())
+		}
 	}
 	response = s.profileWrite(1, http.MethodPatch, "/users/me", map[string]any{"phone": ""})
 	s.Require().Equal(http.StatusOK, response.Code, response.Body.String())

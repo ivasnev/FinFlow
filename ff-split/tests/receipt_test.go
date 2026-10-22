@@ -23,6 +23,11 @@ import (
 // receiptMigration проверяет откат и повторное применение миграции чеков.
 func receiptMigration(t *testing.T, database *TestDBContainer) {
 	t.Helper()
+	if database.DB.Migrator().HasTable("receipt_image_reads") {
+		if e := database.DB.Exec("DROP TABLE receipt_image_reads").Error; e != nil {
+			t.Fatal(e)
+		}
+	}
 	if database.DB.Migrator().HasTable("receipts") {
 		if database.DB.Migrator().HasTable("receipt_admissions") {
 			down8, e := os.ReadFile("../internal/repository/migrations/000008_receipt_actions.down.sql")
@@ -53,6 +58,13 @@ func receiptMigration(t *testing.T, database *TestDBContainer) {
 		t.Fatal(e)
 	}
 	if e = database.DB.Exec(string(raw8)).Error; e != nil {
+		t.Fatal(e)
+	}
+	raw9, e := os.ReadFile("../internal/repository/migrations/000009_receipt_read_budget.up.sql")
+	if e != nil {
+		t.Fatal(e)
+	}
+	if e = database.DB.Exec(string(raw9)).Error; e != nil {
 		t.Fatal(e)
 	}
 }

@@ -2,6 +2,7 @@ package receipt
 
 import (
 	"context"
+	"github.com/ivasnev/FinFlow/ff-split/internal/common/actor"
 	"time"
 
 	commonerrors "github.com/ivasnev/FinFlow/ff-split/internal/common/errors"
@@ -29,6 +30,10 @@ func (s *Service) Retry(ctx context.Context, eventID int64, id string, revision 
 			return nil, commonerrors.NewValidationError("receipt", "загрузка занята; повторите позже")
 		}
 		defer release()
+		actorID, _ := actor.ID(ctx)
+		if err := s.repo.AdmitImageRead(ctx, actorID); err != nil {
+			return nil, err
+		}
 		read, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 		image, err := s.store.Read(read, before.ImageKey)

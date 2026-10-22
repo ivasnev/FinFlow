@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/ivasnev/FinFlow/ff-id/pkg/api"
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -52,11 +53,11 @@ func (a *Adapter) lookupIdentity(ctx context.Context, params api.LookupIdentityP
 	if params.Login != nil {
 		switch {
 		case params.Kind != nil && string(*params.Kind) == LookupEmail:
-			mismatch = string(resp.JSON200.Email) != *params.Login
+			mismatch = !strings.EqualFold(string(resp.JSON200.Email), *params.Login)
 		case params.Kind != nil && string(*params.Kind) == LookupNickname:
 			mismatch = resp.JSON200.Nickname != *params.Login
 		default:
-			mismatch = string(resp.JSON200.Email) != *params.Login && resp.JSON200.Nickname != *params.Login
+			mismatch = !strings.EqualFold(string(resp.JSON200.Email), *params.Login) && resp.JSON200.Nickname != *params.Login
 		}
 	}
 	if mismatch {

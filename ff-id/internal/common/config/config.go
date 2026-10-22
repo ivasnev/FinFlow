@@ -51,6 +51,7 @@ type Config struct {
 	} `yaml:"file_service"`
 
 	TVM struct {
+		AuthServiceID int    `yaml:"auth_service_id" env:"AUTH_SERVICE_ID"`
 		BaseURL       string `yaml:"base_url" env:"TVM_BASE_URL" env-default:"http://localhost:8081"`
 		ServiceID     int    `yaml:"service_id" env:"TVM_SERVICE_ID" env-default:"2"`
 		ServiceSecret string `yaml:"service_secret" env:"TVM_SERVICE_SECRET" env-default:"secret"`
@@ -118,6 +119,7 @@ func loadFromEnv(cfg *Config) {
 	cfg.FileService.BaseURL = getEnv("FILE_SERVICE_BASE_URL", cfg.FileService.BaseURL)
 	cfg.FileService.ServiceID = getEnvAsInt("FILE_SERVICE_ID", cfg.FileService.ServiceID)
 
+	cfg.TVM.AuthServiceID = getEnvAsInt("AUTH_SERVICE_ID", cfg.TVM.AuthServiceID)
 	cfg.TVM.BaseURL = getEnv("TVM_BASE_URL", cfg.TVM.BaseURL)
 	cfg.TVM.ServiceID = getEnvAsInt("TVM_SERVICE_ID", cfg.TVM.ServiceID)
 	cfg.TVM.ServiceSecret = getEnv("TVM_SERVICE_SECRET", cfg.TVM.ServiceSecret)

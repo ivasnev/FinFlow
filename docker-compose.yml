@@ -1,5 +1,12 @@
 x-application: &application
   restart: unless-stopped
+  mem_limit: 256m
+  cpus: 1
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
   entrypoint: ["/bin/sh", "/stack/service-entrypoint.sh"]
   command: []
   environment: &application-env
@@ -15,6 +22,24 @@ x-application: &application
       condition: service_completed_successfully
 
 services:
+  mailpit:
+    image: axllent/mailpit:v1.31.6
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.25
+    ports:
+      - "127.0.0.1:${MAILPIT_PORT:-8025}:8025"
+    environment:
+      MP_MAX_MESSAGES: "200"
+      MP_MAX_AGE: "24h"
+      MP_DATABASE: /data/mailpit.db
+    volumes:
+      - mailpit_data:/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
   ff-ocr:
     profiles: [receipts]
     build:
@@ -188,6 +213,17 @@ services:
       SERVER_PORT: "8084"
       POSTGRES_DB: ff_auth
       ID_BASE_URL: http://ff-id:8083
+      ACCOUNT_LOCAL_MODE: ${ACCOUNT_LOCAL_MODE:-true}
+      ACCOUNT_APP_URL: ${ACCOUNT_APP_URL:-http://127.0.0.1:3000}
+      ACCOUNT_SMTP_ADDR: ${ACCOUNT_SMTP_ADDR:-mailpit:1025}
+      ACCOUNT_MAIL_FROM: ${ACCOUNT_MAIL_FROM:-FinFlow <noreply@finflow.test>}
+      ACCOUNT_SMTP_USER: ${ACCOUNT_SMTP_USER:-}
+      ACCOUNT_SMTP_PASSWORD: ${ACCOUNT_SMTP_PASSWORD:-}
+      ACCOUNT_CAPTCHA_PROVIDER: ${ACCOUNT_CAPTCHA_PROVIDER:-image}
+      SMARTCAPTCHA_SITE_KEY: ${SMARTCAPTCHA_SITE_KEY:-}
+      SMARTCAPTCHA_SECRET_KEY: ${SMARTCAPTCHA_SECRET_KEY:-}
+      ACCOUNT_MAIL_DAILY_LIMIT: ${ACCOUNT_MAIL_DAILY_LIMIT:-100}
+      ACCOUNT_MAIL_MONTHLY_LIMIT: ${ACCOUNT_MAIL_MONTHLY_LIMIT:-2000}
     ports:
       - "127.0.0.1:${AUTH_PORT:-8084}:8084"
     volumes:
@@ -219,6 +255,7 @@ services:
       - split_credentials:/run/tvm:ro
 
 volumes:
+  mailpit_data:
   ocr_models:
   postgres_data:
   minio_data:

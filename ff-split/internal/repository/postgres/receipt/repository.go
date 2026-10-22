@@ -38,6 +38,7 @@ type row struct {
 	Attempts       int
 	ImageAvailable bool
 	RetryRevision  int
+	QueuedBy       int64
 	QueuedAt       time.Time
 	Result         string
 	Draft          string
@@ -49,7 +50,7 @@ type row struct {
 
 // decode проверяет снимки до публикации пользователю.
 func decode(r row) (*models.Receipt, error) {
-	v := &models.Receipt{ID: r.ID, EventID: r.EventID, CreatedBy: r.CreatedBy, Sequence: r.Sequence, Status: r.Status, Revision: r.Revision, ImageKey: r.ImageKey, ImageSHA256: r.ImageSha256, ContentType: r.ContentType, Attempts: r.Attempts, ImageAvailable: r.ImageAvailable, RetryRevision: r.RetryRevision, QueuedAt: r.QueuedAt, Error: r.Error, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt}
+	v := &models.Receipt{ID: r.ID, EventID: r.EventID, CreatedBy: r.CreatedBy, Sequence: r.Sequence, Status: r.Status, Revision: r.Revision, ImageKey: r.ImageKey, ImageSHA256: r.ImageSha256, ContentType: r.ContentType, Attempts: r.Attempts, ImageAvailable: r.ImageAvailable, RetryRevision: r.RetryRevision, QueuedAt: r.QueuedAt, QueuedBy: r.QueuedBy, Error: r.Error, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt}
 	if r.LeaseToken != nil {
 		v.LeaseToken = *r.LeaseToken
 	}
@@ -230,6 +231,10 @@ func (r *Repository) Complete(ctx context.Context, v *models.Receipt, result *mo
 			fields["status"] = "failed"
 		}
 		fields["error"] = "Не удалось распознать чек. Проверьте фотографию; позиции можно добавить вручную."
+		if errors.Is(processingErr, commonerrors.ErrReceiptReadBudget) {
+			fields["status"] = "failed"
+			fields["error"] = "Лимит обработки фотографий исчерпан. Повторите позже или добавьте позиции вручную."
+		}
 		if errors.Is(processingErr, commonerrors.ErrOCRUnavailable) && time.Since(v.QueuedAt) < 15*time.Minute {
 			fields["status"] = "queued"
 			fields["error"] = ""
@@ -268,6 +273,9 @@ func (r *Repository) Garbage(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 	if err := r.db.WithContext(ctx).Exec("DELETE FROM receipt_admissions WHERE id IN (SELECT id FROM receipt_admissions WHERE created_at<clock_timestamp()-interval '7 days' ORDER BY created_at LIMIT 1000)").Error; err != nil {
+		return nil, err
+	}
+	if err := r.db.WithContext(ctx).Exec("DELETE FROM receipt_image_reads WHERE id IN (SELECT id FROM receipt_image_reads WHERE created_at<clock_timestamp()-interval '2 days' ORDER BY created_at LIMIT 1000)").Error; err != nil {
 		return nil, err
 	}
 	var keys []string
@@ -323,18 +331,20 @@ func (r *Repository) admit(ctx context.Context, actorID int64) error {
 		return err
 	}
 	var quota struct {
-		Daily   int
-		Pending int
-		Global  int
+		Daily       int
+		Pending     int
+		Global      int
+		GlobalDaily int
 	}
 	if err := tx.Raw(`SELECT
  (SELECT count(*) FROM (SELECT 1 FROM receipt_admissions WHERE actor_id=? AND created_at>statement_timestamp()-interval '1 day' LIMIT 50) d) AS daily,
  (SELECT count(*) FROM (SELECT 1 FROM receipts r JOIN events e ON e.id=r.event_id WHERE r.queued_by=? AND r.deleted_at IS NULL AND e.deleted_at IS NULL AND r.status IN ('uploading','queued','processing') LIMIT 3) p) AS pending,
- (SELECT count(*) FROM (SELECT 1 FROM receipts r JOIN events e ON e.id=r.event_id WHERE r.deleted_at IS NULL AND e.deleted_at IS NULL AND r.status IN ('uploading','queued','processing') LIMIT 1000) g) AS global`, actorID, actorID).Scan(&quota).Error; err != nil {
+ (SELECT count(*) FROM (SELECT 1 FROM receipts r JOIN events e ON e.id=r.event_id WHERE r.deleted_at IS NULL AND e.deleted_at IS NULL AND r.status IN ('uploading','queued','processing') LIMIT 1000) g) AS global,
+ (SELECT count(*) FROM (SELECT 1 FROM receipt_admissions WHERE created_at>statement_timestamp()-interval '1 day' LIMIT 500) gd) AS global_daily`, actorID, actorID).Scan(&quota).Error; err != nil {
 		return err
 	}
-	if quota.Daily >= 50 || quota.Pending >= 3 || quota.Global >= 1000 {
-		return commonerrors.NewValidationError("receipt", "очередь заполнена или достигнут лимит: три одновременных и 50 загрузок или повторов в сутки")
+	if quota.Daily >= 50 || quota.Pending >= 3 || quota.Global >= 1000 || quota.GlobalDaily >= 500 {
+		return commonerrors.NewValidationError("receipt", "очередь заполнена или достигнут лимит: три одновременных и 50 загрузок или повторов в сутки на пользователя; 500 в сутки на весь сервис")
 	}
 	return nil
 }
@@ -382,4 +392,27 @@ func (r *Repository) Remove(ctx context.Context, v *models.Receipt) error {
 		return commonerrors.NewValidationError("receipt", "чек уже изменён; обновите его")
 	}
 	return tx.Exec("INSERT INTO receipt_image_gc(image_key) VALUES(?) ON CONFLICT DO NOTHING", v.ImageKey).Error
+}
+
+// AdmitImageRead bounds paid S3 operations and image egress before touching storage.
+// At most 1,000 reads/day globally and 200/user; each image is already limited to 10 MiB.
+func (r *Repository) AdmitImageRead(ctx context.Context, actorID int64) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SET LOCAL lock_timeout='2s'").Error; err != nil {
+			return err
+		}
+		if err := tx.Exec("SELECT pg_advisory_xact_lock(20581407,3)").Error; err != nil {
+			return err
+		}
+		var quota struct{ Global, Actor int }
+		if err := tx.Raw(`SELECT
+   (SELECT count(*) FROM (SELECT 1 FROM receipt_image_reads WHERE created_at>statement_timestamp()-interval '1 day' LIMIT 1000) g) AS global,
+   (SELECT count(*) FROM (SELECT 1 FROM receipt_image_reads WHERE actor_id=? AND created_at>statement_timestamp()-interval '1 day' LIMIT 200) a) AS actor`, actorID).Scan(&quota).Error; err != nil {
+			return err
+		}
+		if quota.Global >= 1000 || quota.Actor >= 200 {
+			return commonerrors.ErrReceiptReadBudget
+		}
+		return tx.Exec("INSERT INTO receipt_image_reads(actor_id) VALUES(?)", actorID).Error
+	})
 }

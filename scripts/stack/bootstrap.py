@@ -1,6 +1,7 @@
 """Подготовка TVM-учётных данных для локального Compose без ключей в репозитории."""
 
 import json
+import secrets
 import os
 from pathlib import Path
 import tempfile
@@ -87,6 +88,10 @@ def configure(base, token, state):
         atomic_write(directory / "service.secret", manifest[name]["private_key"])
         if name in ("ff-auth", "ff-split"):
             atomic_write(directory / "id-service.id", str(manifest["ff-id"]["id"]))
+        if name == "ff-auth" and not (directory / "account.secret").exists():
+            atomic_write(directory / "account.secret", secrets.token_urlsafe(48))
+        if name == "ff-id":
+            atomic_write(directory / "auth-service.id", str(manifest["ff-auth"]["id"]))
         if name in ("ff-id", "ff-split"):
             atomic_write(directory / "file-service.id", str(manifest["ff-files"]["id"]))
     return manifest

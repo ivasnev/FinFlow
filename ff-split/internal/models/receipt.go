@@ -58,6 +58,7 @@ type Receipt struct {
 	Attempts       int           `json:"-"`
 	ImageAvailable bool          `json:"-"`
 	RetryRevision  int           `json:"-"`
+	QueuedBy       int64         `json:"-"`
 	QueuedAt       time.Time     `json:"-"`
 }
 

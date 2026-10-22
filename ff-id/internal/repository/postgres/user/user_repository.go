@@ -58,7 +58,7 @@ func (r *UserRepository) GetByIDs(ctx context.Context, ids []int64) ([]*models.U
 // GetByEmail находит пользователя по email
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user User
-	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
+	err := r.db.WithContext(ctx).Where("lower(email) = lower(?)", email).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, repository.ErrUserNotFound

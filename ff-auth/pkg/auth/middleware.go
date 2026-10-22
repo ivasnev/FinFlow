@@ -1,11 +1,15 @@
 package auth
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
+
+var ErrUnavailable = errors.New("authentication service unavailable")
 
 type ValidateClient interface {
 	ValidateToken(tokenStr string) (*TokenPayload, error)
@@ -88,9 +92,23 @@ func AuthMiddleware(client ValidateClient) gin.HandlerFunc {
 		tokenStr := parts[1]
 
 		// Валидируем токен
-		payload, err := client.ValidateToken(tokenStr)
+		var payload *TokenPayload
+		var err error
+		if contextual, ok := client.(interface {
+			ValidateTokenContext(context.Context, string) (*TokenPayload, error)
+		}); ok {
+			payload, err = contextual.ValidateTokenContext(c.Request.Context(), tokenStr)
+		} else {
+			payload, err = client.ValidateToken(tokenStr)
+		}
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token", "error_description": err.Error()})
+			status := http.StatusUnauthorized
+			msg := "invalid token"
+			if errors.Is(err, ErrUnavailable) {
+				status = http.StatusServiceUnavailable
+				msg = "authentication temporarily unavailable"
+			}
+			c.JSON(status, gin.H{"error": msg})
 			c.Abort()
 			return
 		}

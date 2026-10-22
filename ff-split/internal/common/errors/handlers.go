@@ -36,6 +36,10 @@ func HTTPErrorHandler(c *gin.Context, err error) {
 	var logicError *LogicError
 
 	switch {
+	case errors.Is(err, ErrReceiptReadBudget):
+		c.Header("Retry-After", "3600")
+		errorResponse = NewErrorResponse(c.Request, "receipt_read_budget", err.Error())
+		code = http.StatusTooManyRequests
 	case errors.Is(err, ErrEventArchived):
 		errorResponse = NewErrorResponse(c.Request, "event_archived", err.Error())
 		code = http.StatusConflict

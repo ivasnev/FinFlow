@@ -100,7 +100,19 @@ func TestIdentitySource(t *testing.T) {
 	c, err := createTestContainer(t, cfg, gin.New(), database.DB, idClient)
 	require.NoError(t, err)
 	c.RegisterRoutes()
-	authServer := httptest.NewServer(c.Router)
+	// This fixture isolates the legacy identity-source contract. Full account lifecycle and live-grant checks have separate integration tests.
+	authServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/auth/introspect" {
+			payload, err := c.TokenManager.ValidateToken(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
+			if err != nil {
+				w.WriteHeader(401)
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"active": true, "user_id": payload.UserID})
+			return
+		}
+		c.Router.ServeHTTP(w, r)
+	}))
 	t.Cleanup(authServer.Close)
 	authURL, err := url.Parse(authServer.URL)
 	require.NoError(t, err)
@@ -116,7 +128,7 @@ func TestIdentitySource(t *testing.T) {
 	command.Dir = "../../ff-id"
 	command.Stdout = log
 	command.Stderr = log
-	command.Env = append(os.Environ(), "POSTGRES_HOST="+host, "POSTGRES_PORT="+port.Port(), "POSTGRES_DB=ff_identity_source", "POSTGRES_USER=postgres", "POSTGRES_PASSWORD=postgres", "SERVER_PORT="+strconv.Itoa(idPort), "TVM_SERVICE_ID=2", "TVM_BASE_URL="+keys.URL, "AUTH_CLIENT_HOST=http://"+authURL.Hostname(), "AUTH_CLIENT_PORT="+authURL.Port(), "GIN_MODE=release")
+	command.Env = append(os.Environ(), "POSTGRES_HOST="+host, "POSTGRES_PORT="+port.Port(), "POSTGRES_DB=ff_identity_source", "POSTGRES_USER=postgres", "POSTGRES_PASSWORD=postgres", "SERVER_PORT="+strconv.Itoa(idPort), "TVM_SERVICE_ID=2", "AUTH_SERVICE_ID=4", "TVM_BASE_URL="+keys.URL, "AUTH_CLIENT_HOST=http://"+authURL.Hostname(), "AUTH_CLIENT_PORT="+authURL.Port(), "GIN_MODE=release")
 	require.NoError(t, command.Start())
 	wait := make(chan error, 1)
 	go func() { wait <- command.Wait() }()
@@ -161,7 +173,10 @@ func TestIdentitySource(t *testing.T) {
 		return resp.StatusCode
 	}
 	require.Equal(t, 401, request("PUT", "/api/v1/internal/identity/1", `{"nickname":"attacker"}`, false))
-	require.Equal(t, 200, request("PATCH", "/api/v1/users/me", `{"email":"id@example.com","nickname":"id-new"}`, true))
+	require.Equal(t, 400, request("PATCH", "/api/v1/users/me", `{"email":"id@example.com","nickname":"id-new"}`, true))
+	initialEmail, initialNickname := "id@example.com", "id-new"
+	_, err = idClient.UpdateIdentity(ctx, 1, &initialEmail, &initialNickname)
+	require.NoError(t, err)
 	login := func(name string, want int) {
 		t.Helper()
 		resp, err := client.LoginWithResponse(ctx, api.LoginJSONRequestBody{Login: name, Password: "password123"})

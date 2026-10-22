@@ -1,48 +1,57 @@
 openapi: 3.0.3
 info:
   title: FinFlow Auth Service API
-  description: |
-    API для сервиса аутентификации и авторизации FinFlow.
-    
+  description: 'API для сервиса аутентификации и авторизации FinFlow.
+
+
     Сервис предоставляет функциональность для:
+
     - Регистрации и входа пользователей
+
     - Управления сессиями и токенами
+
     - Управления профилями пользователей
+
     - Просмотра истории входов
-    
+
+
     ## Аутентификация
-    
+
+
     Большинство endpoints требуют аутентификации через Bearer токен в заголовке Authorization:
+
     ```
+
     Authorization: Bearer <access_token>
+
     ```
-    
+
+
     Токены можно получить через endpoints `/auth/login` или `/auth/refresh`.
+
+    '
   version: 1.0.0
   contact:
     name: FinFlow Team
   license:
     name: MIT
-
 servers:
-  - url: http://localhost:8084/api/v1
-    description: Development server
-
+- url: http://localhost:8084/api/v1
+  description: Development server
 tags:
-  - name: auth
-    description: Операции аутентификации и авторизации
-  - name: users
-    description: Управление пользователями
-  - name: sessions
-    description: Управление сессиями пользователей
-  - name: login-history
-    description: История входов пользователей
-
+- name: auth
+  description: Операции аутентификации и авторизации
+- name: users
+  description: Управление пользователями
+- name: sessions
+  description: Управление сессиями пользователей
+- name: login-history
+  description: История входов пользователей
 paths:
   /auth/register:
     post:
       tags:
-        - auth
+      - auth
       summary: Регистрация нового пользователя
       description: Создает нового пользователя в системе
       operationId: register
@@ -53,11 +62,11 @@ paths:
             schema:
               $ref: '#/components/schemas/RegisterRequest'
             example:
-              email: "user@example.com"
-              phone: "+71234567890"
-              password: "StrongPassword123"
-              nickname: "user123"
-              name: "John Doe"
+              email: user@example.com
+              phone: '+71234567890'
+              password: StrongPassword123
+              nickname: user123
+              name: John Doe
       responses:
         '201':
           description: Пользователь успешно зарегистрирован
@@ -89,11 +98,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+        '202':
+          description: Требуется подтверждение почты; обычные access/refresh токены не выдаются
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingVerification'
+        '429':
+          description: Превышен лимит попыток
+          headers:
+            Retry-After:
+              schema: &id001
+                type: string
   /auth/login:
     post:
       tags:
-        - auth
+      - auth
       summary: Вход в систему
       description: Аутентификация пользователя по email/nickname и паролю
       operationId: login
@@ -104,8 +124,8 @@ paths:
             schema:
               $ref: '#/components/schemas/LoginRequest'
             example:
-              login: "user@example.com"
-              password: "StrongPassword123"
+              login: user@example.com
+              password: StrongPassword123
       responses:
         '200':
           description: Успешная аутентификация
@@ -137,12 +157,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-
+        '202':
+          description: Требуется подтверждение почты; обычные access/refresh токены не выдаются
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingVerification'
+        '429':
+          description: Превышен лимит попыток
+          headers:
+            Retry-After:
+              schema: *id001
   /auth/refresh:
     post:
       tags:
-        - auth
+      - auth
       summary: Обновление access токена
       description: Получение нового access токена с помощью refresh токена
       operationId: refreshToken
@@ -153,7 +182,7 @@ paths:
             schema:
               $ref: '#/components/schemas/RefreshTokenRequest'
             example:
-              refresh_token: "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9..."
+              refresh_token: eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9...
       responses:
         '200':
           description: Токен успешно обновлен
@@ -185,17 +214,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-
+        '202':
+          description: Требуется подтверждение почты; обычные access/refresh токены не выдаются
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingVerification'
+        '429':
+          description: Превышен лимит попыток
+          headers:
+            Retry-After:
+              schema: *id001
   /auth/logout:
     post:
       tags:
-        - auth
+      - auth
       summary: Выход из системы
       description: Аннулирование refresh токена (завершение сессии)
       operationId: logout
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -203,7 +241,7 @@ paths:
             schema:
               $ref: '#/components/schemas/LogoutRequest'
             example:
-              refresh_token: "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9..."
+              refresh_token: eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9...
       responses:
         '200':
           description: Успешный выход из системы
@@ -214,7 +252,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "successfully logged out"
+                    example: successfully logged out
         '400':
           description: Некорректные данные запроса
           content:
@@ -233,11 +271,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /auth/public-key:
     get:
       tags:
-        - auth
+      - auth
       summary: Получение публичного ключа
       description: Возвращает публичный ключ для верификации JWT токенов (в формате base64)
       operationId: getPublicKey
@@ -249,23 +286,22 @@ paths:
               schema:
                 type: string
                 description: Публичный ключ в формате base64
-                example: "MCowBQYDK2VwAyEAGb9ECWmEzf6FQbrBZ9w7lshQhqowtrbLDFw4rXAxZuE="
-
+                example: MCowBQYDK2VwAyEAGb9ECWmEzf6FQbrBZ9w7lshQhqowtrbLDFw4rXAxZuE=
   /users/{nickname}:
     get:
       tags:
-        - users
+      - users
       summary: Получение пользователя по nickname
       description: Возвращает информацию о пользователе по его nickname
       operationId: getUserByNickname
       parameters:
-        - name: nickname
-          in: path
-          required: true
-          description: Nickname пользователя
-          schema:
-            type: string
-            example: "johndoe"
+      - name: nickname
+        in: path
+        required: true
+        description: Nickname пользователя
+        schema:
+          type: string
+          example: johndoe
       responses:
         '200':
           description: Информация о пользователе
@@ -291,17 +327,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-
   /users/me:
     patch:
       tags:
-        - users
+      - users
       summary: Обновление профиля текущего пользователя
-      description: Изменяет email и nickname в ff-id. Пароль хранится в ff-auth; при частичном отказе повторите смену пароля отдельно.
+      description: Изменяет email и nickname в ff-id. Пароль хранится в ff-auth; при частичном отказе повторите
+        смену пароля отдельно.
       operationId: updateUser
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -309,9 +344,9 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdateUserRequest'
             example:
-              email: "updated@example.com"
-              nickname: "updated_nickname"
-              password: "NewStrongPassword123"
+              email: updated@example.com
+              nickname: updated_nickname
+              password: NewStrongPassword123
       responses:
         '200':
           description: Профиль успешно обновлен
@@ -349,17 +384,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-
   /sessions:
     get:
       tags:
-        - sessions
+      - sessions
       summary: Получение активных сессий пользователя
       description: Возвращает список всех активных сессий текущего пользователя
       operationId: getUserSessions
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       responses:
         '200':
           description: Список активных сессий
@@ -381,25 +414,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /sessions/{id}:
     delete:
       tags:
-        - sessions
+      - sessions
       summary: Завершение сессии
       description: Завершает указанную сессию пользователя
       operationId: terminateSession
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID сессии (UUID)
-          schema:
-            type: string
-            format: uuid
-            example: "550e8400-e29b-41d4-a716-446655440000"
+      - name: id
+        in: path
+        required: true
+        description: ID сессии (UUID)
+        schema:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
       responses:
         '200':
           description: Сессия успешно завершена
@@ -410,7 +442,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "session terminated successfully"
+                    example: session terminated successfully
         '400':
           description: Некорректный ID сессии
           content:
@@ -429,36 +461,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /login-history:
     get:
       tags:
-        - login-history
+      - login-history
       summary: Получение истории входов
       description: Возвращает историю входов текущего пользователя с поддержкой пагинации
       operationId: getLoginHistory
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       parameters:
-        - name: limit
-          in: query
-          required: false
-          description: Количество записей на странице
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 10
-            example: 20
-        - name: offset
-          in: query
-          required: false
-          description: Смещение для пагинации
-          schema:
-            type: integer
-            minimum: 0
-            default: 0
-            example: 0
+      - name: limit
+        in: query
+        required: false
+        description: Количество записей на странице
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+          example: 20
+      - name: offset
+        in: query
+        required: false
+        description: Смещение для пагинации
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          example: 0
       responses:
         '200':
           description: История входов
@@ -480,7 +511,420 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+  /auth/security/config:
+    get:
+      operationId: getAccountConfig
+      tags:
+      - account-security
+      summary: getAccountConfig
+      responses:
+        '400':
+          description: Некорректный запрос или недействительная ссылка
+        '401':
+          description: Сессия недействительна
+        '429':
+          description: Превышен лимит
+        '503':
+          description: Сервис временно недоступен
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  captcha_provider: *id001
+                  captcha_site_key: *id001
+                  local_mode:
+                    type: boolean
+  /auth/captcha:
+    get:
+      operationId: getCaptcha
+      tags:
+      - account-security
+      summary: getCaptcha
+      responses:
+        '400':
+          description: Некорректный запрос или недействительная ссылка
+        '401':
+          description: Сессия недействительна
+        '429':
+          description: Превышен лимит
+        '503':
+          description: Сервис временно недоступен
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - id
+                - image
+                properties:
+                  id: *id001
+                  image: *id001
+  /auth/verification/resend:
+    post:
+      operationId: resendVerification
+      tags:
+      - account-security
+      summary: resendVerification
+      responses:
+        '400':
+          description: Некорректный запрос или недействительная ссылка
+        '401':
+          description: Сессия недействительна
+        '429':
+          description: Превышен лимит
+        '503':
+          description: Сервис временно недоступен
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - pending_token
+              properties:
+                pending_token: *id001
+  /auth/verification/email:
+    post:
+      operationId: correctPendingEmail
+      tags:
+      - account-security
+      summary: correctPendingEmail
+      responses:
+        '400':
+          description: Некорректный запрос или недействительная ссылка
+        '401':
+          description: Сессия недействительна
+        '429':
+          description: Превышен лимит
+        '503':
+          description: Сервис временно недоступен
+        '202':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingVerification'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - pending_token
+              - email
+              - password
+              properties:
+                pending_token: *id001
+                email: *id001
+                password: *id001
+  /auth/verification/confirm:
+    post:
+      operationId: verifyEmail
+      tags:
+      - account-security
+      summary: verifyEmail
+      responses:
+        '400':
+          description: Некорректный запрос или недействительная ссылка
+        '401':
+          description: Сессия недействительна
+        '429':
+          description: Превышен лимит
+        '503':
+          description: Сервис временно недоступен
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - pending_token
+              - token
+              properties:
+                pending_token: *id001
+                token: *id001
+  /auth/verification/logout:
+    post:
+      operationId: logoutPending
+      tags:
+      - account-security
+      summary: logoutPending
+      responses:
+        '400':
+          description: Некорректный запрос или недействительная ссылка
+        '401':
+          description: Сессия недействительна
+        '429':
+          description: Превышен лимит
+        '503':
+          description: Сервис временно недоступен
+        '204':
+          description: Временная сессия отозвана
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - pending_token
+              properties:
+                pending_token: *id001
+  /auth/password/forgot:
+    post:
+      operationId: forgotPassword
+      tags:
+      - account-security
+      summary: forgotPassword
+      responses:
+        '400':
+          description: Некорректный запрос или недействительная ссылка
+        '401':
+          description: Сессия недействительна
+        '429':
+          description: Превышен лимит
+        '503':
+          description: Сервис временно недоступен
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - email
+              - captcha_token
+              properties:
+                email: *id001
+                captcha_token: *id001
+  /auth/password/reset:
+    post:
+      operationId: resetPassword
+      tags:
+      - account-security
+      summary: resetPassword
+      responses:
+        '400':
+          description: Некорректный запрос или недействительная ссылка
+        '401':
+          description: Сессия недействительна
+        '429':
+          description: Превышен лимит
+        '503':
+          description: Сервис временно недоступен
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - token
+              - password
+              properties:
+                token: *id001
+                password: *id001
+  /auth/password/change:
+    post:
+      operationId: changePassword
+      tags:
+      - account-security
+      summary: changePassword
+      responses:
+        '400':
+          description: Некорректный запрос или недействительная ссылка
+        '401':
+          description: Сессия недействительна
+        '429':
+          description: Превышен лимит
+        '503':
+          description: Сервис временно недоступен
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - current_password
+              - password
+              properties:
+                current_password: *id001
+                password: *id001
+      description: Требует действующий Bearer access-токен подтверждённого аккаунта; проверяется обработчиком.
+  /auth/email/change:
+    post:
+      operationId: requestEmailChange
+      tags:
+      - account-security
+      summary: requestEmailChange
+      responses:
+        '400':
+          description: Некорректный запрос или недействительная ссылка
+        '401':
+          description: Сессия недействительна
+        '429':
+          description: Превышен лимит
+        '503':
+          description: Сервис временно недоступен
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - current_password
+              - email
+              properties:
+                current_password: *id001
+                email: *id001
+      description: Требует действующий Bearer access-токен подтверждённого аккаунта; проверяется обработчиком.
+  /auth/email/confirm:
+    post:
+      operationId: confirmEmailChange
+      tags:
+      - account-security
+      summary: confirmEmailChange
+      responses:
+        '400':
+          description: Некорректный запрос или недействительная ссылка
+        '401':
+          description: Сессия недействительна
+        '429':
+          description: Превышен лимит
+        '503':
+          description: Сервис временно недоступен
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - token
+              properties:
+                token: *id001
+      description: Требует действующий Bearer access-токен подтверждённого аккаунта; проверяется обработчиком.
+  /auth/introspect:
+    post:
+      operationId: introspect
+      tags:
+      - account-security
+      summary: introspect
+      responses:
+        '400':
+          description: Некорректный запрос или недействительная ссылка
+        '401':
+          description: Сессия недействительна
+        '429':
+          description: Превышен лимит
+        '503':
+          description: Сервис временно недоступен
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - active
+                - user_id
+                properties:
+                  active:
+                    type: boolean
+                  user_id:
+                    type: integer
+                    format: int64
+      description: Требует действующий Bearer access-токен подтверждённого аккаунта; проверяется обработчиком.
+  /auth/security/account:
+    get:
+      operationId: getAccountSecurity
+      tags:
+      - account-security
+      summary: getAccountSecurity
+      responses:
+        '400':
+          description: Некорректный запрос или недействительная ссылка
+        '401':
+          description: Сессия недействительна
+        '429':
+          description: Превышен лимит
+        '503':
+          description: Сервис временно недоступен
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email: *id001
+                  email_verified:
+                    type: boolean
+      description: Требует действующий Bearer access-токен подтверждённого аккаунта; проверяется обработчиком.
 components:
   securitySchemes:
     BearerAuth:
@@ -488,76 +932,74 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: JWT токен для аутентификации. Получается через /auth/login или /auth/refresh
-
   schemas:
     RegisterRequest:
       type: object
       required:
-        - email
-        - password
-        - nickname
+      - email
+      - password
+      - nickname
       properties:
         email:
           type: string
           format: email
           description: Email пользователя
-          example: "user@example.com"
+          example: user@example.com
         phone:
           type: string
           format: phone
           description: Номер телефона в международном формате (опционально)
-          example: "+71234567890"
+          example: '+71234567890'
         password:
           type: string
           minLength: 8
           description: Пароль (минимум 8 символов)
-          example: "StrongPassword123"
+          example: StrongPassword123
         nickname:
           type: string
           minLength: 3
           maxLength: 50
           description: Уникальный никнейм пользователя
-          example: "user123"
+          example: user123
         name:
           type: string
           description: Полное имя пользователя (опционально)
-          example: "John Doe"
-
+          example: John Doe
+        captcha_token:
+          type: string
+          description: Одноразовый токен капчи, обязателен для публичной регистрации
     LoginRequest:
       type: object
       required:
-        - login
-        - password
+      - login
+      - password
       properties:
         login:
           type: string
           description: Email или nickname пользователя
-          example: "user@example.com"
+          example: user@example.com
         password:
           type: string
           description: Пароль пользователя
-          example: "StrongPassword123"
-
+          example: StrongPassword123
     RefreshTokenRequest:
       type: object
       required:
-        - refresh_token
+      - refresh_token
       properties:
         refresh_token:
           type: string
           description: Refresh токен для обновления access токена
-          example: "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9..."
-
+          example: eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9...
     LogoutRequest:
       type: object
       required:
-        - refresh_token
+      - refresh_token
       properties:
         refresh_token:
           type: string
           description: Refresh токен для аннулирования
-          example: "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9..."
-
+          example: eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9...
     UpdateUserRequest:
       type: object
       properties:
@@ -565,50 +1007,48 @@ components:
           type: string
           format: email
           description: Новый email пользователя
-          example: "updated@example.com"
+          example: updated@example.com
         nickname:
           type: string
           description: Новый nickname пользователя
-          example: "updated_nickname"
+          example: updated_nickname
         password:
           type: string
           minLength: 8
           description: Новый пароль (минимум 8 символов)
-          example: "NewStrongPassword123"
-
+          example: NewStrongPassword123
     AuthResponse:
       type: object
       required:
-        - access_token
-        - refresh_token
-        - expires_at
-        - user
+      - access_token
+      - refresh_token
+      - expires_at
+      - user
       properties:
         access_token:
           type: string
           description: JWT access токен
-          example: "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9..."
+          example: eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9...
         refresh_token:
           type: string
           description: Refresh токен для обновления access токена
-          example: "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9..."
+          example: eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9...
         expires_at:
           type: string
           format: date-time
           description: Время истечения access токена
-          example: "2024-01-01T12:00:00Z"
+          example: '2024-01-01T12:00:00Z'
         user:
           $ref: '#/components/schemas/ShortUserDTO'
-
     UserDTO:
       type: object
       required:
-        - id
-        - email
-        - nickname
-        - roles
-        - created_at
-        - updated_at
+      - id
+      - email
+      - nickname
+      - roles
+      - created_at
+      - updated_at
       properties:
         id:
           type: integer
@@ -619,35 +1059,36 @@ components:
           type: string
           format: email
           description: Email пользователя
-          example: "user@example.com"
+          example: user@example.com
         nickname:
           type: string
           description: Никнейм пользователя
-          example: "johndoe"
+          example: johndoe
         roles:
           type: array
           items:
             type: string
           description: Роли пользователя
-          example: ["user", "premium"]
+          example:
+          - user
+          - premium
         created_at:
           type: string
           format: date-time
           description: Дата создания аккаунта
-          example: "2024-01-01T10:00:00Z"
+          example: '2024-01-01T10:00:00Z'
         updated_at:
           type: string
           format: date-time
           description: Дата последнего обновления
-          example: "2024-01-01T12:00:00Z"
-
+          example: '2024-01-01T12:00:00Z'
     ShortUserDTO:
       type: object
       required:
-        - id
-        - email
-        - nickname
-        - roles
+      - id
+      - email
+      - nickname
+      - roles
       properties:
         id:
           type: integer
@@ -658,53 +1099,53 @@ components:
           type: string
           format: email
           description: Email пользователя
-          example: "user@example.com"
+          example: user@example.com
         nickname:
           type: string
           description: Никнейм пользователя
-          example: "johndoe"
+          example: johndoe
         roles:
           type: array
           items:
             type: string
           description: Роли пользователя
-          example: ["user", "premium"]
-
+          example:
+          - user
+          - premium
     SessionDTO:
       type: object
       required:
-        - id
-        - ip_address
-        - created_at
-        - expires_at
+      - id
+      - ip_address
+      - created_at
+      - expires_at
       properties:
         id:
           type: string
           format: uuid
           description: Уникальный идентификатор сессии
-          example: "550e8400-e29b-41d4-a716-446655440000"
+          example: 550e8400-e29b-41d4-a716-446655440000
         ip_address:
           type: string
           format: ipv4
           description: IP адрес, с которого была создана сессия
-          example: "192.168.1.1"
+          example: 192.168.1.1
         created_at:
           type: string
           format: date-time
           description: Дата создания сессии
-          example: "2024-01-01T10:00:00Z"
+          example: '2024-01-01T10:00:00Z'
         expires_at:
           type: string
           format: date-time
           description: Дата истечения сессии
-          example: "2024-01-08T10:00:00Z"
-
+          example: '2024-01-08T10:00:00Z'
     LoginHistoryDTO:
       type: object
       required:
-        - id
-        - ip_address
-        - created_at
+      - id
+      - ip_address
+      - created_at
       properties:
         id:
           type: integer
@@ -714,24 +1155,23 @@ components:
           type: string
           format: ipv4
           description: IP адрес, с которого был выполнен вход
-          example: "192.168.1.1"
+          example: 192.168.1.1
         user_agent:
           type: string
           description: User-Agent браузера/приложения
-          example: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          example: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
         created_at:
           type: string
           format: date-time
           description: Дата и время входа
-          example: "2024-01-01T10:00:00Z"
-
+          example: '2024-01-01T10:00:00Z'
     DeviceDTO:
       type: object
       required:
-        - id
-        - device_id
-        - user_agent
-        - last_login
+      - id
+      - device_id
+      - user_agent
+      - last_login
       properties:
         id:
           type: integer
@@ -740,23 +1180,39 @@ components:
         device_id:
           type: string
           description: Идентификатор устройства
-          example: "device_123456"
+          example: device_123456
         user_agent:
           type: string
           description: User-Agent устройства
-          example: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          example: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
         last_login:
           type: string
           format: date-time
           description: Дата последнего входа с этого устройства
-          example: "2024-01-01T10:00:00Z"
-
+          example: '2024-01-01T10:00:00Z'
     ErrorResponse:
       type: object
       required:
-        - error
+      - error
       properties:
         error:
           type: string
           description: Описание ошибки
-          example: "Invalid credentials"
+          example: Invalid credentials
+    PendingVerification:
+      type: object
+      required:
+      - verification_required
+      - pending_token
+      - email
+      - expires_at
+      properties:
+        verification_required:
+          type: boolean
+        pending_token: *id001
+        email:
+          type: string
+          format: email
+        expires_at:
+          type: string
+          format: date-time

@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/base64"
 	"errors"
+	"github.com/ivasnev/FinFlow/ff-auth/internal/account"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -16,6 +17,7 @@ import (
 
 // ServerHandler реализует интерфейс api.ServerInterface
 type ServerHandler struct {
+	Account             *account.Manager
 	authService         service.Auth
 	userService         service.User
 	sessionService      service.Session
@@ -42,6 +44,10 @@ func NewServerHandler(
 
 // Login обрабатывает запрос на вход в систему
 func (h *ServerHandler) Login(c *gin.Context) {
+	if h.Account != nil {
+		h.Account.Login(c)
+		return
+	}
 	var req api.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: err.Error()})
@@ -108,6 +114,10 @@ func (h *ServerHandler) GetPublicKey(c *gin.Context) {
 
 // RefreshToken обрабатывает запрос на обновление access-токена
 func (h *ServerHandler) RefreshToken(c *gin.Context) {
+	if h.Account != nil {
+		h.Account.Refresh(c)
+		return
+	}
 	var req api.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: err.Error()})
@@ -142,6 +152,10 @@ func (h *ServerHandler) RefreshToken(c *gin.Context) {
 
 // Register обрабатывает запрос на регистрацию нового пользователя
 func (h *ServerHandler) Register(c *gin.Context) {
+	if h.Account != nil {
+		h.Account.Register(c)
+		return
+	}
 	var req api.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: err.Error()})
@@ -298,6 +312,10 @@ func (h *ServerHandler) UpdateUser(c *gin.Context) {
 		email = &emailStr
 	}
 
+	if h.Account != nil && (req.Email != nil || req.Password != nil) {
+		c.JSON(400, gin.H{"error": "Используйте отдельную подтверждаемую смену email или пароля в настройках безопасности."})
+		return
+	}
 	updateData := service.UserUpdateData{
 		Email:    email,
 		Nickname: req.Nickname,

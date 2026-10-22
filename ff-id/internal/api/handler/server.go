@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	tvmmiddleware "github.com/ivasnev/FinFlow/ff-tvm/pkg/middleware"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -16,6 +17,7 @@ import (
 type ServerHandler struct {
 	friendService service.FriendServiceInterface
 	userService   service.UserServiceInterface
+	AuthServiceID int
 }
 
 // NewServerHandler создает новый ServerHandler
@@ -259,6 +261,10 @@ func (h *ServerHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
+	if req.Email != nil {
+		c.JSON(400, gin.H{"error": "Email меняется через подтверждение в настройках безопасности."})
+		return
+	}
 	// Конвертируем в сервисный тип
 	var email *string
 	if req.Email != nil {
@@ -336,6 +342,11 @@ func (h *ServerHandler) RegisterUser(c *gin.Context) {
 
 // RegisterUserFromService обрабатывает запрос на регистрацию пользователя от другого сервиса
 func (h *ServerHandler) RegisterUserFromService(c *gin.Context) {
+	source, ok := c.Get(tvmmiddleware.ServiceIDContext)
+	if !ok || h.AuthServiceID <= 0 || source != h.AuthServiceID {
+		c.JSON(403, gin.H{"error": "Создание профиля разрешено только сервису аутентификации."})
+		return
+	}
 	// Парсим данные из запроса
 	var req api.ServiceRegisterUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -348,6 +359,7 @@ func (h *ServerHandler) RegisterUserFromService(c *gin.Context) {
 		Email:    string(req.Email),
 		Nickname: req.Nickname,
 		Name:     req.Name,
+		Phone:    req.Phone,
 	}
 
 	// Регистрируем пользователя

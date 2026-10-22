@@ -160,6 +160,10 @@ func (s *Service) Image(ctx context.Context, eventID int64, id string) ([]byte, 
 	if err != nil {
 		return nil, "", err
 	}
+	actorID, _ := actor.ID(ctx)
+	if err := s.repo.AdmitImageRead(ctx, actorID); err != nil {
+		return nil, "", err
+	}
 	read, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	data, err := s.store.Read(read, v.ImageKey)
@@ -363,7 +367,12 @@ func (s *Service) processOne(parent context.Context) {
 		return
 	}
 	started := time.Now()
-	data, err := s.store.Read(ctx, job.ImageKey)
+	// Every S3 GET, including automatic OCR retries, consumes the same durable budget.
+	err = s.repo.AdmitImageRead(ctx, job.QueuedBy)
+	var data []byte
+	if err == nil {
+		data, err = s.store.Read(ctx, job.ImageKey)
+	}
 	var result *models.ReceiptResult
 	if err == nil {
 		result, err = s.ocr.Recognize(ctx, data, job.ContentType)

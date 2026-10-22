@@ -1,10 +1,13 @@
 package auth
 
 import (
+	"bytes"
+	"context"
 	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -36,6 +39,9 @@ func NewClient(hostURL string, updateInterval time.Duration) *Client {
 
 // GetPublicKey возвращает текущий публичный ключ
 func (c *Client) GetPublicKey() (ed25519.PublicKey, error) {
+	return c.getPublicKeyContext(context.Background())
+}
+func (c *Client) getPublicKeyContext(ctx context.Context) (ed25519.PublicKey, error) {
 	c.mutex.RLock()
 	if c.publicKey != nil && time.Since(c.lastUpdate) < c.updateInterval {
 		key := c.publicKey
@@ -45,12 +51,16 @@ func (c *Client) GetPublicKey() (ed25519.PublicKey, error) {
 	c.mutex.RUnlock()
 
 	// Обновляем ключ если прошло больше updateInterval с момента последнего обновления
-	return c.fetchPublicKey()
+	return c.fetchPublicKeyContext(ctx)
 }
 
 // fetchPublicKey получает актуальный публичный ключ с сервера
-func (c *Client) fetchPublicKey() (ed25519.PublicKey, error) {
-	resp, err := c.httpClient.Get(c.hostURL + publicKeyUrl)
+func (c *Client) fetchPublicKeyContext(ctx context.Context) (ed25519.PublicKey, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.hostURL+publicKeyUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -83,10 +93,16 @@ func (c *Client) fetchPublicKey() (ed25519.PublicKey, error) {
 
 // ValidateToken проверяет подпись, срок и назначение access-токена.
 func (c *Client) ValidateToken(tokenStr string) (*TokenPayload, error) {
+	return c.ValidateTokenContext(context.Background(), tokenStr)
+}
+func (c *Client) ValidateTokenContext(ctx context.Context, tokenStr string) (*TokenPayload, error) {
+	if len(tokenStr) > 8192 {
+		return nil, errors.New("invalid token size")
+	}
 	// Получаем актуальный публичный ключ
-	publicKey, err := c.GetPublicKey()
+	publicKey, err := c.getPublicKeyContext(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: public key unavailable", ErrUnavailable)
 	}
 
 	// Декодируем из base64
@@ -102,7 +118,7 @@ func (c *Client) ValidateToken(tokenStr string) (*TokenPayload, error) {
 	}
 
 	// Проверяем подпись с использованием публичного ключа
-	valid := ed25519.Verify(publicKey, token.Payload, token.Sig)
+	valid := len(publicKey) == ed25519.PublicKeySize && ed25519.Verify(publicKey, token.Payload, token.Sig)
 	if !valid {
 		return nil, errors.New("invalid token signature")
 	}
@@ -121,5 +137,30 @@ func (c *Client) ValidateToken(tokenStr string) (*TokenPayload, error) {
 		return nil, errors.New("token expired")
 	}
 
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.hostURL+"/api/v1/auth/introspect", bytes.NewReader(nil))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+tokenStr)
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("%w: introspection unavailable", ErrUnavailable)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
+		return nil, errors.New("session revoked or email unverified")
+	}
+	if resp.StatusCode != http.StatusOK {
+		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
+		return nil, fmt.Errorf("%w: introspection status %d", ErrUnavailable, resp.StatusCode)
+	}
+	var result struct {
+		Active bool  `json:"active"`
+		UserID int64 `json:"user_id"`
+	}
+	if err = json.NewDecoder(io.LimitReader(resp.Body, 4096)).Decode(&result); err != nil || !result.Active || result.UserID != payload.UserID {
+		return nil, fmt.Errorf("%w: invalid introspection response", ErrUnavailable)
+	}
 	return &payload, nil
 }

@@ -31,6 +31,8 @@ type Receipt interface {
 	Garbage(context.Context) ([]string, error)
 	// DeleteGarbage подтверждает удаление объекта из хранилища.
 	DeleteGarbage(context.Context, string) error
+	// AdmitImageRead reserves a durable image-read budget before S3 access.
+	AdmitImageRead(context.Context, int64) error
 	// FinishUpload завершает резервирование после записи фотографии.
 	FinishUpload(context.Context, *models.Receipt, bool) error
 }

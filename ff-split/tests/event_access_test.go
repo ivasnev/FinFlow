@@ -36,6 +36,16 @@ func TestEventAccessHTTP(t *testing.T) {
 		t.Fatal(err)
 	}
 	keys := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/auth/introspect" {
+			var token auth.Token
+			raw, _ := base64.StdEncoding.DecodeString(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
+			_ = json.Unmarshal(raw, &token)
+			var payload auth.TokenPayload
+			_ = json.Unmarshal(token.Payload, &payload)
+			_ = json.NewEncoder(w).Encode(map[string]any{"active": true, "user_id": payload.UserID})
+			return
+		}
+
 		fmt.Fprint(w, base64.StdEncoding.EncodeToString(pub))
 	}))
 	t.Cleanup(keys.Close)

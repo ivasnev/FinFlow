@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	tvmmiddleware "github.com/ivasnev/FinFlow/ff-tvm/pkg/middleware"
 	"net/http"
 	"strings"
 
@@ -49,6 +50,11 @@ func (h *ServerHandler) LookupIdentity(c *gin.Context, params api.LookupIdentity
 
 // UpdateIdentity изменяет email и nickname в ff-id от имени доверенного сервиса.
 func (h *ServerHandler) UpdateIdentity(c *gin.Context, userID int64) {
+	source, ok := c.Get(tvmmiddleware.ServiceIDContext)
+	if !ok || h.AuthServiceID <= 0 || source != h.AuthServiceID {
+		c.JSON(403, gin.H{"error": "Изменение идентификаторов разрешено только сервису аутентификации."})
+		return
+	}
 	var req api.UpdateIdentityJSONRequestBody
 	if userID <= 0 || c.ShouldBindJSON(&req) != nil {
 		c.JSON(http.StatusBadRequest, api.ErrorResponse{Error: "некорректные данные"})

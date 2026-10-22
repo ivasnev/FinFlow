@@ -328,7 +328,7 @@ func classifyUserWriteError(err error) error {
 		switch conflict.ConstraintName {
 		case "users_phone_key":
 			return service.ErrPhoneConflict
-		case "users_email_key", "users_nickname_key", "users_pkey":
+		case "users_email_fold_key", "users_email_key", "users_nickname_key", "users_pkey":
 			return service.ErrIdentityConflict
 		}
 	}
