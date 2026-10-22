@@ -7,7 +7,7 @@ require (
 	github.com/gin-gonic/gin v1.12.0
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/golang/mock v1.6.0
-	github.com/lib/pq v1.10.9
+	github.com/lib/pq v1.12.3
 	github.com/stretchr/testify v1.12.1
 	go.uber.org/zap v1.27.0
 	gopkg.in/yaml.v3 v3.0.1
