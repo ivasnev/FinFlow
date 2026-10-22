@@ -1,5 +1,5 @@
 # Сборка из корня репозитория использует согласованные локальные версии auth, id и tvm.
-FROM golang:1.24-alpine AS builder
+FROM golang:1.27.3-alpine AS builder
 RUN apk add --no-cache git
 WORKDIR /src
 COPY ff-auth/ ./ff-auth/

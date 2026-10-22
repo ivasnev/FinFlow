@@ -1,0 +1,50 @@
+name: Security and tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 4 * * 1'
+permissions:
+  contents: read
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [ff-auth, ff-files, ff-id, ff-split, ff-tvm, ff-common]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: '**/go.sum'
+      - name: Tests
+        working-directory: ${{ matrix.module }}
+        run: go test -count=1 -timeout=180s ./...
+      - name: Install vulnerability scanner
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+      - name: Scan application and test dependencies
+        working-directory: ${{ matrix.module }}
+        run: govulncheck -test ./...
+      - name: Scan Go tools
+        shell: bash
+        working-directory: ${{ matrix.module }}
+        run: |
+          tools="$(go list tool)"
+          if [ -n "$tools" ]; then
+            govulncheck $tools
+          fi
+  ocr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - run: python -m pip install pip-audit==2.10.1
+      - name: Audit complete OCR dependency resolution
+        run: pip-audit --strict -r ff-ocr/requirements.txt

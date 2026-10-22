@@ -1,5 +1,5 @@
 # Этап сборки
-FROM golang:1.24-alpine AS builder
+FROM golang:1.27.3-alpine AS builder
 
 # Устанавливаем git для скачивания Go модулей
 RUN apk add --no-cache git

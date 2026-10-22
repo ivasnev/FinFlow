@@ -1,6 +1,6 @@
 module github.com/ivasnev/FinFlow/ff-common
 
-go 1.24.1
+go 1.27.3
 
 require (
 	github.com/golang-migrate/migrate/v4 v4.18.2

@@ -1,6 +1,6 @@
 # Официальный релиз с исправлением CVE; авторы рекомендуют собирать контейнер из исходников.
 # https://github.com/minio/minio/releases/tag/RELEASE.2025-10-15T17-29-55Z
-FROM golang:1.24-alpine AS builder
+FROM golang:1.27.3-alpine AS builder
 RUN apk add --no-cache git
 RUN CGO_ENABLED=0 GOMAXPROCS=2 go install -p 1 github.com/minio/minio@RELEASE.2025-10-15T17-29-55Z
 
