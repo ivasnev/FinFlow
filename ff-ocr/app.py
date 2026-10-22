@@ -3,6 +3,7 @@ import asyncio
 import hmac
 import io
 import os
+import signal
 import time
 from contextlib import asynccontextmanager
 
@@ -25,6 +26,25 @@ running = set()
 stats = {'completed': 0, 'failed': 0, 'busy': 0, 'seconds': 0.0}
 
 
+def prepare_runtime():
+    # Paddle replaces native signal handlers during import. Keep termination
+    # owned by Uvicorn, including while models load in the background thread.
+    handlers = {sig: signal.getsignal(sig) for sig in (signal.SIGTERM, signal.SIGINT)}
+    previous_mask = signal.pthread_sigmask(signal.SIG_BLOCK, handlers) if hasattr(signal, 'pthread_sigmask') else None
+    try:
+        import paddle
+        paddle.disable_signal_handler()
+    finally:
+        try:
+            # CPython caches handlers: getsignal() alone cannot detect the
+            # native sigaction changes, so reinstall them unconditionally.
+            for sig, handler in handlers.items():
+                signal.signal(sig, handler)
+        finally:
+            if previous_mask is not None:
+                signal.pthread_sigmask(signal.SIG_SETMASK, previous_mask)
+
+
 def load_engine():
     from paddleocr import PaddleOCR
     return PaddleOCR(text_detection_model_name='PP-OCRv5_mobile_det', text_recognition_model_name='eslav_PP-OCRv5_mobile_rec',
@@ -38,6 +58,7 @@ async def lifespan(_app):
     global engine
     if len(TOKEN) < 32:
         raise RuntimeError('OCR_TOKEN must contain at least 32 characters')
+    prepare_runtime()
     engine = await asyncio.to_thread(load_engine)
     try:
         yield

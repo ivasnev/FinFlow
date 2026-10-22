@@ -48,3 +48,7 @@ jobs:
       - run: python -m pip install pip-audit==2.10.1
       - name: Audit complete OCR dependency resolution
         run: pip-audit --strict -r ff-ocr/requirements.txt
+      - name: Install OCR test dependencies
+        run: python -m pip install -r ff-ocr/requirements.txt -r ff-ocr/requirements-test.txt
+      - name: OCR tests, including graceful process termination
+        run: python -m pytest ff-ocr/tests -q

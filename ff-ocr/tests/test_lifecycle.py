@@ -12,6 +12,7 @@ def test_shutdown_waits_for_cancelled_native_work(monkeypatch):
     monkeypatch.setattr(app, 'TOKEN', token)
     monkeypatch.setattr(app, 'busy', asyncio.Semaphore(1))
     monkeypatch.setattr(app, 'running', set())
+    monkeypatch.setattr(app, 'prepare_runtime', lambda: None)
     monkeypatch.setattr(app, 'load_engine', lambda: marker)
 
     def recognize(_):
