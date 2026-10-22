@@ -150,3 +150,6 @@ replace github.com/ivasnev/FinFlow/ff-tvm => ../ff-tvm
 replace github.com/ivasnev/FinFlow/ff-files => ../ff-files
 
 tool github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
+
+// Testcontainers pulls this optional module into the complete graph. Keep its selected source patched.
+replace google.golang.org/grpc => google.golang.org/grpc v1.84.0

@@ -217,3 +217,41 @@ ff-ocr/.venv/bin/python ff-ocr/evaluate.py /absolute/path/to/corpus/manifest.jso
 Приватный OCR Bearer-токен передаётся через `OCR_TOKEN`, адрес — через `--ocr-url`.
 По умолчанию примеры ожидают временные локальные порты 65170/65171/65172; в обычном
 compose OCR остаётся приватным, для замера используйте отдельный локальный override.
+
+
+## Проверка зависимостей в CI
+
+`.github/workflows/security.yml` запускает тесты и `govulncheck` приложений,
+тестовых пакетов и Go-инструментов всех шести модулей. Python проверяется
+`pip-audit --strict` вместе с `requirements-test.txt` на Linux x86_64 и aarch64;
+это разные ветки Paddle в requirements. После установки выполняются тесты и
+собирается граф фактически разрешённых Python-зависимостей.
+
+`scripts/security/dependency_snapshot.py` формирует данные GitHub Dependency Graph:
+для Go — реальные импорты приложений, тестов и инструментов с учётом `replace`;
+для Python — транзитивные зависимости от production/test requirements с учётом
+platform markers и extras. Посторонние пакеты runner и неиспользуемые опциональные
+ветки полных Go module graphs не выдаются за зависимости собранных приложений.
+Локальные Go-модули учитываются как исходники текущего checkout, а не старые remote pseudo-versions.
+
+JSON-файлы передаются через artifacts. Только после успешных проверок **всех**
+модулей и обеих Python-платформ отдельный job с `contents: write` отправляет
+снимки точного commit в GitHub. PR jobs имеют только чтение; токен публикации
+не передаётся коду PR. Публикации сериализованы, каждый POST проверяет актуальный
+remote main, поэтому медленный старый workflow не возвращает старый граф.
+Корреляторы стабильны по модулю/платформе: следующие запуски заменяют данные,
+а не добавляют бесконечные устаревшие снимки. При пропущенной платформе,
+неразрешённом пакете или неполном наборе artifacts публикация завершается ошибкой.
+
+Сбор данных сам по себе не требует GitHub-токена; для локальной диагностики:
+
+```sh
+python3 scripts/security/dependency_snapshot.py go --module ff-files --output /tmp/files-dependencies.json
+# В окружении с установленными production и test requirements:
+python scripts/security/dependency_snapshot.py pip --output /tmp/ocr-dependencies.json
+python -m unittest discover -s scripts/security -p 'test_*.py'
+```
+
+Неподтверждённые/грязные локальные графы публиковать нельзя. Предупреждения
+Dependabot вручную не скрываются: GitHub получает текущие версии и пересчитывает
+alerts по ним. Документация API и правила приоритета: [GitHub Dependency Graph](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependency-graph-data).

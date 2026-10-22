@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/ivasnev/FinFlow/ff-tvm v0.0.0-20250413001105-de6af4703bcc
 	github.com/minio/minio-go/v7 v7.0.95
-	github.com/oapi-codegen/runtime v1.1.2
+	github.com/oapi-codegen/runtime v1.7.0
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/sync v0.24.0
 	gopkg.in/yaml.v3 v3.0.1

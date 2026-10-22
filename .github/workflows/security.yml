@@ -1,5 +1,6 @@
 name: Security and tests
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
@@ -21,6 +22,11 @@ jobs:
         with:
           go-version-file: go.mod
           cache-dependency-path: '**/go.sum'
+      - name: Check reproducible Files API generation
+        if: matrix.module == 'ff-files'
+        run: |
+          make -C ff-files generate
+          git diff --exit-code -- ff-files/pkg/api
       - name: Tests
         working-directory: ${{ matrix.module }}
         run: go test -count=1 -timeout=180s ./...
@@ -37,8 +43,25 @@ jobs:
           if [ -n "$tools" ]; then
             govulncheck $tools
           fi
+      - name: Collect resolved application, test and tool dependencies
+        run: python3 scripts/security/dependency_snapshot.py go --module ${{ matrix.module }} --output ${{ runner.temp }}/dependencies-${{ matrix.module }}.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        with:
+          name: dependencies-${{ matrix.module }}
+          path: ${{ runner.temp }}/dependencies-${{ matrix.module }}.json
+          if-no-files-found: error
+          retention-days: 3
   ocr:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            architecture: x86_64
+          - os: ubuntu-24.04-arm
+            architecture: aarch64
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -47,8 +70,43 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install pip-audit==2.10.1
       - name: Audit complete OCR dependency resolution
-        run: pip-audit --strict -r ff-ocr/requirements.txt
+        run: pip-audit --strict -r ff-ocr/requirements.txt -r ff-ocr/requirements-test.txt
       - name: Install OCR test dependencies
         run: python -m pip install -r ff-ocr/requirements.txt -r ff-ocr/requirements-test.txt
       - name: OCR tests, including graceful process termination
         run: python -m pytest ff-ocr/tests -q
+      - name: Dependency collector regression tests
+        run: python -m unittest discover -s scripts/security -p 'test_*.py'
+      - name: Collect resolved production and test Python dependencies
+        run: python scripts/security/dependency_snapshot.py pip --output ${{ runner.temp }}/dependencies-ocr-${{ matrix.architecture }}.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        with:
+          name: dependencies-ocr-${{ matrix.architecture }}
+          path: ${{ runner.temp }}/dependencies-ocr-${{ matrix.architecture }}.json
+          if-no-files-found: error
+          retention-days: 3
+  dependency-graph:
+    # PR code never runs with a write token. Publish only artifacts of a successful main build.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: [go, ocr]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    concurrency:
+      group: dependency-graph-main
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: dependencies-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/dependency-snapshots
+      - name: Publish verified dependency snapshots
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/security/dependency_snapshot.py publish --directory ${{ runner.temp }}/dependency-snapshots
