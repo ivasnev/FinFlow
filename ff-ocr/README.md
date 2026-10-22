@@ -224,7 +224,11 @@ compose OCR остаётся приватным, для замера испол�
 `.github/workflows/security.yml` запускает тесты и `govulncheck` приложений,
 тестовых пакетов и Go-инструментов всех шести модулей. Python проверяется
 `pip-audit --strict` вместе с `requirements-test.txt` на Linux x86_64 и aarch64;
-это разные ветки Paddle в requirements. После установки выполняются тесты и
+это разные ветки Paddle в requirements. После установки дополнительно выполняются
+`pip check` и `pip-audit --strict --local`: аудит нового resolution не обнаруживает
+старые пакеты, уже предустановленные в runner или базовом образе. Версии pip/wheel
+при сборке обновляются согласованно с CI, а setuptools закреплён в production
+requirements: ModelScope не задаёт для него безопасную нижнюю границу. Затем выполняются тесты и
 собирается граф фактически разрешённых Python-зависимостей.
 
 `scripts/security/dependency_snapshot.py` формирует данные GitHub Dependency Graph:

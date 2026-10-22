@@ -68,11 +68,27 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.11'
+      - name: Update Python packaging tools
+        run: python -m pip install --upgrade pip==26.2.2 wheel==0.48.0
       - run: python -m pip install pip-audit==2.10.1
       - name: Audit complete OCR dependency resolution
         run: pip-audit --strict -r ff-ocr/requirements.txt -r ff-ocr/requirements-test.txt
       - name: Install OCR test dependencies
         run: python -m pip install -r ff-ocr/requirements.txt -r ff-ocr/requirements-test.txt
+      - name: Check and audit the installed environment
+        run: |
+          python -m pip check
+          python -m pip_audit --strict --local
+      - name: Import the real Paddle runtime without downloading models
+        run: |
+          python - <<'PYTHON'
+          import sys
+          sys.path.insert(0, 'ff-ocr')
+          import app
+          app.prepare_runtime()
+          from paddleocr import PaddleOCR
+          print('PaddleOCR imports with the installed packaging tools')
+          PYTHON
       - name: OCR tests, including graceful process termination
         run: python -m pytest ff-ocr/tests -q
       - name: Dependency collector regression tests
