@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.15-slim
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1 PADDLE_PDX_CACHE_HOME=/models PADDLE_PDX_MODEL_SOURCE=BOS PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK=True OMP_NUM_THREADS=2
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 libgl1 libglib2.0-0 && rm -rf /var/lib/apt/lists/*
