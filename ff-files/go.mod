@@ -3,7 +3,7 @@ module github.com/ivasnev/FinFlow/ff-files
 go 1.27.3
 
 require (
-	github.com/getkin/kin-openapi v0.151.0
+	github.com/getkin/kin-openapi v0.152.0
 	github.com/gin-gonic/gin v1.12.0
 	github.com/google/uuid v1.6.0
 	github.com/ivasnev/FinFlow/ff-tvm v0.0.0-20250413001105-de6af4703bcc
